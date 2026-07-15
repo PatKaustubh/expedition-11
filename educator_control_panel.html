@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Expedition 11 — Educator Control Panel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+:root {
+  --navy: #0b1320; --navy-deep: #050914;
+  --parchment: #f0e6d2; --parchment-dim: #c5bba8;
+  --ink: #111a22; --brass: #c99c51; --brass-light: #e8c382;
+  --sea: #2a9d8f; --coral: #e76f51; --line: rgba(201, 156, 81, 0.3);
+  --glass: rgba(11, 19, 32, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.12);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+.app { max-width: 900px; margin: 0 auto; padding: 30px 16px 80px; position: relative; z-index: 10; }
+
+/* HEADER */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border: 1px solid var(--brass); border-radius: 16px; background: var(--glass); margin-bottom: 30px; gap: 10px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.brand h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; color: var(--brass-light); }
+.brand p { margin: 0; font-size: 0.8rem; color: var(--parchment-dim); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
+
+.passcode-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; }
+.passcode-card { background: var(--glass); border: 1px solid var(--brass); border-radius: 24px; width: 100%; max-width: 420px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(20px); }
+.passcode-card h3 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--brass-light); margin: 0 0 10px; }
+.passcode-card p { color: var(--parchment-dim); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
+.passcode-input { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--brass); border-radius: 12px; padding: 14px 20px; width: 100%; color: #fff; font-family: 'JetBrains Mono', monospace; text-align: center; font-size: 1.3rem; outline: none; margin-bottom: 20px; }
+.passcode-input:focus { border-color: var(--brass-light); box-shadow: 0 0 12px rgba(201, 156, 81, 0.3); }
+
+/* TAB TOGGLES */
+.tab-row { display: flex; gap: 12px; margin-bottom: 24px; }
+.tab-btn { background: var(--glass); border: 1px solid var(--glass-border); color: var(--parchment); border-radius: 10px; padding: 12px 20px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; transition: all 0.2s; }
+.tab-btn.active { border-color: var(--brass-light); color: var(--brass-light); background: rgba(201, 156, 81, 0.1); }
+
+.report-list { display: flex; flex-direction: column; gap: 20px; }
+.report-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px; border-left: 5px solid var(--coral); position: relative; }
+.report-card.resolved { border-left-color: var(--sea); }
+.report-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+.meta-badge { background: rgba(231, 111, 81, 0.15); color: var(--coral); padding: 4px 10px; border-radius: 6px; font-weight: 600; border: 1px solid rgba(231, 111, 81, 0.3); }
+.report-card.resolved .meta-badge { background: rgba(42, 157, 143, 0.15); color: var(--sea); border-color: rgba(42, 157, 143, 0.3); }
+.report-time { color: var(--parchment-dim); }
+
+.report-qtext { background: rgba(0, 0, 0, 0.2); padding: 16px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 14px; font-size: 1.05rem; line-height: 1.5; font-family: 'Playfair Display', serif; }
+.report-ans { color: var(--sea); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; margin-bottom: 14px; }
+.report-comment { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 12px; font-size: 0.95rem; color: var(--parchment-dim); margin-bottom: 16px; line-height: 1.5; }
+
+.reply-area { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.reply-textarea { background: #0b1320; border: 1px solid var(--brass); border-radius: 12px; padding: 14px; color: #fff; font-size: 0.95rem; outline: none; width: 100%; resize: none; min-height: 80px; }
+.reply-textarea:focus { border-color: var(--brass-light); }
+
+.btn { border: none; border-radius: 10px; padding: 12px 24px; cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s; align-self: flex-end; }
+.btn.primary { background: var(--sea); color: #fff; }
+.btn.primary:hover { background: #33bdae; }
+.btn.danger { background: var(--coral); color: #fff; }
+.btn.ghost { background: transparent; border: 1px solid var(--parchment-dim); color: var(--parchment); }
+.btn.ghost:hover { background: rgba(255,255,255,0.05); }
+
+.resolved-reply { background: rgba(201, 156, 81, 0.05); border: 1px solid var(--line); border-radius: 10px; padding: 14px; color: var(--brass-light); font-size: 0.95rem; line-height: 1.5; }
+
+/* MODALS */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(5, 9, 20, 0.8); backdrop-filter: blur(6px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-backdrop.show { display: flex; }
+.modal-box { background: var(--glass); border: 1px solid var(--brass); border-radius: 20px; padding: 36px 30px; max-width: 420px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(20px); }
+.modal-box h3 { font-family: 'Playfair Display', serif; color: var(--coral); font-size: 1.6rem; margin: 0 0 14px; }
+.modal-box p { color: var(--parchment-dim); font-size: 1.05rem; line-height: 1.6; margin: 0 0 26px; }
+
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+.shaking { animation: shake 0.35s ease both; }
+.border-error { border-color: var(--coral) !important; box-shadow: 0 0 12px rgba(231, 111, 81, 0.4) !important; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="passcode-screen" id="passcodeGateScreen">
+    <div class="passcode-card" id="gateCard">
+      <h3>Teacher Portal Authorization</h3>
+      <p>Please enter the administrative security passcode to resolve reported question nodes.</p>
+      <input type="password" id="gateField" class="passcode-input" placeholder="Teacher Passcode...">
+      <div id="gateError" style="color:var(--coral); font-family:'JetBrains Mono',monospace; font-size:0.8rem; margin-bottom:15px; display:none;">Invalid Code. Access Denied.</div>
+      <button class="btn primary" style="align-self:center;" onclick="verifyGatePasscode()">Verify Access &rarr;</button>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATED TEACHER DASHBOARD -->
+  <div id="adminAppDashboard" style="display:none;">
+    <div class="topbar">
+      <div class="brand">
+        <h1>Educator Quality Control</h1>
+        <p>Flagged Questions Review Console</p>
+      </div>
+      <button class="btn danger" style="padding:10px 18px; font-size:0.8rem;" onclick="openClearModal()">Clear Reports</button>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabPending" onclick="switchTab('Pending')">Pending Reviews</button>
+      <button class="tab-btn" id="tabResolved" onclick="switchTab('Resolved')">Resolved Archives</button>
+    </div>
+
+    <div class="report-list" id="reportCardsList">
+      <!-- Dynamic logs rendered here -->
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM DIALOG OVERLAY: CLEAR ALL CONFIRMATION -->
+<div class="modal-backdrop" id="clearConfirmModal">
+  <div class="modal-box">
+    <h3>Clear All Archives?</h3>
+    <p>This action will permanently delete all student flagged questions, pending logs, and completed response notes. This is irreversible.</p>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="btn ghost" onclick="closeClearModal()">Cancel</button>
+      <button class="btn danger" onclick="confirmClearAllReports()">Purge All</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+// ============================================================================
+// Admin_DB now talks to the SAME Firebase Realtime Database project that
+// index.html (the player-facing app) writes reports into. This firebaseConfig
+// must always be identical to the one in index.html — both are substituted
+// with the same real project values at DEPLOY time via GitHub Secrets.
+//
+// Previously this panel was wired to a kvdb.io bucket while index.html was
+// wired to Firebase — two different backends that never talked to each
+// other, which is why a report filed in the player app never showed up
+// here no matter which browser/device opened this panel.
+// ============================================================================
+
+const firebaseConfig = {
+  apiKey: "__FIREBASE_API_KEY__",
+  authDomain: "__FIREBASE_AUTH_DOMAIN__",
+  databaseURL: "__FIREBASE_DATABASE_URL__",
+  projectId: "__FIREBASE_PROJECT_ID__",
+  storageBucket: "__FIREBASE_STORAGE_BUCKET__",
+  messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
+  appId: "__FIREBASE_APP_ID__"
+};
+
+let dbReady = false;
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  dbReady = true;
+} catch (e) {
+  console.error('[Admin] Firebase failed to initialize:', e);
+}
+
+window.Admin_DB = {
+  getReportsLocal() {
+    try {
+      const prev = localStorage.getItem('explorer_reported_issues');
+      return prev ? JSON.parse(prev) : [];
+    } catch(e) { return []; }
+  },
+
+  async updateReport(id, updateData) {
+    if (dbReady) {
+      try {
+        await db.ref('reports/' + id).update(updateData);
+        return;
+      } catch (e) {
+        console.error("[Admin] Firebase update failed, falling back locally.", e);
+      }
+    }
+    this.updateReportLocal(id, updateData);
+  },
+
+  updateReportLocal(id, updateData) {
+    let list = this.getReportsLocal();
+    let idx = list.findIndex(r => r.id === id);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...updateData };
+      localStorage.setItem('explorer_reported_issues', JSON.stringify(list));
+    }
+    if (window.onReportsUpdate) window.onReportsUpdate();
+  },
+
+  async clearAll() {
+    if (dbReady) {
+      try {
+        await db.ref('reports').remove();
+      } catch (err) {
+        console.error("[Admin] Firebase purge failed.", err);
+      }
+    }
+    localStorage.removeItem('explorer_reported_issues');
+    if (window.onReportsUpdate) window.onReportsUpdate();
+  },
+
+  listenReports(callback) {
+    if (!dbReady) {
+      callback(this.getReportsLocal());
+      window.onReportsUpdate = () => callback(this.getReportsLocal());
+      return () => { window.onReportsUpdate = null; };
+    }
+    const ref = db.ref('reports');
+    const handler = (snapshot) => {
+      const val = snapshot.val() || {};
+      callback(Object.values(val));
+    };
+    const errHandler = (e) => {
+      console.warn("[Admin] Firebase unreachable, dropping back to local reports.", e);
+      callback(this.getReportsLocal());
+    };
+    ref.on('value', handler, errHandler);
+    window.onReportsUpdate = null; // Firebase pushes live, no manual poll trigger needed
+    return () => ref.off('value', handler);
+  }
+};
+</script>
+
+<script>
+/* ================= STREAMING_CHUNK: Launching Admin verification checks ================= */
+let activeTab = 'Pending';
+let activeReports = [];
+
+// Stored as a SHA-256 hash so the actual passcode isn't visible in the page source
+const GATE_HASH = '0f6b31b40e622d92344d3c3c5112b32816ac9a0fcc8993a8277ffeb95db297c8';
+
+async function sha256(text) {
+  const data = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyGatePasscode() {
+  const code = document.getElementById('gateField').value.trim();
+  const error = document.getElementById('gateError');
+  const card = document.getElementById('gateCard');
+
+  const inputHash = await sha256(code);
+
+  if (inputHash === GATE_HASH) {
+    document.getElementById('passcodeGateScreen').style.display = 'none';
+    document.getElementById('adminAppDashboard').style.display = 'block';
+    startAdminEngine();
+  } else {
+    error.style.display = 'block';
+    card.classList.remove('shaking'); void card.offsetWidth; card.classList.add('shaking');
+  }
+}
+
+// Support hitting 'Enter' to log in
+document.getElementById('gateField').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') verifyGatePasscode();
+});
+
+function startAdminEngine() {
+  if (window.Admin_DB) {
+    window.Admin_DB.listenReports((reports) => {
+      activeReports = reports;
+      renderReports();
+    });
+  }
+}
+
+/* ================= STREAMING_CHUNK: Executing tab controller filters ================= */
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tabPending').classList.toggle('active', tab === 'Pending');
+  document.getElementById('tabResolved').classList.toggle('active', tab === 'Resolved');
+  renderReports();
+}
+
+function renderReports() {
+  const container = document.getElementById('reportCardsList');
+  if (!container) return;
+
+  const filtered = activeReports.filter(r => r.status === activeTab);
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
+        <p style="font-size:1.2rem; margin-bottom:5px;">All clear!</p>
+        <p style="font-size:0.9rem; opacity:0.7;">No logged queries in the "${activeTab}" directory.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Sort by newest first
+  filtered.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  container.innerHTML = "";
+  filtered.forEach(r => {
+    let card = document.createElement('div');
+    card.className = "report-card" + (r.status === 'Resolved' ? ' resolved' : '');
+    
+    let interactionMarkup = '';
+    if (r.status === 'Pending') {
+      interactionMarkup = `
+        <div class="reply-area">
+          <textarea id="replyText-${r.id}" class="reply-textarea" placeholder="Type resolution or educational feedback to send to student..."></textarea>
+          <button class="btn primary" onclick="submitReply('${r.id}')">Submit Reply & Resolve</button>
+        </div>
+      `;
+    } else {
+      interactionMarkup = `
+        <div class="resolved-reply">
+          <strong>Teacher Resolution:</strong> ${r.reply || "Acknowledge and updated."}
+        </div>
+      `;
+    }
+
+    let optionsHtml = '';
+    if (Array.isArray(r.allOptions) && r.allOptions.length) {
+      optionsHtml = `
+        <div style="margin-bottom:14px;">
+          <div style="font-size:0.8rem; color:var(--parchment-dim); margin-bottom:6px; font-family:'JetBrains Mono',monospace;">All Options:</div>
+          <ul style="margin:0; padding-left:20px; font-size:0.9rem; line-height:1.6;">
+            ${r.allOptions.map((o, idx) => {
+              const isUserPick = idx === r.userSelectedIdx;
+              const isCorrectOpt = idx === r.correctAnswerIdx;
+              const color = isCorrectOpt ? 'var(--sea)' : (isUserPick ? 'var(--coral)' : 'var(--parchment)');
+              const tag = isCorrectOpt ? ' &nbsp;✓ correct answer' : (isUserPick ? ' &nbsp;(student selected)' : '');
+              return `<li style="color:${color};">${o}${tag}</li>`;
+            }).join('')}
+          </ul>
+        </div>`;
+    }
+
+    card.innerHTML = `
+      <div class="report-meta">
+        <span class="meta-badge">${r.category}</span>
+        <span style="color:var(--brass-light);">${r.subject} · Ch: ${r.chapter} · Lvl ${r.level}</span>
+        <span class="report-time">${r.timestamp}</span>
+      </div>
+      <div style="font-size:0.9rem; color:var(--brass-light); font-family:'JetBrains Mono', monospace; margin-bottom:8px;">Reported by: ${r.studentName}</div>
+      <div class="report-qtext">${r.questionText}</div>
+      <div class="report-ans" style="color:var(--coral);">Student's Selected Answer: "${r.userSelectedText || 'Not answered yet'}"</div>
+      <div class="report-ans">Correct Answer: "${r.correctAnswerText}"</div>
+      ${optionsHtml}
+      <div class="report-comment">
+        <strong>Student Remarks:</strong> "${r.comments}"
+      </div>
+      ${interactionMarkup}
+    `;
+    container.appendChild(card);
+  });
+}
+
+/* ================= STREAMING_CHUNK: Resolving and sending reply responses ================= */
+function submitReply(id) {
+  const textbox = document.getElementById(`replyText-${id}`);
+  if (!textbox) return;
+  const replyVal = textbox.value.trim();
+  
+  if (!replyVal) {
+    textbox.classList.add('border-error');
+    textbox.classList.remove('shaking'); void textbox.offsetWidth; textbox.classList.add('shaking');
+    return;
+  }
+  textbox.classList.remove('border-error');
+
+  if (window.Admin_DB) {
+    window.Admin_DB.updateReport(id, {
+      status: "Resolved",
+      reply: replyVal
+    }).then(() => {
+      renderReports();
+    });
+  }
+}
+
+/* ================= CUSTOM CONFIRMATION WINDOW OVERLAYS ================= */
+function openClearModal() {
+  document.getElementById('clearConfirmModal').classList.add('show');
+}
+
+function closeClearModal() {
+  document.getElementById('clearConfirmModal').classList.remove('show');
+}
+
+function confirmClearAllReports() {
+  closeClearModal();
+  if (window.Admin_DB) {
+    window.Admin_DB.clearAll().then(() => {
+      renderReports();
+    });
+  }
+}
+
+// Bind globally
+window.submitReply = submitReply;
+window.verifyGatePasscode = verifyGatePasscode;
+window.switchTab = switchTab;
+window.openClearModal = openClearModal;
+window.closeClearModal = closeClearModal;
+window.confirmClearAllReports = confirmClearAllReports;
+</script>
+</body>
+</html>

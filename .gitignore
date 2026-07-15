@@ -1,0 +1,3 @@
+# Ignore local Firebase configuration containing sensitive keys
+firebase-config.js
+.vs/

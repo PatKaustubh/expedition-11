@@ -1,0 +1,55 @@
+name: Deploy to GitHub Pages
+
+# Runs every time you push to main. Builds a deploy copy of the site with
+# the Firebase config placeholders swapped in from GitHub Secrets, so the
+# real values never sit in the committed source files.
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject Firebase config into HTML files
+        run: |
+          for file in index.html educator_control_panel.html; do
+            if [ -f "$file" ]; then
+              sed -i \
+                -e "s|__FIREBASE_API_KEY__|${{ secrets.FIREBASE_API_KEY }}|g" \
+		-e "s|__FIREBASE_APP_ID__|${{ secrets.FIREBASE_APP_ID }}|g" \
+                -e "s|__FIREBASE_AUTH_DOMAIN__|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" \
+                -e "s|__FIREBASE_DATABASE_URL__|${{ secrets.FIREBASE_DATABASE_URL }}|g" \
+		-e "s|__FIREBASE_MESSAGING_SENDER_ID__|${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}|g" \
+                -e "s|__FIREBASE_PROJECT_ID__|${{ secrets.FIREBASE_PROJECT_ID }}|g" \
+                -e "s|__FIREBASE_STORAGE_BUCKET__|${{ secrets.FIREBASE_STORAGE_BUCKET }}|g" 
+                
+                
+                "$file"
+            fi
+          done
+
+      - name: Upload site as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
