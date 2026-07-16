@@ -338,6 +338,69 @@ body { padding-top: 30px; }
 .side-panel { cursor: pointer; transition: box-shadow 0.25s ease, border-color 0.25s ease; }
 .side-panel:hover { box-shadow: 0 14px 40px rgba(0,0,0,0.5); border-color: var(--brass); }
 
+
+/* --- Level progression polish (added) --- */
+.crumbs { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:0.8px; text-transform:uppercase; color:var(--parchment-dim); margin: 0 0 12px; }
+.crumbs .sep { opacity:0.5; }
+.crumbs .now { color: var(--brass-light); }
+
+.chap-progress { margin-top: 10px; }
+.chap-progress .bar { position: relative; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; border: 1px solid var(--glass-border); }
+.chap-progress .fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, var(--sea), var(--brass-light)); border-radius: 999px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 12px color-mix(in oklab, var(--brass-light) 45%, transparent); }
+.chap-progress .meta { display:flex; justify-content:space-between; margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--parchment-dim); letter-spacing:0.5px; }
+.chap-progress .meta .pct { color: var(--brass-light); font-weight: 700; }
+
+.level-progress-panel { display:flex; flex-direction:column; gap:8px; padding: 14px 16px; margin: 4px 0 18px; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
+.level-progress-panel .row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.level-progress-panel .title { font-family:'Playfair Display',serif; font-size:1rem; color: var(--parchment); }
+.level-progress-panel .stat { font-family:'JetBrains Mono',monospace; font-size:0.75rem; color: var(--parchment-dim); }
+.level-progress-panel .stat b { color: var(--brass-light); }
+.level-progress-panel .bar { position: relative; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.level-progress-panel .fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, var(--sea), var(--brass-light)); border-radius: 999px; transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Level dot connector strip — visible progression at a glance */
+.level-dots { display:flex; gap:6px; align-items:center; overflow-x:auto; padding: 4px 2px 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.level-dots::-webkit-scrollbar { display: none; }
+.level-dots .dot { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; display:grid; place-items:center; font-size: 0.62rem; font-family:'JetBrains Mono',monospace; font-weight:700; background: rgba(255,255,255,0.04); color: var(--parchment-dim); border: 1px solid var(--glass-border); position: relative; }
+.level-dots .dot.done { background: linear-gradient(135deg, var(--sea), var(--brass)); color: var(--navy-deep); border-color: transparent; box-shadow: 0 0 8px color-mix(in oklab, var(--brass) 50%, transparent); }
+.level-dots .dot.current { background: rgba(255,255,255,0.08); color: var(--brass-light); border-color: var(--brass-light); animation: pulseDot 1.6s ease-in-out infinite; }
+.level-dots .connector { flex: 0 0 auto; width: 10px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; }
+.level-dots .connector.done { background: linear-gradient(90deg, var(--sea), var(--brass)); }
+@keyframes pulseDot { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in oklab, var(--brass-light) 55%, transparent); } 50% { transform: scale(1.08); box-shadow: 0 0 0 6px color-mix(in oklab, var(--brass-light) 0%, transparent); } }
+
+/* Card + level-btn tap feedback (mobile-friendly) */
+.card-item, .level-btn { -webkit-tap-highlight-color: transparent; }
+.card-item:active { transform: translateY(-2px) scale(0.98); transition: transform 0.08s ease-out; }
+.level-btn.unlocked:active { transform: scale(0.96); transition: transform 0.08s ease-out; }
+
+/* Staggered fade-in for grid children when a screen becomes active */
+.screen.active .grid-container > *,
+.screen.active .levels-grid > * { animation: cardIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.screen.active .grid-container > *:nth-child(1),
+.screen.active .levels-grid > *:nth-child(1) { animation-delay: 0.02s; }
+.screen.active .grid-container > *:nth-child(2),
+.screen.active .levels-grid > *:nth-child(2) { animation-delay: 0.06s; }
+.screen.active .grid-container > *:nth-child(3),
+.screen.active .levels-grid > *:nth-child(3) { animation-delay: 0.10s; }
+.screen.active .grid-container > *:nth-child(4),
+.screen.active .levels-grid > *:nth-child(4) { animation-delay: 0.14s; }
+.screen.active .grid-container > *:nth-child(5),
+.screen.active .levels-grid > *:nth-child(5) { animation-delay: 0.18s; }
+.screen.active .grid-container > *:nth-child(n+6),
+.screen.active .levels-grid > *:nth-child(n+6) { animation-delay: 0.22s; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Newly unlocked level highlight */
+.level-btn.just-unlocked { animation: unlockPop 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes unlockPop { 0% { transform: scale(0.9); box-shadow: 0 0 0 0 var(--brass-light); } 60% { transform: scale(1.06); box-shadow: 0 0 0 8px color-mix(in oklab, var(--brass-light) 0%, transparent); } 100% { transform: scale(1); } }
+
+/* Honor reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .screen.active .grid-container > *, .screen.active .levels-grid > *,
+  .level-btn.just-unlocked, .level-dots .dot.current { animation: none !important; }
+  .chap-progress .fill, .level-progress-panel .fill { transition: none; }
+}
+
 /* --- Mobile tap-target polish (added by fix) --- */
 @media (max-width: 640px) {
   .app { padding: 16px 12px 60px; }
@@ -451,6 +514,7 @@ body { padding-top: 30px; }
       <button class="back-btn" onclick="goToSubjects()">&larr; Disciplines</button>
       <div style="width:70px"></div>
     </div>
+    <div class="crumbs" id="chaptersCrumbs"></div>
     <div class="title-wrap">
       <h2 id="subjTitle">Subject</h2>
       <p>Select a chapter to explore. Master all 15 levels.</p>
@@ -463,10 +527,12 @@ body { padding-top: 30px; }
       <button class="back-btn" onclick="showScreen('screen-chapters')">&larr; Chapters</button>
       <div style="width:70px"></div>
     </div>
+    <div class="crumbs" id="levelsCrumbs"></div>
     <div class="title-wrap">
       <h2 id="chapTitle">Chapter</h2>
       <p>15 Levels · 5 Hearts per Level · Earn up to 3 Stars.</p>
     </div>
+    <div class="level-progress-panel" id="levelProgressPanel"></div>
     <div class="levels-grid" id="levelsGrid"></div>
   </div>
 
@@ -1873,12 +1939,29 @@ function loadChapters() {
   grid.innerHTML = '';
   
   state.curSubj.chapters.forEach((ch, idx) => {
+    if(!state.progress[ch.id]) state.progress[ch.id] = { maxUnlocked: 1, stars: {} };
+    const prog = state.progress[ch.id];
+    const stars = prog.stars || {};
+    const cleared = Math.max(0, (prog.maxUnlocked || 1) - 1); // levels finished
+    const pct = Math.round((cleared / TOTAL_LEVELS) * 100);
+    const starTotal = Object.values(stars).reduce((a,b)=>a+(b||0),0);
     let card = document.createElement('div');
     card.className = 'card-item';
     card.onclick = () => { state.curChap = ch; loadLevels(); };
-    card.innerHTML = `<div class="ico">${ch.icon}</div><h3>${ch.name}</h3><p>${ch.blurb}</p>`;
+    card.innerHTML = `
+      <div class="ico">${ch.icon}</div>
+      <h3>${ch.name}</h3>
+      <p>${ch.blurb}</p>
+      <div class="chap-progress" style="width:100%;">
+        <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+        <div class="meta"><span>${cleared}/${TOTAL_LEVELS} cleared</span><span class="pct">${pct}%</span></div>
+        <div class="meta"><span>${starTotal}/${TOTAL_LEVELS*3} ★</span><span>${cleared === TOTAL_LEVELS ? 'Mastered' : (cleared === 0 ? 'Not started' : 'In progress')}</span></div>
+      </div>`;
     grid.appendChild(card);
   });
+  // Chapters breadcrumb
+  const cbEl = document.getElementById('chaptersCrumbs');
+  if (cbEl) cbEl.innerHTML = `<span>Hub</span><span class="sep">›</span><span class="now">${state.curSubj.name}</span>`;
   showScreen('screen-chapters');
 }
 
@@ -1887,19 +1970,48 @@ function loadLevels() {
   document.getElementById('chapTitle').textContent = state.curChap.name;
   const grid = document.getElementById('levelsGrid');
   grid.innerHTML = '';
-  
+
   if(!state.progress[state.curChap.id]) state.progress[state.curChap.id] = { maxUnlocked: 1, stars: {} };
   let prog = state.progress[state.curChap.id];
   if(!prog.stars) prog.stars = {};
   let maxUnl = prog.maxUnlocked;
-  
+  const cleared = Math.max(0, maxUnl - 1);
+  const pct = Math.round((cleared / TOTAL_LEVELS) * 100);
+  const starTotal = Object.values(prog.stars).reduce((a,b)=>a+(b||0),0);
+  const prevUnl = (state._lastRenderedMaxUnl && state._lastRenderedMaxUnl[state.curChap.id]) || 1;
+  const justUnlockedIdx = maxUnl > prevUnl ? maxUnl : -1;
+  state._lastRenderedMaxUnl = state._lastRenderedMaxUnl || {};
+  state._lastRenderedMaxUnl[state.curChap.id] = maxUnl;
+
+  // Breadcrumb + progress panel
+  const cbEl = document.getElementById('levelsCrumbs');
+  if (cbEl) cbEl.innerHTML = `<span>Hub</span><span class="sep">›</span><span>${state.curSubj.name}</span><span class="sep">›</span><span class="now">${state.curChap.name}</span>`;
+  const panel = document.getElementById('levelProgressPanel');
+  if (panel) {
+    let dots = '';
+    for (let i=1; i<=TOTAL_LEVELS; i++) {
+      const done = i < maxUnl;
+      const cur = i === maxUnl;
+      dots += `<div class="dot ${done ? 'done' : ''} ${cur ? 'current' : ''}" title="Level ${i}">${i}</div>`;
+      if (i < TOTAL_LEVELS) dots += `<div class="connector ${i < maxUnl-1 ? 'done' : ''}"></div>`;
+    }
+    panel.innerHTML = `
+      <div class="row">
+        <div class="title">Progression</div>
+        <div class="stat"><b>${cleared}</b> / ${TOTAL_LEVELS} cleared · <b>${starTotal}</b> / ${TOTAL_LEVELS*3} ★ · <b>${pct}%</b></div>
+      </div>
+      <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+      <div class="level-dots">${dots}</div>
+    `;
+  }
+
   for(let i=1; i<=TOTAL_LEVELS; i++) {
     let btn = document.createElement('button');
     let isUnl = i <= maxUnl;
     let earned = prog.stars[i] || 0;
     let starsHtml = isUnl ? `<span class="mini-stars">${[1,2,3].map(n => `<span class="${n <= earned ? 'on' : ''}">★</span>`).join('')}</span>` : '';
-    btn.className = `level-btn ${isUnl ? 'unlocked' : 'locked'}`;
-    btn.innerHTML = `Lvl ${i} <span class="lbl">${isUnl ? '▶ Play' : '🔒 Locked'}</span>${starsHtml}`;
+    btn.className = `level-btn ${isUnl ? 'unlocked' : 'locked'}${i === justUnlockedIdx ? ' just-unlocked' : ''}`;
+    btn.innerHTML = `Lvl ${i} <span class="lbl">${isUnl ? (i === maxUnl && earned === 0 ? '★ New' : '▶ Play') : '🔒 Locked'}</span>${starsHtml}`;
     if(isUnl) { btn.onclick = () => { state.curLvl = i; startGame(); }; }
     grid.appendChild(btn);
   }
