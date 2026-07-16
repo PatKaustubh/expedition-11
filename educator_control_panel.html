@@ -20,6 +20,18 @@ html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, 
 
 .app { max-width: 900px; margin: 0 auto; padding: 30px 16px 80px; position: relative; z-index: 10; }
 
+/* DEV-BUILD SCROLLING DISCLAIMER */
+.dev-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 5000; height: 30px; background: rgba(231, 111, 81, 0.16); border-bottom: 1px solid var(--coral); backdrop-filter: blur(6px); overflow: hidden; display: flex; align-items: center; }
+.dev-banner-track { display: inline-flex; white-space: nowrap; animation: devBannerScroll 22s linear infinite; will-change: transform; }
+.dev-banner-track span { display: inline-block; padding: 0 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--coral); }
+@keyframes devBannerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+body { padding-top: 30px; }
+@media (prefers-reduced-motion: reduce) { .dev-banner-track { animation: none; } }
+
+/* BACKEND CONNECTION STATUS */
+.conn-status-row { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; margin-top: 6px; }
+.conn-status-row .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
 /* HEADER */
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border: 1px solid var(--brass); border-radius: 16px; background: var(--glass); margin-bottom: 30px; gap: 10px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
 .brand h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; color: var(--brass-light); }
@@ -76,6 +88,13 @@ html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, 
 </head>
 <body>
 
+<div class="dev-banner" role="status" aria-label="Development notice">
+  <div class="dev-banner-track">
+    <span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience! ⚠️</span>
+    <span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience! ⚠️</span>
+  </div>
+</div>
+
 <div class="app">
   <div class="passcode-screen" id="passcodeGateScreen">
     <div class="passcode-card" id="gateCard">
@@ -93,6 +112,10 @@ html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, 
       <div class="brand">
         <h1>Educator Quality Control</h1>
         <p>Flagged Questions Review Console</p>
+        <div class="conn-status-row">
+          <span class="dot" id="connStatusDot" style="background:#999;"></span>
+          <span id="connStatusText" style="color:#999;">Connecting...</span>
+        </div>
       </div>
       <button class="btn danger" style="padding:10px 18px; font-size:0.8rem;" onclick="openClearModal()">Clear Reports</button>
     </div>
@@ -156,6 +179,38 @@ try {
   console.error('[Admin] Firebase failed to initialize:', e);
 }
 
+// Drives the "Connecting... / Live (shared) / Local only" indicator in the
+// topbar, plus a hard-to-miss banner when we drop to local-only mode — this
+// is the same signal that meant a report never left a student's device, so
+// making it obvious here closes the loop on that failure mode.
+function setAdminBackendStatus(status, detail) {
+  window.adminBackendStatus = status;
+  const dot = document.getElementById('connStatusDot');
+  const text = document.getElementById('connStatusText');
+  if (dot && text) {
+    if (status === 'live') { dot.style.background = '#2A9D8F'; text.style.color = '#2A9D8F'; text.textContent = 'Live — connected to shared database'; }
+    else if (status === 'local') { dot.style.background = '#E76F51'; text.style.color = '#E76F51'; text.textContent = 'Local only — NOT connected to shared database'; }
+    else { dot.style.background = '#999'; text.style.color = '#999'; text.textContent = 'Connecting...'; }
+    text.title = detail || '';
+  }
+  let banner = document.getElementById('adminSyncWarningBanner');
+  if (status === 'local') {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'adminSyncWarningBanner';
+      banner.style.cssText = 'position:fixed; top:30px; left:0; right:0; z-index:4999; background:rgba(231,111,81,0.95); color:#fff; font-family:Inter,sans-serif; font-size:0.8rem; font-weight:600; text-align:center; padding:8px 16px; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+      banner.textContent = '⚠️ Not connected to the shared database — the list below is only this browser\'s local cache and may be missing reports filed from other devices/browsers.';
+      document.body.appendChild(banner);
+    }
+    banner.style.display = 'block';
+    document.body.style.paddingTop = (30 + banner.offsetHeight) + 'px';
+    console.error('[Admin] Running in LOCAL-ONLY mode. Reason:', detail);
+  } else if (banner) {
+    banner.style.display = 'none';
+    document.body.style.paddingTop = '30px';
+  }
+}
+
 window.Admin_DB = {
   getReportsLocal() {
     try {
@@ -168,9 +223,11 @@ window.Admin_DB = {
     if (dbReady) {
       try {
         await db.ref('reports/' + id).update(updateData);
+        setAdminBackendStatus('live');
         return;
       } catch (e) {
         console.error("[Admin] Firebase update failed, falling back locally.", e);
+        setAdminBackendStatus('local', 'Update failed: ' + e.message);
       }
     }
     this.updateReportLocal(id, updateData);
@@ -190,8 +247,10 @@ window.Admin_DB = {
     if (dbReady) {
       try {
         await db.ref('reports').remove();
+        setAdminBackendStatus('live');
       } catch (err) {
         console.error("[Admin] Firebase purge failed.", err);
+        setAdminBackendStatus('local', 'Purge failed: ' + err.message);
       }
     }
     localStorage.removeItem('explorer_reported_issues');
@@ -200,17 +259,20 @@ window.Admin_DB = {
 
   listenReports(callback) {
     if (!dbReady) {
+      setAdminBackendStatus('local', 'Firebase did not initialize (check config values)');
       callback(this.getReportsLocal());
       window.onReportsUpdate = () => callback(this.getReportsLocal());
       return () => { window.onReportsUpdate = null; };
     }
     const ref = db.ref('reports');
     const handler = (snapshot) => {
+      setAdminBackendStatus('live');
       const val = snapshot.val() || {};
       callback(Object.values(val));
     };
     const errHandler = (e) => {
       console.warn("[Admin] Firebase unreachable, dropping back to local reports.", e);
+      setAdminBackendStatus('local', 'Reports fetch failed: ' + e.message);
       callback(this.getReportsLocal());
     };
     ref.on('value', handler, errHandler);

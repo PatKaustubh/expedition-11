@@ -34,6 +34,14 @@ body.theme-mixed { --navy: #241129; --navy-deep: #120714; --brass: #ff9a3c; --br
 
 .app { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; position: relative; z-index: 10; }
 
+/* DEV-BUILD SCROLLING DISCLAIMER */
+.dev-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 5000; height: 30px; background: rgba(255, 93, 143, 0.16); border-bottom: 1px solid var(--coral); backdrop-filter: blur(6px); overflow: hidden; display: flex; align-items: center; }
+.dev-banner-track { display: inline-flex; white-space: nowrap; animation: devBannerScroll 22s linear infinite; will-change: transform; }
+.dev-banner-track span { display: inline-block; padding: 0 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--coral); }
+@keyframes devBannerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+body { padding-top: 30px; }
+@media (prefers-reduced-motion: reduce) { .dev-banner-track { animation: none; } }
+
 /* BACKGROUND CANVAS */
 #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; }
 
@@ -332,6 +340,13 @@ body.theme-mixed { --navy: #241129; --navy-deep: #120714; --brass: #ff9a3c; --br
 </head>
 <body>
 
+<div class="dev-banner" role="status" aria-label="Development notice">
+  <div class="dev-banner-track">
+    <span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience, and please use the "Report Issue" button if you spot anything odd! ⚠️</span>
+    <span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience, and please use the "Report Issue" button if you spot anything odd! ⚠️</span>
+  </div>
+</div>
+
 <canvas id="bgCanvas"></canvas>
 
 <div class="intro-modal" id="introModal">
@@ -569,9 +584,9 @@ body.theme-mixed { --navy: #241129; --navy-deep: #120714; --brass: #ff9a3c; --br
 
 <div class="modal-backdrop" id="reportSuccessModal">
   <div class="modal-box" style="max-width: 420px; text-align: center;">
-    <div style="font-size: 2.6rem; line-height: 1; margin-bottom: 10px;">✅</div>
-    <h3 style="font-family: 'Playfair Display', serif; color: var(--brass-light); text-align: center;">Issue Reported</h3>
-    <p style="color: var(--parchment-dim); font-size: 0.9rem; line-height: 1.5; margin: 10px 0 24px;">
+    <div id="reportSuccessIcon" style="font-size: 2.6rem; line-height: 1; margin-bottom: 10px;">✅</div>
+    <h3 id="reportSuccessTitle" style="font-family: 'Playfair Display', serif; color: var(--brass-light); text-align: center;">Issue Reported</h3>
+    <p id="reportSuccessMsg" style="color: var(--parchment-dim); font-size: 0.9rem; line-height: 1.5; margin: 10px 0 24px;">
       Thanks for flagging this — your report has been sent to the teacher's dashboard for review.
     </p>
     <div class="btn-row" style="justify-content: center;">
@@ -580,8 +595,6 @@ body.theme-mixed { --navy: #241129; --navy-deep: #120714; --brass: #ff9a3c; --br
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 // ============================================================================
 // DB_Engine: shared backend for the leaderboard and question reports.
@@ -637,7 +650,29 @@ function setBackendStatus(status, detail) {
     el.style.color = status === 'live' ? '#2A9D8F' : (status === 'local' ? '#E76F51' : '#999');
     el.title = detail || '';
   }
+  updateSyncBanner(status);
   if (status === 'local') console.error('[Explorer] Running in LOCAL-ONLY mode. Reason:', detail);
+}
+
+// A small badge in the corner is easy to miss. When we drop to local-only
+// mode, also surface a visible top banner so students/teachers immediately
+// know progress/reports on THIS device won't reach anyone else right now.
+function updateSyncBanner(status) {
+  let el = document.getElementById('syncWarningBanner');
+  if (status !== 'local') {
+    if (el) el.style.display = 'none';
+    document.body.style.paddingTop = '30px';
+    return;
+  }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'syncWarningBanner';
+    el.style.cssText = 'position:fixed; top:30px; left:0; right:0; z-index:4999; background:rgba(231,111,81,0.95); color:#fff; font-family:Inter,sans-serif; font-size:0.8rem; font-weight:600; text-align:center; padding:8px 16px; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    el.textContent = '⚠️ Not connected to the shared server right now — reports and scores on this device may not reach the teacher until the connection is restored.';
+    document.body.appendChild(el);
+  }
+  el.style.display = 'block';
+  document.body.style.paddingTop = (30 + el.offsetHeight) + 'px';
 }
 
 window.DB_Engine = {
@@ -691,13 +726,17 @@ window.DB_Engine = {
         const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
         await db.ref('reports/' + id).set({ ...reportObj, id });
         setBackendStatus('live');
-        return;
+        return { mode: 'live' };
       } catch (e) {
         console.error("[Reports] Firebase save FAILED — report only saved locally on this device/browser. Reason:", e);
         setBackendStatus('local', 'Report save failed: ' + e.message);
       }
     }
     this.saveReportLocal(reportObj);
+    // mode: 'local' means this report only exists in THIS browser's storage on
+    // THIS device — the teacher's dashboard (running elsewhere) will never see
+    // it until the shared backend connection is restored and it's re-filed.
+    return { mode: 'local' };
   },
   saveReportLocal(reportObj) {
     let list = this.getReportsLocal();
@@ -1043,13 +1082,32 @@ function submitQuestionReport() {
   
   if (window.DB_Engine) {
     window.DB_Engine.saveReport(reportObj)
-      .then(() => { closeReportModal(); openReportSuccessModal(); })
-      .catch(() => { closeReportModal(); });
+      .then((result) => { closeReportModal(); openReportSuccessModal(result && result.mode); })
+      .catch(() => { closeReportModal(); openReportSuccessModal('local'); });
   } else {
     closeReportModal();
+    openReportSuccessModal('local');
   }
 }
-function openReportSuccessModal() { document.getElementById('reportSuccessModal').classList.add('show'); }
+function openReportSuccessModal(mode) {
+  const icon = document.getElementById('reportSuccessIcon');
+  const title = document.getElementById('reportSuccessTitle');
+  const msg = document.getElementById('reportSuccessMsg');
+  if (mode === 'local') {
+    // Saved on THIS device/browser only — the shared backend wasn't reachable,
+    // so the teacher's dashboard will NOT see this report until it syncs.
+    icon.textContent = '⚠️';
+    title.textContent = 'Saved on this device only';
+    title.style.color = 'var(--coral)';
+    msg.innerHTML = "We couldn't reach the shared server right now, so this report was saved only on this device/browser. Your teacher won't see it yet. Please check your internet connection and try reporting again in a bit.";
+  } else {
+    icon.textContent = '✅';
+    title.textContent = 'Issue Reported';
+    title.style.color = 'var(--brass-light)';
+    msg.textContent = "Thanks for flagging this — your report has been sent to the teacher's dashboard for review.";
+  }
+  document.getElementById('reportSuccessModal').classList.add('show');
+}
 function closeReportSuccessModal() { document.getElementById('reportSuccessModal').classList.remove('show'); }
 
 /* ================= LIVE GLOBALLY SYNCED SCOREBOARD ================= */
@@ -1540,11 +1598,57 @@ function getGrandSummary(chap) {
 }
 
 /* ================= UI NAVIGATION ================= */
-function showScreen(id) {
+// _navBaseSet / _restoringHistory work together with the popstate listener
+// below so that hitting the browser/device BACK button steps back through
+// the app's own screens (game -> levels -> chapters -> subjects) instead of
+// dumping the user straight back to the outer home page.
+let _navBaseSet = false;
+let _restoringHistory = false;
+
+function showScreen(id, navOpts) {
+  navOpts = navOpts || {};
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
   window.scrollTo(0,0);
+
+  if (navOpts.skipHistory) return; // called from the popstate handler itself — don't re-push
+
+  try {
+    if (!_navBaseSet) {
+      // First screen shown after the app starts: replace, so a single back
+      // press from here returns to wherever the browser was before the app
+      // opened, rather than adding a redundant extra history entry.
+      _navBaseSet = true;
+      history.replaceState({ explorerScreen: id }, '', '#' + id);
+    } else {
+      history.pushState({ explorerScreen: id }, '', '#' + id);
+    }
+  } catch (e) { /* history API unavailable — degrade silently, no crash */ }
 }
+
+window.addEventListener('popstate', function (e) {
+  // If the app hasn't started yet (still on the name-entry intro screen),
+  // let the browser's normal back behavior happen.
+  const mainAppEl = document.getElementById('mainApp');
+  if (!mainAppEl || mainAppEl.style.display === 'none') return;
+
+  const target = (e.state && e.state.explorerScreen) ? e.state.explorerScreen : 'screen-subjects';
+
+  // Leaving the game screen needs the same cleanup abortGame() does
+  // (stop the exam timer, resume peaceful ambient music) or the timer
+  // interval and combat music would keep running in the background.
+  const gameEl = document.getElementById('screen-game');
+  const leavingGame = gameEl && gameEl.classList.contains('active') && target !== 'screen-game';
+  if (leavingGame) {
+    clearInterval(timerInt);
+    AudioSys.startPeacefulAmbient();
+  }
+
+  _restoringHistory = true;
+  showScreen(target, { skipHistory: true });
+  _restoringHistory = false;
+});
 
 function updateStats() {
   document.getElementById('xpVal').textContent = state.xp;
