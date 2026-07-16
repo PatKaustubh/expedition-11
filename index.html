@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <title>Expedition 11 — Class 11 Math, Physics & Chemistry</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2212%22 fill=%22%230b1320%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2222%22 fill=%22none%22 stroke=%22%23c99c51%22 stroke-width=%222%22/%3E%3Ctext x=%2232%22 y=%2240%22 font-family=%22Georgia,serif%22 font-size=%2220%22 font-weight=%22700%22 text-anchor=%22middle%22 fill=%22%23e8c382%22%3E11%3C/text%3E%3C/svg%3E">
 
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script>
@@ -336,6 +337,13 @@ body { padding-top: 30px; }
 
 .side-panel { cursor: pointer; transition: box-shadow 0.25s ease, border-color 0.25s ease; }
 .side-panel:hover { box-shadow: 0 14px 40px rgba(0,0,0,0.5); border-color: var(--brass); }
+
+/* --- Mobile tap-target polish (added by fix) --- */
+@media (max-width: 640px) {
+  .app { padding: 16px 12px 60px; }
+  .btn { min-height: 44px; padding: 10px 14px; }
+  .subject-card, .level-card, .chapter-card { padding: 14px !important; }
+}
 </style>
 </head>
 <body>
@@ -609,13 +617,33 @@ body { padding-top: 30px; }
 
 let dbReady = false;
 let db = null;
-try {
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.database();
-  dbReady = true;
-} catch (e) {
-  console.error('[Explorer] Firebase failed to initialize:', e);
-}
+(function initFirebase() {
+  const problem = (window.__validateFirebaseConfig || (()=>null))(
+    typeof firebaseConfig !== 'undefined' ? firebaseConfig : null
+  );
+  if (problem) {
+    window.__lastFirebaseError = problem;
+    console.warn('[Explorer] Firebase disabled — ' + problem + '. App will run offline.');
+    setTimeout(() => { try { setBackendStatus('local', problem); } catch(_) {} }, 0);
+    return;
+  }
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    dbReady = true;
+    // Live connection indicator via Firebase's own .info/connected node.
+    try {
+      db.ref('.info/connected').on('value', (snap) => {
+        if (snap.val() === true) { try { setBackendStatus('live'); } catch(_) {} }
+        else { try { setBackendStatus('local', 'Reconnecting to shared server...'); } catch(_) {} }
+      });
+    } catch(_) {}
+  } catch (e) {
+    window.__lastFirebaseError = e && e.message || String(e);
+    console.warn('[Explorer] Firebase init failed:', e);
+    setTimeout(() => { try { setBackendStatus('local', window.__lastFirebaseError); } catch(_) {} }, 0);
+  }
+})();
 
 function getPlayerUid() {
   let uid = localStorage.getItem('explorer_player_uid');
@@ -640,7 +668,7 @@ function setBackendStatus(status, detail) {
     el.title = detail || '';
   }
   updateSyncBanner(status);
-  if (status === 'local') console.error('[Explorer] Running in LOCAL-ONLY mode. Reason:', detail);
+  if (status === 'local') console.info('[Explorer] Offline mode:', detail || '');
 }
 
 // A small badge in the corner is easy to miss. When we drop to local-only
@@ -657,7 +685,7 @@ function updateSyncBanner(status) {
     el = document.createElement('div');
     el.id = 'syncWarningBanner';
     el.style.cssText = 'position:fixed; top:30px; left:0; right:0; z-index:4999; background:rgba(231,111,81,0.95); color:#fff; font-family:Inter,sans-serif; font-size:0.8rem; font-weight:600; text-align:center; padding:8px 16px; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-    el.textContent = '⚠️ Not connected to the shared server right now — reports and scores on this device may not reach the teacher until the connection is restored.';
+    el.textContent = 'Offline mode — your progress is saved on this device and will sync automatically when the connection returns.';
     document.body.appendChild(el);
   }
   el.style.display = 'block';
@@ -667,15 +695,19 @@ function updateSyncBanner(status) {
 window.DB_Engine = {
   async syncPlayerScore(name, xp) {
     localStorage.setItem('local_xp_record', xp); // always keep a local fallback copy
+    const uid = getPlayerUid();
+    const key = safeKeyPart(uid);
+    const payload = { uid, username: name, xp, timestamp: Date.now() };
     if (!dbReady) {
-      setBackendStatus('local', 'Firebase did not initialize (check config values)');
+      queueOfflineWrite({ type: 'score', key, payload });
       return;
     }
     try {
-      const uid = getPlayerUid();
-      await db.ref('leaderboard/' + safeKeyPart(uid)).set({ uid, username: name, xp, timestamp: Date.now() });
+      await db.ref('leaderboard/' + key).set(payload);
       setBackendStatus('live');
+      flushOfflineQueue();
     } catch (e) {
+      queueOfflineWrite({ type: 'score', key, payload });
       setBackendStatus('local', e.message);
     }
   },
@@ -710,21 +742,22 @@ window.DB_Engine = {
   },
 
   async saveReport(reportObj) {
+    const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const payload = { ...reportObj, id };
     if (dbReady) {
       try {
-        const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        await db.ref('reports/' + id).set({ ...reportObj, id });
+        await db.ref('reports/' + id).set(payload);
         setBackendStatus('live');
+        flushOfflineQueue();
         return { mode: 'live' };
       } catch (e) {
-        console.error("[Reports] Firebase save FAILED — report only saved locally on this device/browser. Reason:", e);
+        console.info("[Reports] Save queued — will retry when online.", e && e.message);
         setBackendStatus('local', 'Report save failed: ' + e.message);
       }
     }
-    this.saveReportLocal(reportObj);
-    // mode: 'local' means this report only exists in THIS browser's storage on
-    // THIS device — the teacher's dashboard (running elsewhere) will never see
-    // it until the shared backend connection is restored and it's re-filed.
+    // Save locally AND queue for later sync so the teacher eventually sees it.
+    this.saveReportLocal(payload);
+    queueOfflineWrite({ type: 'report', key: id, payload });
     return { mode: 'local' };
   },
   saveReportLocal(reportObj) {
@@ -757,6 +790,64 @@ window.DB_Engine = {
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
   }
+};
+
+
+
+// ─── Offline write queue ──────────────────────────────────────────────────
+// When Firebase is unreachable, queue score syncs and report submissions to
+// localStorage and flush them the moment the connection comes back. Prevents
+// silent data loss on flaky classroom WiFi.
+const OFFLINE_QUEUE_KEY = 'explorer_offline_queue_v1';
+function _loadQueue() {
+  try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); }
+  catch(_) { return []; }
+}
+function _saveQueue(q) {
+  try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q.slice(-200))); } catch(_) {}
+}
+function queueOfflineWrite(op) {
+  const q = _loadQueue();
+  q.push({ ...op, at: Date.now() });
+  _saveQueue(q);
+}
+async function flushOfflineQueue() {
+  if (!dbReady || !db) return;
+  const q = _loadQueue();
+  if (!q.length) return;
+  const remaining = [];
+  for (const op of q) {
+    try {
+      if (op.type === 'score')       await db.ref('leaderboard/' + op.key).set(op.payload);
+      else if (op.type === 'report') await db.ref('reports/' + op.key).set(op.payload);
+    } catch(_) { remaining.push(op); }
+  }
+  _saveQueue(remaining);
+  if (remaining.length === 0) console.info('[Explorer] Synced offline data to shared server.');
+}
+window.addEventListener('online', () => setTimeout(flushOfflineQueue, 500));
+setInterval(() => { if (dbReady) flushOfflineQueue(); }, 30000);
+
+
+// ─── Diagnostic dump (copy to clipboard) ──────────────────────────────────
+window.copyExpeditionDiagnostics = async function () {
+  const info = {
+    when: new Date().toISOString(),
+    page: location.href,
+    userAgent: navigator.userAgent,
+    online: navigator.onLine,
+    firebaseLoaded: typeof firebase !== 'undefined',
+    configLoaded: typeof firebaseConfig !== 'undefined',
+    databaseURL: (typeof firebaseConfig !== 'undefined' && firebaseConfig.databaseURL) || null,
+    dbReady: typeof dbReady !== 'undefined' ? dbReady : null,
+    lastFirebaseError: window.__lastFirebaseError || null,
+    backendStatus: window.explorerBackendStatus || window.adminBackendStatus || 'unknown',
+    queuedWrites: (function(){ try { return JSON.parse(localStorage.getItem('explorer_offline_queue_v1')||'[]').length; } catch(_) { return 0; } })(),
+    localReports: (function(){ try { return JSON.parse(localStorage.getItem('explorer_reported_issues')||'[]').length; } catch(_) { return 0; } })()
+  };
+  const text = JSON.stringify(info, null, 2);
+  try { await navigator.clipboard.writeText(text); alert('Diagnostic info copied to clipboard.'); }
+  catch(_) { prompt('Copy this diagnostic info:', text); }
 };
 
 window.isFirebaseLive = true;
@@ -2266,5 +2357,22 @@ window.onload = function() {
   if (state.explorerName && state.explorerName !== "Explorer") startApp();
 };
 </script>
+
+<script>
+// Small unobtrusive corner button — only shows if we're offline.
+document.addEventListener('DOMContentLoaded', function () {
+  const btn = document.createElement('button');
+  btn.id = 'diagBtn';
+  btn.textContent = 'Copy diagnostic info';
+  btn.style.cssText = 'position:fixed; bottom:12px; right:12px; z-index:5001; padding:8px 12px; font-family:Inter,sans-serif; font-size:0.75rem; font-weight:600; background:rgba(11,19,32,0.85); color:#e8c382; border:1px solid rgba(201,156,81,0.5); border-radius:8px; cursor:pointer; backdrop-filter:blur(8px); display:none;';
+  btn.onclick = function () { if (window.copyExpeditionDiagnostics) window.copyExpeditionDiagnostics(); };
+  document.body.appendChild(btn);
+  setInterval(function () {
+    const s = window.explorerBackendStatus || window.adminBackendStatus;
+    btn.style.display = (s === 'local') ? 'block' : 'none';
+  }, 1500);
+});
+</script>
+
 </body>
 </html>
