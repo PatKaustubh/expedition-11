@@ -597,30 +597,15 @@ body { padding-top: 30px; }
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
 // ============================================================================
 // DB_Engine: shared backend for the leaderboard and question reports.
 //
-// Uses Firebase Realtime Database. Config values below are the project's
-// public client config (safe to commit — Firebase client config is not a
-// secret; access is controlled by the Database Rules in the Firebase
-// console instead). Hardcoded directly to avoid depending on the GitHub
-// Actions secrets-injection step, which was an ongoing source of failures.
-//
-// IMPORTANT: educator_control_panel.html must use this SAME firebaseConfig
-// (the same project) so that reports filed here actually show up there.
+// Uses Firebase Realtime Database. firebaseConfig is defined in the shared
+// firebase-config.js file (loaded above) so this file and
+// educator_control_panel.html can never end up with mismatched configs.
 // ============================================================================
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUr5QPsUNk9VaixxwqsDESwXcvzqLxYSE",
-  authDomain: "expedition-11-3c997.firebaseapp.com",
-  databaseURL: "https://expedition-11-3c997-default-rtdb.firebaseio.com",
-  projectId: "expedition-11-3c997",
-  storageBucket: "expedition-11-3c997.firebasestorage.app",
-  messagingSenderId: "935443179328",
-  appId: "1:935443179328:web:792506ecaa0d2728383ca5",
-  measurementId: "G-Y83G37CK8N"
-};
 
 let dbReady = false;
 let db = null;

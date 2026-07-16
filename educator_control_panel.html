@@ -146,34 +146,19 @@ body { padding-top: 30px; }
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
 // ============================================================================
 // Admin_DB talks to the SAME Firebase Realtime Database project that
-// index.html (the player-facing app) writes reports into. This firebaseConfig
-// must always be identical to the one in index.html.
-//
-// Config values below are the project's public client config (safe to
-// commit — Firebase client config is not a secret; access is controlled by
-// the Database Rules in the Firebase console instead). Hardcoded directly
-// to avoid depending on the GitHub Actions secrets-injection step, which was
-// an ongoing source of failures.
+// index.html (the player-facing app) writes reports into. firebaseConfig is
+// defined in the shared firebase-config.js file (loaded above), so this
+// panel and index.html can never end up wired to different backends again.
 //
 // Previously this panel was wired to a kvdb.io bucket while index.html was
 // wired to Firebase — two different backends that never talked to each
 // other, which is why a report filed in the player app never showed up
 // here no matter which browser/device opened this panel.
 // ============================================================================
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUr5QPsUNk9VaixxwqsDESwXcvzqLxYSE",
-  authDomain: "expedition-11-3c997.firebaseapp.com",
-  databaseURL: "https://expedition-11-3c997-default-rtdb.firebaseio.com",
-  projectId: "expedition-11-3c997",
-  storageBucket: "expedition-11-3c997.firebasestorage.app",
-  messagingSenderId: "935443179328",
-  appId: "1:935443179328:web:792506ecaa0d2728383ca5",
-  measurementId: "G-Y83G37CK8N"
-};
 
 let dbReady = false;
 let db = null;
