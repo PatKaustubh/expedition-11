@@ -31,7 +31,7 @@ jobs:
         run: |
           for file in index.html educator_control_panel.html; do
             if [ -f "$file" ]; then
-              sed -i \
+              sed -i 
                 -e "s|__FIREBASE_API_KEY__|${{ secrets.FIREBASE_API_KEY }}|g" \
 				-e "s|__FIREBASE_APP_ID__|${{ secrets.FIREBASE_APP_ID }}|g" \
                 -e "s|__FIREBASE_AUTH_DOMAIN__|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" \
