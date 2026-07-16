@@ -601,24 +601,25 @@ body { padding-top: 30px; }
 // ============================================================================
 // DB_Engine: shared backend for the leaderboard and question reports.
 //
-// Uses Firebase Realtime Database. The config values below are placeholders
-// (__FIREBASE_*__) substituted with the real project values at DEPLOY time
-// by the GitHub Actions workflow, using GitHub Secrets — so the real values
-// never sit in plain text in the repo's committed source.
+// Uses Firebase Realtime Database. Config values below are the project's
+// public client config (safe to commit — Firebase client config is not a
+// secret; access is controlled by the Database Rules in the Firebase
+// console instead). Hardcoded directly to avoid depending on the GitHub
+// Actions secrets-injection step, which was an ongoing source of failures.
 //
 // IMPORTANT: educator_control_panel.html must use this SAME firebaseConfig
 // (the same project) so that reports filed here actually show up there.
 // ============================================================================
 
 const firebaseConfig = {
-  apiKey: "__FIREBASE_API_KEY__",
-  authDomain: "__FIREBASE_AUTH_DOMAIN__",
+  apiKey: "AIzaSyDUr5QPsUNk9VaixxwqsDESwXcvzqLxYSE",
+  authDomain: "expedition-11-3c997.firebaseapp.com",
   databaseURL: "https://expedition-11-3c997-default-rtdb.firebaseio.com",
-  projectId: "__FIREBASE_PROJECT_ID__",
-  storageBucket: "__FIREBASE_STORAGE_BUCKET__",
-  messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
-  appId: "__FIREBASE_APP_ID__",
-  measurementId: "__FIREBASE_MEASUREMENT_ID__"
+  projectId: "expedition-11-3c997",
+  storageBucket: "expedition-11-3c997.firebasestorage.app",
+  messagingSenderId: "935443179328",
+  appId: "1:935443179328:web:792506ecaa0d2728383ca5",
+  measurementId: "G-Y83G37CK8N"
 };
 
 let dbReady = false;

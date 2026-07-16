@@ -148,10 +148,15 @@ body { padding-top: 30px; }
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 // ============================================================================
-// Admin_DB now talks to the SAME Firebase Realtime Database project that
+// Admin_DB talks to the SAME Firebase Realtime Database project that
 // index.html (the player-facing app) writes reports into. This firebaseConfig
-// must always be identical to the one in index.html — both are substituted
-// with the same real project values at DEPLOY time via GitHub Secrets.
+// must always be identical to the one in index.html.
+//
+// Config values below are the project's public client config (safe to
+// commit — Firebase client config is not a secret; access is controlled by
+// the Database Rules in the Firebase console instead). Hardcoded directly
+// to avoid depending on the GitHub Actions secrets-injection step, which was
+// an ongoing source of failures.
 //
 // Previously this panel was wired to a kvdb.io bucket while index.html was
 // wired to Firebase — two different backends that never talked to each
@@ -160,14 +165,14 @@ body { padding-top: 30px; }
 // ============================================================================
 
 const firebaseConfig = {
-  apiKey: "__FIREBASE_API_KEY__",
-  authDomain: "__FIREBASE_AUTH_DOMAIN__",
-  databaseURL: "__FIREBASE_DATABASE_URL__",
-  projectId: "__FIREBASE_PROJECT_ID__",
-  storageBucket: "__FIREBASE_STORAGE_BUCKET__",
-  messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
-  appId: "__FIREBASE_APP_ID__",
-  measurementId: "__FIREBASE_MEASUREMENT_ID__"
+  apiKey: "AIzaSyDUr5QPsUNk9VaixxwqsDESwXcvzqLxYSE",
+  authDomain: "expedition-11-3c997.firebaseapp.com",
+  databaseURL: "https://expedition-11-3c997-default-rtdb.firebaseio.com",
+  projectId: "expedition-11-3c997",
+  storageBucket: "expedition-11-3c997.firebasestorage.app",
+  messagingSenderId: "935443179328",
+  appId: "1:935443179328:web:792506ecaa0d2728383ca5",
+  measurementId: "G-Y83G37CK8N"
 };
 
 let dbReady = false;
