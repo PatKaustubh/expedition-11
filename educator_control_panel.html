@@ -118,17 +118,24 @@ body { padding-top: 30px; }
           <span id="connStatusText" style="color:#999;">Connecting...</span>
         </div>
       </div>
-      <button class="btn danger" style="padding:10px 18px; font-size:0.8rem;" onclick="openClearModal()">Clear Reports</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearResolvedModal()">Purge Resolved</button>
+        <button class="btn danger" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearModal()">Clear All Reports</button>
+      </div>
     </div>
 
     <!-- Navigation Tabs -->
     <div class="tab-row">
       <button class="tab-btn active" id="tabPending" onclick="switchTab('Pending')">Pending Reviews</button>
       <button class="tab-btn" id="tabResolved" onclick="switchTab('Resolved')">Resolved Archives</button>
+      <button class="tab-btn" id="tabLeaderboard" onclick="switchTab('Leaderboard')">Leaderboard</button>
     </div>
 
     <div class="report-list" id="reportCardsList">
       <!-- Dynamic logs rendered here -->
+    </div>
+    <div class="report-list" id="leaderboardList" style="display:none;">
+      <!-- Leaderboard entries rendered here -->
     </div>
   </div>
 </div>
@@ -141,6 +148,30 @@ body { padding-top: 30px; }
     <div style="display:flex; justify-content:center; gap:12px;">
       <button class="btn ghost" onclick="closeClearModal()">Cancel</button>
       <button class="btn danger" onclick="confirmClearAllReports()">Purge All</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM DIALOG OVERLAY: CLEAR RESOLVED-ONLY CONFIRMATION -->
+<div class="modal-backdrop" id="clearResolvedModal">
+  <div class="modal-box">
+    <h3>Purge Resolved Reports?</h3>
+    <p>This will permanently delete only reports marked <strong>Resolved</strong>. Pending reviews are left untouched. This is irreversible.</p>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="btn ghost" onclick="closeClearResolvedModal()">Cancel</button>
+      <button class="btn danger" onclick="confirmClearResolvedReports()">Purge Resolved</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM DIALOG OVERLAY: LEADERBOARD PURGE CONFIRMATION -->
+<div class="modal-backdrop" id="clearLbModal">
+  <div class="modal-box">
+    <h3 id="clearLbTitle">Remove Leaderboard Entries?</h3>
+    <p id="clearLbBody">This will permanently remove the selected entries. This is irreversible.</p>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="btn ghost" onclick="closeClearLbModal()">Cancel</button>
+      <button class="btn danger" onclick="confirmClearLbEntries()">Remove</button>
     </div>
   </div>
 </div>
@@ -281,7 +312,20 @@ window.Admin_DB = {
   async clearAll() {
     if (dbReady) {
       try {
-        await db.ref('reports').remove();
+        // NOTE: db.ref('reports').remove() would require write permission
+        // at the 'reports' node itself, but the security rules only grant
+        // .write at 'reports/$reportId' (per-report). Write permission
+        // cascades DOWN to children but never UP to a parent, so a direct
+        // .remove() on the parent is always rejected here. A multi-location
+        // update() is evaluated per-child instead, so it works correctly
+        // under the existing rules.
+        const snap = await db.ref('reports').once('value');
+        const val = snap.val() || {};
+        const updates = {};
+        Object.keys(val).forEach(id => { updates[id] = null; });
+        if (Object.keys(updates).length) {
+          await db.ref('reports').update(updates);
+        }
         setAdminBackendStatus('live');
       } catch (err) {
         console.error("[Admin] Firebase purge failed.", err);
@@ -289,6 +333,33 @@ window.Admin_DB = {
       }
     }
     localStorage.removeItem('explorer_reported_issues');
+    if (window.onReportsUpdate) window.onReportsUpdate();
+  },
+
+  async clearResolvedOnly() {
+    if (dbReady) {
+      try {
+        const snap = await db.ref('reports').once('value');
+        const val = snap.val() || {};
+        const updates = {};
+        Object.keys(val).forEach(id => {
+          if (val[id] && val[id].status === 'Resolved') updates[id] = null;
+        });
+        if (Object.keys(updates).length) {
+          await db.ref('reports').update(updates);
+        }
+        setAdminBackendStatus('live');
+      } catch (err) {
+        console.error("[Admin] Firebase purge (resolved-only) failed.", err);
+        setAdminBackendStatus('local', 'Purge failed: ' + err.message);
+      }
+    }
+    // Local fallback cache only ever mirrors offline-authored reports; drop
+    // resolved ones from it too so the two stay consistent.
+    try {
+      const list = this.getReportsLocal().filter(r => r.status !== 'Resolved');
+      localStorage.setItem('explorer_reported_issues', JSON.stringify(list));
+    } catch(_) {}
     if (window.onReportsUpdate) window.onReportsUpdate();
   },
 
@@ -313,6 +384,35 @@ window.Admin_DB = {
     ref.on('value', handler, errHandler);
     window.onReportsUpdate = null; // Firebase pushes live, no manual poll trigger needed
     return () => ref.off('value', handler);
+  },
+
+  // ── Leaderboard management ──────────────────────────────────────────────
+  async getLeaderboardOnce() {
+    if (!dbReady) return [];
+    try {
+      const snap = await db.ref('leaderboard').once('value');
+      const val = snap.val() || {};
+      return Object.keys(val).map(uid => ({ uid, ...val[uid] }));
+    } catch (e) {
+      console.error("[Admin] Failed to fetch leaderboard.", e);
+      return [];
+    }
+  },
+
+  // Deletes specific leaderboard entries by uid. Same multi-location-update
+  // approach as clearResolvedOnly() — required because the rules only grant
+  // .write at 'leaderboard/$uid', not at the 'leaderboard' parent itself.
+  async removeLeaderboardEntries(uids) {
+    if (!dbReady || !uids || !uids.length) return { ok: false, removed: 0 };
+    try {
+      const updates = {};
+      uids.forEach(uid => { updates[uid] = null; });
+      await db.ref('leaderboard').update(updates);
+      return { ok: true, removed: uids.length };
+    } catch (err) {
+      console.error("[Admin] Leaderboard purge failed.", err);
+      return { ok: false, removed: 0, error: err.message };
+    }
   }
 };
 </script>
@@ -367,7 +467,20 @@ function switchTab(tab) {
   activeTab = tab;
   document.getElementById('tabPending').classList.toggle('active', tab === 'Pending');
   document.getElementById('tabResolved').classList.toggle('active', tab === 'Resolved');
-  renderReports();
+  document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'Leaderboard');
+
+  const reportsList = document.getElementById('reportCardsList');
+  const lbList = document.getElementById('leaderboardList');
+
+  if (tab === 'Leaderboard') {
+    reportsList.style.display = 'none';
+    lbList.style.display = 'flex';
+    loadLeaderboard();
+  } else {
+    reportsList.style.display = 'flex';
+    lbList.style.display = 'none';
+    renderReports();
+  }
 }
 
 function renderReports() {
@@ -488,6 +601,119 @@ function confirmClearAllReports() {
   }
 }
 
+function openClearResolvedModal() {
+  document.getElementById('clearResolvedModal').classList.add('show');
+}
+
+function closeClearResolvedModal() {
+  document.getElementById('clearResolvedModal').classList.remove('show');
+}
+
+function confirmClearResolvedReports() {
+  closeClearResolvedModal();
+  if (window.Admin_DB) {
+    window.Admin_DB.clearResolvedOnly().then(() => {
+      renderReports();
+    });
+  }
+}
+
+/* ================= STREAMING_CHUNK: Leaderboard management ================= */
+let currentLeaderboard = [];
+let pendingLbRemoval = []; // uids queued up for the confirmation modal
+
+async function loadLeaderboard() {
+  const container = document.getElementById('leaderboardList');
+  container.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">Loading leaderboard...</div>`;
+  currentLeaderboard = await window.Admin_DB.getLeaderboardOnce();
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const container = document.getElementById('leaderboardList');
+  if (!container) return;
+
+  if (!dbReady) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
+        <p style="font-size:1.2rem; margin-bottom:5px;">Not connected</p>
+        <p style="font-size:0.9rem; opacity:0.7;">Leaderboard management requires a live connection to the shared database.</p>
+      </div>`;
+    return;
+  }
+
+  if (!currentLeaderboard.length) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
+        <p style="font-size:1.2rem; margin-bottom:5px;">No entries</p>
+        <p style="font-size:0.9rem; opacity:0.7;">The leaderboard is currently empty.</p>
+      </div>`;
+    return;
+  }
+
+  const sorted = [...currentLeaderboard].sort((a,b) => (b.xp||0) - (a.xp||0));
+
+  // Detect obvious test/placeholder entries so the quick-purge button can
+  // show exactly what it'll remove before anything happens.
+  const isTestLike = (r) => {
+    const name = (r.username || '').toLowerCase();
+    const uid = (r.uid || '').toLowerCase();
+    return /\btest\b|\bknp\b/.test(name) || /\btest\b|\bknp\b/.test(uid);
+  };
+  const testEntries = sorted.filter(isTestLike);
+
+  let quickPurgeBar = '';
+  if (testEntries.length) {
+    quickPurgeBar = `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(231,111,81,0.08); border:1px solid rgba(231,111,81,0.3); border-radius:12px; padding:14px 18px; margin-bottom:6px; flex-wrap:wrap;">
+        <div style="font-size:0.9rem; color:var(--parchment-dim);">
+          Found <strong style="color:var(--coral);">${testEntries.length}</strong> entr${testEntries.length === 1 ? 'y' : 'ies'} that look like test data (matching "test" or "knp"): 
+          <span style="color:var(--brass-light);">${testEntries.map(r => r.username || r.uid).join(', ')}</span>
+        </div>
+        <button class="btn danger" style="padding:10px 16px; font-size:0.8rem; align-self:auto;" onclick="openClearLbModal(${JSON.stringify(testEntries.map(r=>r.uid)).replace(/"/g,'&quot;')}, 'test/knp')">Purge These</button>
+      </div>`;
+  }
+
+  const rows = sorted.map(r => `
+    <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div>
+      </div>
+      <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
+    </div>
+  `).join('');
+
+  container.innerHTML = quickPurgeBar + rows;
+}
+
+function openClearLbModal(uids, label) {
+  pendingLbRemoval = uids;
+  document.getElementById('clearLbTitle').textContent = uids.length > 1
+    ? `Remove ${uids.length} Leaderboard Entries?`
+    : `Remove Leaderboard Entry?`;
+  document.getElementById('clearLbBody').textContent = uids.length > 1
+    ? `This will permanently remove all entries matching "${label}" (${uids.length} total). This is irreversible.`
+    : `This will permanently remove "${label}" from the leaderboard. This is irreversible.`;
+  document.getElementById('clearLbModal').classList.add('show');
+}
+
+function closeClearLbModal() {
+  document.getElementById('clearLbModal').classList.remove('show');
+  pendingLbRemoval = [];
+}
+
+async function confirmClearLbEntries() {
+  const uids = pendingLbRemoval;
+  closeClearLbModal();
+  if (!uids.length || !window.Admin_DB) return;
+  const result = await window.Admin_DB.removeLeaderboardEntries(uids);
+  if (!result.ok) {
+    alert('Failed to remove leaderboard entries: ' + (result.error || 'unknown error') + '\n\nCheck the connection status indicator — this requires a live connection.');
+  }
+  await loadLeaderboard();
+}
+
 // Bind globally
 window.submitReply = submitReply;
 window.verifyGatePasscode = verifyGatePasscode;
@@ -495,6 +721,12 @@ window.switchTab = switchTab;
 window.openClearModal = openClearModal;
 window.closeClearModal = closeClearModal;
 window.confirmClearAllReports = confirmClearAllReports;
+window.openClearResolvedModal = openClearResolvedModal;
+window.closeClearResolvedModal = closeClearResolvedModal;
+window.confirmClearResolvedReports = confirmClearResolvedReports;
+window.openClearLbModal = openClearLbModal;
+window.closeClearLbModal = closeClearLbModal;
+window.confirmClearLbEntries = confirmClearLbEntries;
 </script>
 
 <script>
