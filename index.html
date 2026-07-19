@@ -1509,11 +1509,16 @@ async function _fetchTier(topic, tier) {
   const docId = `${topic}_${tier}`;
   if (_questionCache.has(docId)) return _questionCache.get(docId);
 
-  await _initFirebase();
-  const snap = await _fbFns.getDoc(_fbFns.doc(_fbDb, 'questionBank', docId));
-  const questions = snap.exists() ? (snap.data().questions || []) : [];
-  _questionCache.set(docId, questions);
-  return questions;
+  try {
+    await _initFirebase();
+    const snap = await _fbFns.getDoc(_fbFns.doc(_fbDb, 'questionBank', docId));
+    const questions = snap.exists() ? (snap.data().questions || []) : [];
+    _questionCache.set(docId, questions);
+    return questions;
+  } catch (error) {
+    console.warn(`Firestore fetch failed for ${docId}:`, error);
+    return []; // caller falls back gracefully instead of hanging
+  }
 }
 
 const Factory = {
@@ -1569,12 +1574,15 @@ const Factory = {
     // dedicated Firestore-backed question bank (tiered Basic/Intermediate/Advanced).
     // Use it directly, randomized per level.
     if (FIRESTORE_TOPICS.has(chapId)) {
-      return await this.bankGenerate(chapId, level, qCount);
+      const qs = await this.bankGenerate(chapId, level, qCount);
+      if (qs.length > 0) return qs;
+      // Firestore/App Check unavailable or empty — fall back to local generator
+      // rather than showing nothing.
+      console.warn(`No questions returned from Firestore for ${chapId}; using local fallback.`);
     }
 
-    // All other chapters use the local procedural generator directly.
-    // (External Hugging Face dataset fetch removed — it had no timeout and could
-    // hang indefinitely if the external API was slow or unreachable.)
+    // All other chapters (and any Firestore fallback above) use the local
+    // procedural generator directly.
     return this.fallbackGenerate(subjId, chapId, level, qCount);
   },
 
@@ -1999,7 +2007,17 @@ async function startGame() {
   document.getElementById('jeePalette').style.display = 'none';
   showScreen('screen-game');
   
-  state.currentQuestions = await Factory.generate(state.curSubj.id, state.curChap.id, state.curLvl, qCount);
+  let questions = [];
+  try {
+    questions = await Factory.generate(state.curSubj.id, state.curChap.id, state.curLvl, qCount);
+  } catch (error) {
+    console.error("Question generation failed:", error);
+  }
+  if (!questions || questions.length === 0) {
+    document.getElementById('qText').innerHTML = `<span style="color:#e55;">Couldn't load questions. Please check your connection and try again.</span>`;
+    return;
+  }
+  state.currentQuestions = questions;
   
   qCount = state.currentQuestions.length; 
   state.qSelected = Array(qCount).fill(null);
