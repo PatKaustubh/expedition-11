@@ -1565,125 +1565,16 @@ const Factory = {
   },
 
   async generate(subjId, chapId, level, qCount = Q_PER_LEVEL) {
-    let qs = [];
-
-    // Sets, Relations & Functions, and Trigonometry now have a dedicated, curated
-    // 500-question bank each (tiered Basic/Intermediate/Advanced). Use it directly,
-    // randomized per level, instead of the live/fallback generators below.
+    // Sets, Relations & Functions, Trigonometry, and other curated topics have a
+    // dedicated Firestore-backed question bank (tiered Basic/Intermediate/Advanced).
+    // Use it directly, randomized per level.
     if (FIRESTORE_TOPICS.has(chapId)) {
       return await this.bankGenerate(chapId, level, qCount);
     }
 
-    // Map local subjId to Hugging Face eQOURSE config names
-    let configName = subjId;
-    if (subjId === 'math') configName = 'mathematics';
-    else if (subjId === 'mixed') {
-      const subs = ['mathematics', 'physics', 'chemistry'];
-      configName = subs[Math.floor(Math.random() * subs.length)];
-    }
-
-    try {
-      // Fetch concurrently from eQOURSE (mostly text) and datavorous (rich with HTML and images)
-      let offset1 = Math.floor(Math.random() * 500);
-      let offset2 = Math.floor(Math.random() * 2000);
-      
-      const [res1, res2] = await Promise.allSettled([
-        fetch(`https://datasets-server.huggingface.co/rows?dataset=eQOURSE/jee-main-questions&config=${configName}&split=train&offset=${offset1}&length=100`),
-        fetch(`https://datasets-server.huggingface.co/rows?dataset=datavorous/entrance-exam-dataset&config=default&split=train&offset=${offset2}&length=100`)
-      ]);
-
-      let allRows = [];
-      if (res1.status === 'fulfilled' && res1.value.ok) {
-        let d = await res1.value.json();
-        if(d.rows) allRows.push(...d.rows.map(r => r.row));
-      }
-      if (res2.status === 'fulfilled' && res2.value.ok) {
-        let d = await res2.value.json();
-        if(d.rows) allRows.push(...d.rows.map(r => r.row));
-      }
-      
-      allRows = this.shuffleArray(allRows);
-      
-      for (let row of allRows) {
-        if (qs.length >= qCount) break; 
-        
-        // Ensure subject matches for datavorous dataset (which combines all subjects under 'default')
-        if (subjId !== 'mixed' && row.subject && row.subject.toLowerCase() !== configName.toLowerCase()) {
-            continue;
-        }
-          
-        let qText = row.question || row.text || row.Question || "";
-        if (!qText.trim()) continue;
-        
-        let optsArray = [];
-        if (Array.isArray(row.options)) optsArray = row.options;
-        else if (row.A && row.B && row.C && row.D) optsArray = [row.A, row.B, row.C, row.D];
-        else if (row.option_1) optsArray = [row.option_1, row.option_2, row.option_3, row.option_4];
-        else optsArray = ["A", "B", "C", "D"]; 
-        
-        let correctAns = row.answer || row.correct_answer || row.Answer || optsArray[0];
-        let explanation = row.solution || row.explanation || row.Solution || "Explanation not available in public dataset.";
-        
-        // === HTML & IMAGE PARSER ===
-        let imgUrl = row.image_url || row.image || row.QuestionImage || row.imageUrl;
-        let hasImgTag = qText.includes('<img');
-        let hasPlaceholder = qText.includes('[IMAGE]') || qText.includes('[Image]') || qText.includes('[image]');
-        
-        // If there's a placeholder AND we have a valid URL in the schema, inject the HTML img tag
-        if (hasPlaceholder && imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
-            qText = qText.replace(/\[IMAGE\]/gi, `<br><img src="${imgUrl}" alt="Question Figure"><br>`);
-        } else if (hasPlaceholder && !hasImgTag) {
-            // It has an unresolved image placeholder with no URL and no embedded <img> tag. Drop it.
-            continue; 
-        }
-
-        // Sometimes the options themselves are images with placeholders
-        optsArray = optsArray.map(opt => {
-           let oStr = String(opt);
-           if (oStr.includes('[IMAGE]') && imgUrl) {
-               return oStr.replace(/\[IMAGE\]/gi, `<br><img src="${imgUrl}" alt="Option Figure">`);
-           }
-           return oStr;
-        });
-
-        // Map purely alphabetical/numerical answers back to the option string text
-        if (['A','B','C','D'].includes(String(correctAns).toUpperCase())) {
-          let idx = ['A','B','C','D'].indexOf(String(correctAns).toUpperCase());
-          correctAns = optsArray[idx];
-        } else if (['1','2','3','4'].includes(String(correctAns))) {
-          correctAns = optsArray[parseInt(correctAns) - 1];
-        }
-
-        optsArray = [...new Set(optsArray.map(String))];
-        while (optsArray.length < 4) optsArray.push("None of these " + Math.random().toString().slice(2,5));
-
-        let shuffledOpts = this.shuffleArray(optsArray.slice(0, 4));
-        let ansIdx = shuffledOpts.indexOf(String(correctAns));
-        if (ansIdx === -1) {
-          shuffledOpts[0] = String(correctAns);
-          ansIdx = 0;
-        }
-
-        qs.push({
-          q: qText,
-          opts: shuffledOpts,
-          ans: ansIdx,
-          exp: explanation
-        });
-      }
-        
-      if (qs.length > 0) {
-          if (qs.length < qCount) {
-              let extra = this.fallbackGenerate(subjId, chapId, level, qCount - qs.length);
-              qs = qs.concat(extra);
-          }
-          return qs.slice(0, qCount);
-      }
-      
-    } catch (error) {
-      console.warn("Hugging Face API failed or timed out. Falling back to local Concept Pool.", error);
-    }
-
+    // All other chapters use the local procedural generator directly.
+    // (External Hugging Face dataset fetch removed — it had no timeout and could
+    // hang indefinitely if the external API was slow or unreachable.)
     return this.fallbackGenerate(subjId, chapId, level, qCount);
   },
 
@@ -2102,7 +1993,7 @@ async function startGame() {
   let qCount = isJee ? Q_JEE_LEVEL : Q_PER_LEVEL;
   
   document.getElementById('qTag').textContent = `SYSTEM UPLINK`;
-  document.getElementById('qText').innerHTML = `<span style="color:var(--sea); animation: pulseGreen 1.2s infinite;">Establishing uplink to external database...<br>Fetching unique questions & image renders...</span>`;
+  document.getElementById('qText').innerHTML = `<span style="color:var(--sea); animation: pulseGreen 1.2s infinite;">Preparing your questions...</span>`;
   document.getElementById('optGrid').innerHTML = '';
   document.getElementById('qNextRow').style.display = 'none';
   document.getElementById('jeePalette').style.display = 'none';
