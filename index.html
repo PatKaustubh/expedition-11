@@ -1512,14 +1512,47 @@ async function _fetchTier(topic, tier) {
   try {
     await _initFirebase();
     const snap = await _fbFns.getDoc(_fbFns.doc(_fbDb, 'questionBank', docId));
-    const questions = snap.exists() ? (snap.data().questions || []) : [];
+    if (!snap.exists()) {
+      console.error(`[Firestore] Doc "questionBank/${docId}" does NOT exist. ` +
+        `Check the exact collection name ("questionBank") and doc id spelling (must be "${topic}_${tier}").`);
+      window.__firestoreDiag = window.__firestoreDiag || {};
+      window.__firestoreDiag[docId] = 'doc-missing';
+      _questionCache.set(docId, []);
+      return [];
+    }
+    const data = snap.data();
+    const questions = data.questions || [];
+    window.__firestoreDiag = window.__firestoreDiag || {};
+    if (questions.length === 0) {
+      console.error(`[Firestore] Doc "questionBank/${docId}" exists but has no "questions" array ` +
+        `(or it's empty). Fields found: ${Object.keys(data).join(', ') || '(none)'}`);
+      window.__firestoreDiag[docId] = 'empty-questions-field';
+    } else {
+      window.__firestoreDiag[docId] = `ok (${questions.length} questions)`;
+    }
     _questionCache.set(docId, questions);
     return questions;
   } catch (error) {
-    console.warn(`Firestore fetch failed for ${docId}:`, error);
+    // permission-denied = rules issue. "App Check" in the message = App Check/
+    // reCAPTCHA issue. network/unavailable = Firestore not enabled or wrong project.
+    console.error(`[Firestore] Fetch FAILED for "questionBank/${docId}":`, error.code || '', error.message || error);
+    window.__firestoreDiag = window.__firestoreDiag || {};
+    window.__firestoreDiag[docId] = `error: ${error.code || error.message || error}`;
     return []; // caller falls back gracefully instead of hanging
   }
 }
+
+// Open browser console and run copyFirestoreDiag() after visiting a
+// Firestore-backed chapter to see exactly what happened for each doc.
+window.copyFirestoreDiag = function () {
+  const diag = window.__firestoreDiag || {};
+  const text = Object.keys(diag).length
+    ? Object.entries(diag).map(([k, v]) => `${k}: ${v}`).join('\n')
+    : '(no Firestore fetches attempted yet — open a Firestore-backed chapter first)';
+  console.log('[Firestore Diagnostics]\n' + text);
+  try { navigator.clipboard.writeText(text); console.log('(copied to clipboard)'); } catch (_) {}
+  return text;
+};
 
 const Factory = {
   // Level 1-5 = Basic, 6-10 = Intermediate, 11-15 = Advanced
