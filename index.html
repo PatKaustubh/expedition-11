@@ -946,7 +946,7 @@ window.isFirebaseLive = true;
 const TOTAL_LEVELS = 15;
 const LEVEL_MAX_HEARTS = 5;
 const REVIVE_XP_COST = 40;
-const Q_PER_LEVEL = 20;
+const Q_PER_LEVEL = 10;
 const Q_JEE_LEVEL = 75;
 
 const DATA = [
@@ -1536,35 +1536,43 @@ const Factory = {
   },
 
   // Randomized draw from the local curated question bank (Sets / Relations & Functions / Trigonometry / etc.).
-  // Randomizes anew every time a level is started, avoids repeats within a single quiz, and — since many
-  // entries are just numeric/option variants of the same underlying question — also avoids drawing more
-  // than one variant of the same base question into a single quiz.
+  // Each tier (basic/intermediate/advanced) spans 5 levels. To avoid the same questions showing up
+  // across different levels within a tier, the pool is shuffled ONCE per session and then split into
+  // non-overlapping slices per level — level 1 gets slice 0, level 2 gets slice 1, etc. — wrapping around
+  // only if the pool is too small to cover all 5 levels without reuse.
   async bankGenerate(chapId, level, qCount) {
     const tier = this.tierForLevel(level);
     const pool = await _fetchTier(chapId, tier);
     if (pool.length === 0) return [];
 
-    let shuffled = this.shuffleArray(pool.slice());
+    const docId = `${chapId}_${tier}`;
+    if (!this._shuffledPools) this._shuffledPools = new Map();
+    if (!this._shuffledPools.has(docId)) {
+      this._shuffledPools.set(docId, this.shuffleArray(pool.slice()));
+    }
+    const shuffled = this._shuffledPools.get(docId);
+
+    // Which of the 5 levels within this tier is this? (0-4)
+    const levelStart = tier === 'basic' ? 1 : tier === 'intermediate' ? 6 : 11;
+    const levelIndexInTier = level - levelStart; // 0..4
+
     let qs = [];
     let usedBases = new Set();
-    let idx = 0;
-    while (qs.length < qCount) {
-      if (idx >= shuffled.length) {
-        // Ran out of unique base questions in this tier — reshuffle, reset dedup, and continue drawing.
-        shuffled = this.shuffleArray(pool.slice());
-        idx = 0;
-        usedBases.clear();
-        if (pool.length === 0) break;
-      }
-      const src = shuffled[idx++];
-      const key = this.baseQuestionKey(src.q);
-      if (usedBases.has(key)) continue; // skip: same underlying question as one already picked
-      usedBases.add(key);
+    let ptr = (levelIndexInTier * qCount) % shuffled.length;
+    let scanned = 0;
 
-      const correctText = src.opts[src.ans];
-      const shuffledOpts = this.shuffleArray(src.opts.slice());
-      const ansIdx = shuffledOpts.indexOf(correctText);
-      qs.push({ q: src.q, opts: shuffledOpts, ans: ansIdx === -1 ? 0 : ansIdx, exp: src.exp });
+    while (qs.length < qCount && scanned < shuffled.length) {
+      const src = shuffled[ptr];
+      const key = this.baseQuestionKey(src.q);
+      if (!usedBases.has(key)) {
+        usedBases.add(key);
+        const correctText = src.opts[src.ans];
+        const shuffledOpts = this.shuffleArray(src.opts.slice());
+        const ansIdx = shuffledOpts.indexOf(correctText);
+        qs.push({ q: src.q, opts: shuffledOpts, ans: ansIdx === -1 ? 0 : ansIdx, exp: src.exp });
+      }
+      ptr = (ptr + 1) % shuffled.length;
+      scanned++;
     }
     return qs;
   },
