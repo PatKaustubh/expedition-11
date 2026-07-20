@@ -990,7 +990,6 @@ const DATA = [
   {
     id: 'chemistry', name: 'Chemistry', icon: '⚗️', theme: 'theme-chemistry',
     chapters: [
-      { id: 'chem_basic', name: 'Some Basic Concepts of Chem', icon: '⚖️', blurb: 'Moles, Stoichiometry' },
       { id: 'atom', name: 'Structure of Atom', icon: '⚛️', blurb: 'Quantum, Bohr, Heisenberg' },
       { id: 'period', name: 'Classification of Elements', icon: '📊', blurb: 'Periodicity, Trends' },
       { id: 'bond', name: 'Chemical Bonding', icon: '🔗', blurb: 'VSEPR, Hybridization, MOT' },
@@ -2325,7 +2324,7 @@ function submitJeeExam() {
   
   AudioSys.win();
   let prog = state.progress[state.curChap.id];
-  if(state.curLvl === prog.maxUnlocked && state.curLvl < TOTAL_LEVELS) { prog.maxUnlocked++; doSave(); }
+  if(state.curLvl === prog.maxUnlocked && prog.maxUnlocked <= TOTAL_LEVELS) { prog.maxUnlocked++; doSave(); }
   
   let compOv = document.getElementById('completeOv');
   let title = document.getElementById('compTitle');
@@ -2368,7 +2367,7 @@ function computeLevelStars() {
 function levelComplete() {
   AudioSys.win();
   let prog = state.progress[state.curChap.id];
-  if(state.curLvl === prog.maxUnlocked && state.curLvl < TOTAL_LEVELS) { prog.maxUnlocked++; }
+  if(state.curLvl === prog.maxUnlocked && prog.maxUnlocked <= TOTAL_LEVELS) { prog.maxUnlocked++; }
   
   if (!prog.stars) prog.stars = {};
   let earnedStars = computeLevelStars();
