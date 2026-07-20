@@ -669,6 +669,23 @@ body { padding-top: 30px; }
   </div>
 </div>
 
+<!-- REMOVAL NOTICE + DISCUSSION PANE -->
+<div class="modal-backdrop" id="removedModal">
+  <div class="modal-box" style="max-width: 460px; text-align: left;">
+    <h3 style="text-align:center;">You've been removed from the leaderboard</h3>
+    <p style="margin-bottom: 8px;">Your teacher removed your entry from the shared leaderboard. Reason given:</p>
+    <div id="removedReasonBox" style="background: rgba(231,111,81,0.08); border: 1px solid rgba(231,111,81,0.3); border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; color: var(--parchment-dim); margin-bottom: 16px;"></div>
+    <p style="margin-bottom: 8px; font-size: 0.85rem;">You can ask your teacher for clarification below — they'll see it and can reply here.</p>
+    <div id="removedDiscussionList" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;"></div>
+    <textarea id="removedDiscussionInput" placeholder="Ask your teacher why..." style="width:100%; min-height:60px; resize:vertical; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 10px; padding: 10px; color: #fff; font-family: inherit; font-size: 0.9rem; outline: none;"></textarea>
+    <div class="btn-row" style="justify-content: space-between; margin-top: 12px;">
+      <button class="btn ghost" onclick="closeRemovedModal()">Close</button>
+      <button class="btn primary" onclick="sendRemovalDiscussionMsg()">Send</button>
+    </div>
+  </div>
+</div>
+<button id="reopenRemovedTab" onclick="openRemovedModal()" style="display:none; position:fixed; bottom: 16px; left: 16px; z-index: 3000; background: var(--coral); color:#fff; border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35);">⚠️ Removed from leaderboard — view details</button>
+
 <script>
 // Level → tier mapping: 1–5 Basic, 6–10 Intermediate, 11–15 Advanced
 // Populated from questionbank.js (window.EXPEDITION_QUESTIONS), covering:
@@ -779,6 +796,10 @@ function updateSyncBanner(status) {
 window.DB_Engine = {
   async syncPlayerScore(name, xp) {
     localStorage.setItem('local_xp_record', xp); // always keep a local fallback copy
+    // Once an educator has removed this candidate, stop writing to the shared
+    // leaderboard entirely — otherwise the very next XP gain silently
+    // re-creates the entry the educator just removed.
+    if (state.isRemoved) return;
     const uid = getPlayerUid();
     const key = safeKeyPart(uid);
     const payload = { uid, username: name, xp, timestamp: Date.now() };
@@ -873,6 +894,49 @@ window.DB_Engine = {
     };
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
+  },
+
+  // ── Removal status & discussion pane ────────────────────────────────────
+  // When an educator removes a candidate from the leaderboard, a record is
+  // written to removedCandidates/{uid}. We listen for that here so it's
+  // reflected on THIS candidate's screen automatically (no refresh needed),
+  // and so we stop re-syncing their score (which would otherwise silently
+  // resurrect the leaderboard entry the educator just removed).
+  listenRemovalStatus(callback) {
+    const uid = getPlayerUid();
+    if (!dbReady) { callback(null); return () => {}; }
+    const ref = db.ref('removedCandidates/' + safeKeyPart(uid));
+    const handler = (snapshot) => callback(snapshot.val() || null);
+    const errHandler = () => callback(null);
+    ref.on('value', handler, errHandler);
+    return () => ref.off('value', handler);
+  },
+
+  listenDiscussion(callback) {
+    const uid = getPlayerUid();
+    if (!dbReady) { callback([]); return () => {}; }
+    const ref = db.ref('removalDiscussion/' + safeKeyPart(uid) + '/messages');
+    const handler = (snapshot) => {
+      const val = snapshot.val() || {};
+      callback(Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)));
+    };
+    const errHandler = () => callback([]);
+    ref.on('value', handler, errHandler);
+    return () => ref.off('value', handler);
+  },
+
+  async sendDiscussionMessage(text) {
+    const uid = getPlayerUid();
+    if (!dbReady || !text || !text.trim()) return { ok: false };
+    try {
+      const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      await db.ref('removalDiscussion/' + safeKeyPart(uid) + '/messages/' + id).set({
+        from: 'student', name: state.explorerName, text: text.trim(), at: Date.now()
+      });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
   }
 };
 
@@ -902,7 +966,9 @@ async function flushOfflineQueue() {
   const remaining = [];
   for (const op of q) {
     try {
-      if (op.type === 'score')       await db.ref('leaderboard/' + op.key).set(op.payload);
+      if (op.type === 'score') {
+        if (!state.isRemoved) await db.ref('leaderboard/' + op.key).set(op.payload);
+      }
       else if (op.type === 'report') await db.ref('reports/' + op.key).set(op.payload);
     } catch(_) { remaining.push(op); }
   }
@@ -1027,7 +1093,9 @@ let state = {
   levelCorrectCount: 0,
   levelXpEarned: 0,
   reviveCount: 0,
-  combo: 0
+  combo: 0,
+  isRemoved: false,
+  removalInfo: null
 };
 let timerInt = null;
 let activeReports = []; 
@@ -1884,7 +1952,59 @@ function startApp() {
       liveLeaderboard = leaders;
       if(document.getElementById('screen-subjects').classList.contains('active')) renderLeaderboard();
     });
+    window.DB_Engine.listenRemovalStatus((info) => {
+      const wasRemoved = state.isRemoved;
+      state.isRemoved = !!info;
+      state.removalInfo = info;
+      if (info) {
+        renderRemovalReason(info);
+        if (!wasRemoved) openRemovedModal();
+        document.getElementById('reopenRemovedTab').style.display = 'block';
+      } else {
+        document.getElementById('reopenRemovedTab').style.display = 'none';
+        closeRemovedModal();
+      }
+    });
+    window.DB_Engine.listenDiscussion((messages) => renderRemovalDiscussion(messages));
   }
+}
+
+function renderRemovalReason(info) {
+  const box = document.getElementById('removedReasonBox');
+  if (box) box.textContent = (info && info.reason) ? info.reason : 'No reason was provided.';
+}
+
+function renderRemovalDiscussion(messages) {
+  const list = document.getElementById('removedDiscussionList');
+  if (!list) return;
+  if (!messages.length) {
+    list.innerHTML = '<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet — ask your teacher a question below.</div>';
+    return;
+  }
+  list.innerHTML = messages.map(m => `
+    <div style="align-self: ${m.from === 'student' ? 'flex-end' : 'flex-start'}; max-width: 85%; background: ${m.from === 'student' ? 'rgba(42,157,143,0.15)' : 'rgba(201,156,81,0.12)'}; border: 1px solid ${m.from === 'student' ? 'rgba(42,157,143,0.3)' : 'var(--line)'}; border-radius: 10px; padding: 8px 12px; font-size: 0.85rem;">
+      <div style="font-size:0.65rem; opacity:0.7; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.5px;">${m.from === 'student' ? 'You' : 'Teacher'}</div>
+      ${escapeHtml(m.text || '')}
+    </div>
+  `).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function openRemovedModal() { document.getElementById('removedModal').classList.add('show'); }
+function closeRemovedModal() { document.getElementById('removedModal').classList.remove('show'); }
+
+function sendRemovalDiscussionMsg() {
+  const input = document.getElementById('removedDiscussionInput');
+  const text = input.value.trim();
+  if (!text) return;
+  if (window.DB_Engine) window.DB_Engine.sendDiscussionMessage(text);
+  input.value = '';
 }
 
 function goToSubjects() {

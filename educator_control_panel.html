@@ -129,6 +129,7 @@ body { padding-top: 30px; }
       <button class="tab-btn active" id="tabPending" onclick="switchTab('Pending')">Pending Reviews</button>
       <button class="tab-btn" id="tabResolved" onclick="switchTab('Resolved')">Resolved Archives</button>
       <button class="tab-btn" id="tabLeaderboard" onclick="switchTab('Leaderboard')">Leaderboard</button>
+      <button class="tab-btn" id="tabRemoved" onclick="switchTab('Removed')">Removed Candidates</button>
     </div>
 
     <div class="report-list" id="reportCardsList">
@@ -136,6 +137,9 @@ body { padding-top: 30px; }
     </div>
     <div class="report-list" id="leaderboardList" style="display:none;">
       <!-- Leaderboard entries rendered here -->
+    </div>
+    <div class="report-list" id="removedList" style="display:none;">
+      <!-- Removed candidates + discussion threads rendered here -->
     </div>
   </div>
 </div>
@@ -166,10 +170,13 @@ body { padding-top: 30px; }
 
 <!-- CUSTOM DIALOG OVERLAY: LEADERBOARD PURGE CONFIRMATION -->
 <div class="modal-backdrop" id="clearLbModal">
-  <div class="modal-box">
-    <h3 id="clearLbTitle">Remove Leaderboard Entries?</h3>
-    <p id="clearLbBody">This will permanently remove the selected entries. This is irreversible.</p>
-    <div style="display:flex; justify-content:center; gap:12px;">
+  <div class="modal-box" style="max-width: 460px; text-align:left;">
+    <h3 id="clearLbTitle" style="text-align:center;">Remove Leaderboard Entries?</h3>
+    <p id="clearLbBody" style="text-align:center;">This will permanently remove the selected entries. This is irreversible.</p>
+    <label style="display:block; font-size:0.8rem; color:var(--parchment-dim); margin-bottom:8px;">Reason for removal (shown to the candidate, required):</label>
+    <textarea id="clearLbReason" class="reply-textarea" style="min-height:70px; margin-bottom:6px;" placeholder="e.g. Duplicate entry, suspected multiple attempts, name mismatch..."></textarea>
+    <div id="clearLbReasonError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please give a reason — the candidate will see this.</div>
+    <div style="display:flex; justify-content:center; gap:12px; margin-top:14px;">
       <button class="btn ghost" onclick="closeClearLbModal()">Cancel</button>
       <button class="btn danger" onclick="confirmClearLbEntries()">Remove</button>
     </div>
@@ -402,16 +409,83 @@ window.Admin_DB = {
   // Deletes specific leaderboard entries by uid. Same multi-location-update
   // approach as clearResolvedOnly() — required because the rules only grant
   // .write at 'leaderboard/$uid', not at the 'leaderboard' parent itself.
-  async removeLeaderboardEntries(uids) {
+  // Also stamps a removedCandidates/{uid} record with the reason so the
+  // candidate's own screen (index.html) picks it up automatically via its
+  // live listener, and so their client stops re-syncing a score that would
+  // otherwise silently resurrect the entry we just removed.
+  async removeLeaderboardEntries(uids, reason, labels) {
     if (!dbReady || !uids || !uids.length) return { ok: false, removed: 0 };
     try {
-      const updates = {};
-      uids.forEach(uid => { updates[uid] = null; });
-      await db.ref('leaderboard').update(updates);
+      const lbUpdates = {};
+      uids.forEach(uid => { lbUpdates[uid] = null; });
+      await db.ref('leaderboard').update(lbUpdates);
+
+      const removalUpdates = {};
+      uids.forEach(uid => {
+        removalUpdates[uid] = {
+          uid,
+          username: (labels && labels[uid]) || uid,
+          reason: reason || '',
+          removedAt: Date.now(),
+          removedBy: 'educator'
+        };
+      });
+      await db.ref('removedCandidates').update(removalUpdates);
+
       return { ok: true, removed: uids.length };
     } catch (err) {
       console.error("[Admin] Leaderboard purge failed.", err);
       return { ok: false, removed: 0, error: err.message };
+    }
+  },
+
+  // ── Removed-candidates review & discussion ──────────────────────────────
+  async getRemovedCandidatesOnce() {
+    if (!dbReady) return [];
+    try {
+      const snap = await db.ref('removedCandidates').once('value');
+      const val = snap.val() || {};
+      return Object.keys(val).map(uid => ({ uid, ...val[uid] }));
+    } catch (e) {
+      console.error("[Admin] Failed to fetch removed candidates.", e);
+      return [];
+    }
+  },
+
+  listenDiscussion(uid, callback) {
+    if (!dbReady) { callback([]); return () => {}; }
+    const ref = db.ref('removalDiscussion/' + uid + '/messages');
+    const handler = (snapshot) => {
+      const val = snapshot.val() || {};
+      callback(Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)));
+    };
+    const errHandler = () => callback([]);
+    ref.on('value', handler, errHandler);
+    return () => ref.off('value', handler);
+  },
+
+  async sendDiscussionMessage(uid, text) {
+    if (!dbReady || !text || !text.trim()) return { ok: false };
+    try {
+      const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      await db.ref('removalDiscussion/' + uid + '/messages/' + id).set({
+        from: 'educator', text: text.trim(), at: Date.now()
+      });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  },
+
+  // Un-removes a candidate: clears the removal record so their next score
+  // sync writes back to the shared leaderboard normally again.
+  async restoreCandidate(uid) {
+    if (!dbReady) return { ok: false };
+    try {
+      await db.ref('removedCandidates/' + uid).remove();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
     }
   }
 };
@@ -468,17 +542,24 @@ function switchTab(tab) {
   document.getElementById('tabPending').classList.toggle('active', tab === 'Pending');
   document.getElementById('tabResolved').classList.toggle('active', tab === 'Resolved');
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'Leaderboard');
+  document.getElementById('tabRemoved').classList.toggle('active', tab === 'Removed');
 
   const reportsList = document.getElementById('reportCardsList');
   const lbList = document.getElementById('leaderboardList');
+  const removedList = document.getElementById('removedList');
+
+  reportsList.style.display = 'none';
+  lbList.style.display = 'none';
+  removedList.style.display = 'none';
 
   if (tab === 'Leaderboard') {
-    reportsList.style.display = 'none';
     lbList.style.display = 'flex';
     loadLeaderboard();
+  } else if (tab === 'Removed') {
+    removedList.style.display = 'flex';
+    loadRemovedCandidates();
   } else {
     reportsList.style.display = 'flex';
-    lbList.style.display = 'none';
     renderReports();
   }
 }
@@ -687,14 +768,24 @@ function renderLeaderboard() {
   container.innerHTML = quickPurgeBar + rows;
 }
 
+let pendingLbLabels = {};
 function openClearLbModal(uids, label) {
   pendingLbRemoval = uids;
+  // Remember username per uid so we can label the removal record even after
+  // the leaderboard entry itself is deleted.
+  pendingLbLabels = {};
+  uids.forEach(uid => {
+    const entry = (currentLeaderboard || []).find(r => r.uid === uid);
+    pendingLbLabels[uid] = entry ? (entry.username || uid) : (uids.length === 1 ? label : uid);
+  });
   document.getElementById('clearLbTitle').textContent = uids.length > 1
     ? `Remove ${uids.length} Leaderboard Entries?`
     : `Remove Leaderboard Entry?`;
   document.getElementById('clearLbBody').textContent = uids.length > 1
     ? `This will permanently remove all entries matching "${label}" (${uids.length} total). This is irreversible.`
     : `This will permanently remove "${label}" from the leaderboard. This is irreversible.`;
+  document.getElementById('clearLbReason').value = '';
+  document.getElementById('clearLbReasonError').style.display = 'none';
   document.getElementById('clearLbModal').classList.add('show');
 }
 
@@ -703,15 +794,132 @@ function closeClearLbModal() {
   pendingLbRemoval = [];
 }
 
+// ── Removed Candidates tab ──────────────────────────────────────────────
+let currentRemoved = [];
+let openDiscussionUid = null;
+let discussionUnsub = null;
+
+async function loadRemovedCandidates() {
+  const container = document.getElementById('removedList');
+  if (!container) return;
+  container.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">Loading...</div>`;
+  currentRemoved = window.Admin_DB ? await window.Admin_DB.getRemovedCandidatesOnce() : [];
+  renderRemovedCandidates();
+}
+window.loadRemovedCandidates = loadRemovedCandidates;
+
+function renderRemovedCandidates() {
+  const container = document.getElementById('removedList');
+  if (!container) return;
+
+  if (!dbReady) {
+    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">Not connected</p><p style="font-size:0.9rem; opacity:0.7;">This requires a live connection to the shared database.</p></div>`;
+    return;
+  }
+  if (!currentRemoved.length) {
+    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">No removed candidates</p><p style="font-size:0.9rem; opacity:0.7;">Anyone you remove from the leaderboard will show up here, along with any clarification questions they send.</p></div>`;
+    return;
+  }
+
+  const sorted = [...currentRemoved].sort((a, b) => (b.removedAt || 0) - (a.removedAt || 0));
+  container.innerHTML = sorted.map(r => `
+    <div class="report-card">
+      <div class="report-meta">
+        <span class="meta-badge">Removed</span>
+        <span class="report-time">${r.removedAt ? new Date(r.removedAt).toLocaleString() : ''}</span>
+      </div>
+      <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light); margin-bottom:6px;">${r.username || r.uid}</div>
+      <div class="report-comment"><strong style="color:var(--parchment);">Reason:</strong> ${r.reason || '(none given)'}</div>
+      <div id="discBox-${r.uid}" style="margin-top:10px;"></div>
+      <div style="display:flex; justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;">
+        <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}')">${openDiscussionUid === r.uid ? 'Hide' : 'View'} discussion</button>
+        <button class="btn primary" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="restoreCandidate('${r.uid}')">Restore to leaderboard</button>
+      </div>
+    </div>
+  `).join('');
+
+  if (openDiscussionUid) openDiscussionThread(openDiscussionUid);
+}
+
+function toggleDiscussion(uid) {
+  if (openDiscussionUid === uid) {
+    if (discussionUnsub) { discussionUnsub(); discussionUnsub = null; }
+    openDiscussionUid = null;
+    renderRemovedCandidates();
+    return;
+  }
+  openDiscussionUid = uid;
+  renderRemovedCandidates();
+}
+
+function openDiscussionThread(uid) {
+  if (discussionUnsub) { discussionUnsub(); discussionUnsub = null; }
+  const box = document.getElementById('discBox-' + uid);
+  if (!box) return;
+  box.innerHTML = `
+    <div id="discMsgs-${uid}" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; margin-bottom:8px;"></div>
+    <div style="display:flex; gap:8px;">
+      <textarea id="discInput-${uid}" class="reply-textarea" style="min-height:50px;" placeholder="Reply with clarification..."></textarea>
+      <button class="btn primary" style="align-self:flex-end; padding:10px 16px; font-size:0.75rem;" onclick="sendDiscussionReply('${uid}')">Send</button>
+    </div>`;
+  discussionUnsub = window.Admin_DB.listenDiscussion(uid, (messages) => {
+    const msgsEl = document.getElementById('discMsgs-' + uid);
+    if (!msgsEl) return;
+    if (!messages.length) {
+      msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet.</div>`;
+      return;
+    }
+    msgsEl.innerHTML = messages.map(m => `
+      <div style="align-self:${m.from === 'educator' ? 'flex-end' : 'flex-start'}; max-width:85%; background:${m.from === 'educator' ? 'rgba(201,156,81,0.12)' : 'rgba(42,157,143,0.15)'}; border:1px solid ${m.from === 'educator' ? 'var(--line)' : 'rgba(42,157,143,0.3)'}; border-radius:10px; padding:8px 12px; font-size:0.85rem;">
+        <div style="font-size:0.65rem; opacity:0.7; margin-bottom:2px; text-transform:uppercase;">${m.from === 'educator' ? 'You' : (m.name || 'Candidate')}</div>
+        ${(m.text || '').replace(/</g,'&lt;')}
+      </div>
+    `).join('');
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  });
+}
+
+async function sendDiscussionReply(uid) {
+  const input = document.getElementById('discInput-' + uid);
+  const text = input.value.trim();
+  if (!text || !window.Admin_DB) return;
+  await window.Admin_DB.sendDiscussionMessage(uid, text);
+  input.value = '';
+}
+
+async function restoreCandidate(uid) {
+  if (!window.Admin_DB) return;
+  const result = await window.Admin_DB.restoreCandidate(uid);
+  if (!result.ok) {
+    alert('Failed to restore candidate: ' + (result.error || 'unknown error'));
+    return;
+  }
+  if (openDiscussionUid === uid && discussionUnsub) { discussionUnsub(); discussionUnsub = null; openDiscussionUid = null; }
+  await loadRemovedCandidates();
+}
+
+window.toggleDiscussion = toggleDiscussion;
+window.sendDiscussionReply = sendDiscussionReply;
+window.restoreCandidate = restoreCandidate;
+
 async function confirmClearLbEntries() {
   const uids = pendingLbRemoval;
+  const reasonEl = document.getElementById('clearLbReason');
+  const reason = reasonEl.value.trim();
+  if (!reason) {
+    document.getElementById('clearLbReasonError').style.display = 'block';
+    reasonEl.classList.remove('shaking'); void reasonEl.offsetWidth; reasonEl.classList.add('shaking');
+    reasonEl.classList.add('border-error');
+    return;
+  }
   closeClearLbModal();
   if (!uids.length || !window.Admin_DB) return;
-  const result = await window.Admin_DB.removeLeaderboardEntries(uids);
+  const result = await window.Admin_DB.removeLeaderboardEntries(uids, reason, pendingLbLabels);
   if (!result.ok) {
     alert('Failed to remove leaderboard entries: ' + (result.error || 'unknown error') + '\n\nCheck the connection status indicator — this requires a live connection.');
   }
   await loadLeaderboard();
+  if (window.loadRemovedCandidates) loadRemovedCandidates();
 }
 
 // Bind globally
