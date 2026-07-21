@@ -8,6 +8,7 @@
 
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
   window.MathJax = {
     tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
@@ -1379,7 +1380,8 @@ let state = {
   isRemoved: false,
   removalInfo: null,
   lifelinesLeft: 1,
-  eliminatedOpts: []
+  eliminatedOpts: [],
+  ocrCache: {}
 };
 let timerInt = null;
 let activeReports = []; 
@@ -2038,7 +2040,11 @@ const Factory = {
     if (!explanation) explanation = 'No detailed explanation was provided for this question.';
     return {
       q: qHtml, opts, ans: ansIdx, exp: explanation,
-      subject: row.subject || '', difficulty: row.difficulty || ''
+      subject: row.subject || '', difficulty: row.difficulty || '',
+      imgUrl: imgUrl || null,
+      // Flag rows whose "options" are just placeholder letters — the real
+      // option text lives inside the question image for this dataset shape.
+      optsAreImagePlaceholders: (opts.length === 4 && opts.join('') === 'ABCD')
     };
   },
 
@@ -3569,6 +3575,105 @@ function renderPalette() {
   }
 }
 
+// Runs OCR (Tesseract.js) against a question image to pull out the plain
+// question text and, where possible, the four answer choices baked into the
+// image. This lets image-only JEE dataset questions show up as real,
+// selectable text on the dashboard instead of just a photo.
+async function ocrExtractFromImage(imgUrl) {
+  if (!window.Tesseract) return null;
+  if (state.ocrCache[imgUrl] !== undefined) return state.ocrCache[imgUrl];
+  try {
+    const { data } = await Tesseract.recognize(imgUrl, 'eng');
+    const text = (data && data.text) ? data.text.trim() : null;
+    state.ocrCache[imgUrl] = text;
+    return text;
+  } catch (err) {
+    console.warn('OCR failed for question image:', err);
+    state.ocrCache[imgUrl] = null;
+    return null;
+  }
+}
+
+// Splits raw OCR text into a question stem plus up to 4 lettered options,
+// recognizing "(A)", "A)", or "A." style markers. Returns null if it can't
+// confidently find at least 2 option markers (better to keep the image than
+// to show a garbled partial parse).
+function parseOcrIntoQA(rawText) {
+  if (!rawText) return null;
+  const t = rawText.replace(/\r/g, ' ').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+  const optionRegex = /\(?\b([A-D])\)?[\.\)]\s+/g;
+  const matches = [...t.matchAll(optionRegex)];
+  if (matches.length < 2) return null;
+
+  const stem = t.slice(0, matches[0].index).trim();
+  const segments = matches.map((m, i) => {
+    const start = m.index + m[0].length;
+    const end = (i + 1 < matches.length) ? matches[i + 1].index : t.length;
+    return { letter: m[1].toUpperCase(), text: t.slice(start, end).trim() };
+  });
+
+  const opts = ['A', 'B', 'C', 'D'].map(L => {
+    const seg = segments.find(s => s.letter === L);
+    return seg ? seg.text : null;
+  });
+  if (opts.some(o => !o)) return null;
+  return { stem, opts };
+}
+
+// Kicks off OCR for the currently-shown question (if it's image-based) and,
+// once done, adds real text on the dashboard — question stem and, when the
+// dataset only gave us placeholder A/B/C/D letters, the actual option
+// wording pulled from the image too.
+async function tryOcrEnhanceQuestion(qData, qIdxAtCallTime) {
+  if (!qData.imgUrl || qData.ocrHandled) return;
+
+  const badge = document.createElement('div');
+  badge.className = 'ocr-badge';
+  badge.textContent = '🔎 Reading question from image…';
+  badge.style.cssText = 'font-size:0.8rem;color:var(--parchment-dim);margin-top:8px;font-style:italic;';
+  const qTextEl = document.getElementById('qText');
+  if (qTextEl) qTextEl.appendChild(badge);
+
+  const rawText = await ocrExtractFromImage(qData.imgUrl);
+  qData.ocrHandled = true;
+
+  // Bail quietly if the user has moved to a different question by the time
+  // OCR finishes (it can take a few seconds per image).
+  const stillOnThisQuestion = state.qIdx === qIdxAtCallTime && state.currentQuestions[state.qIdx] === qData;
+  if (!stillOnThisQuestion) return;
+
+  if (badge.parentNode) badge.remove();
+  if (!rawText) return; // OCR failed or unavailable — leave the image as the only source
+
+  const parsed = parseOcrIntoQA(rawText);
+  qData.ocrRawText = rawText;
+
+  if (parsed && parsed.stem) {
+    qData.ocrStem = parsed.stem;
+    const qTextElAfter = document.getElementById('qText');
+    if (qTextElAfter) {
+      const stemDiv = document.createElement('div');
+      stemDiv.className = 'ocr-extracted-text';
+      stemDiv.style.cssText = 'margin-top:10px;';
+      stemDiv.textContent = parsed.stem;
+      qTextElAfter.appendChild(stemDiv);
+    }
+  }
+
+  // Only overwrite options if the dataset gave us bare "A"/"B"/"C"/"D"
+  // placeholders — never clobber real option text we already had.
+  if (parsed && qData.optsAreImagePlaceholders) {
+    qData.opts = parsed.opts;
+    qData.optsAreImagePlaceholders = false;
+    const grid = document.getElementById('optGrid');
+    if (grid && state.qIdx === qIdxAtCallTime) {
+      Array.from(grid.children).forEach((btn, i) => {
+        if (qData.opts[i]) btn.innerHTML = qData.opts[i];
+      });
+    }
+  }
+}
+
 function renderQuestion() {
   state.answered = false;
   state.eliminatedOpts = [];
@@ -3583,6 +3688,21 @@ function renderQuestion() {
   
   // Use innerHTML so img tags and HTML-based LaTeX render properly
   document.getElementById('qText').innerHTML = qData.q;
+
+  // Image-based JEE dataset questions: if we've already OCR'd this question
+  // on a previous view, reuse the extracted text immediately. Otherwise,
+  // kick off OCR now (async — the image stays visible while it runs).
+  if (qData.imgUrl) {
+    if (qData.ocrStem) {
+      const stemDiv = document.createElement('div');
+      stemDiv.className = 'ocr-extracted-text';
+      stemDiv.style.cssText = 'margin-top:10px;';
+      stemDiv.textContent = qData.ocrStem;
+      document.getElementById('qText').appendChild(stemDiv);
+    } else if (!qData.ocrHandled) {
+      tryOcrEnhanceQuestion(qData, state.qIdx);
+    }
+  }
   
   const grid = document.getElementById('optGrid');
   grid.innerHTML = '';
@@ -3783,7 +3903,9 @@ function submitJeeExam() {
       isUnattempted: isUn,
       exp: q.exp,
       subject: q.subject || '',
-      difficulty: q.difficulty || ''
+      difficulty: q.difficulty || '',
+      imgUrl: q.imgUrl || null,
+      ocrStem: q.ocrStem || null
     });
   });
 
@@ -3824,7 +3946,7 @@ function submitJeeExam() {
           <span class="jsc-qnum">Question ${r.idx + 1}</span>
           <div class="jsc-tags">${tags}<span class="jsc-status" style="color:${statusColor}; background:rgba(255,255,255,0.06);">${statusLabel}</span></div>
         </div>
-        <div class="jsc-q">${r.q}</div>
+        <div class="jsc-q">${r.q}${r.ocrStem ? `<div style="margin-top:8px;">${r.ocrStem}</div>` : ''}</div>
         <div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Your Answer:</span> <b style="color:${statusColor};">${r.uAnsText}</b></div>
         ${!r.isCorrect ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Correct Answer:</span> <b style="color:var(--sea);">${r.cAnsText}</b></div>` : ''}
         <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}<br><em>In short: the correct answer is ${r.cAnsText}.</em></div>
@@ -3938,7 +4060,7 @@ function shareJeeSolution(idx, btnEl) {
   const rep = state.lastJeeReport;
   if (!rep) return;
   const q = rep.questions[idx];
-  const plainQ = latexToPlain(q.q);
+  const plainQ = latexToPlain(q.q) || latexToPlain(q.ocrStem);
   const plainExp = latexToPlain(q.exp);
   const optionLines = q.opts.map((o, i) => `  ${String.fromCharCode(65 + i)}. ${latexToPlain(o)}${i === q.ans ? '  ✓ correct' : ''}`).join('\n');
   const text = `JEE Question ${idx + 1} (${rep.chapName})\n\n${plainQ}\n\nOptions:\n${optionLines}\n\nYour Answer: ${latexToPlain(q.uAnsText)}\nCorrect Answer: ${latexToPlain(q.cAnsText)}\n\nWhy: ${plainExp}`;
@@ -3954,13 +4076,48 @@ function shareJeeSolution(idx, btnEl) {
   }
 }
 
+// Fetches an image URL and returns a data URL usable by jsPDF's addImage,
+// along with its natural pixel dimensions. Returns null on any failure
+// (CORS block, network error, unsupported format) so callers can just skip
+// the image and carry on with the text-only report.
+async function loadImageForPdf(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const dims = await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.naturalWidth || 400, h: img.naturalHeight || 300 });
+      img.onerror = () => resolve({ w: 400, h: 300 });
+      img.src = dataUrl;
+    });
+    let format = 'JPEG';
+    if (/^data:image\/png/i.test(dataUrl)) format = 'PNG';
+    else if (/^data:image\/webp/i.test(dataUrl)) format = 'WEBP';
+    return { dataUrl, format, ...dims };
+  } catch (err) {
+    console.warn('Could not embed question image in PDF:', err);
+    return null;
+  }
+}
+
 // Builds a downloadable PDF exam report from the last JEE attempt.
-function downloadJeeReport() {
+async function downloadJeeReport() {
   const rep = state.lastJeeReport;
   if (!rep) return;
 
   const JsPdfCtor = window.jspdf && window.jspdf.jsPDF;
   if (!JsPdfCtor) { alert('PDF library failed to load — check your internet connection and try again.'); return; }
+
+  const btn = document.querySelector('button[onclick="downloadJeeReport()"]');
+  const btnOldText = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparing PDF…'; }
 
   const doc = new JsPdfCtor({ unit: 'pt', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
@@ -3985,6 +4142,18 @@ function downloadJeeReport() {
       y += lh;
     });
   }
+  // Places a fetched question image on the page, scaled to fit within maxW
+  // and a sensible max height, breaking to a new page first if it won't fit.
+  function placeImage(imgInfo) {
+    const maxImgH = 260;
+    let w = maxW;
+    let h = (imgInfo.h / imgInfo.w) * w;
+    if (h > maxImgH) { h = maxImgH; w = (imgInfo.w / imgInfo.h) * h; }
+    ensureSpace(h + 10);
+    const x = margin + (maxW - w) / 2;
+    doc.addImage(imgInfo.dataUrl, imgInfo.format, x, y, w, h);
+    y += h + 12;
+  }
 
   // Header
   doc.setFillColor(12, 18, 32);
@@ -4007,9 +4176,10 @@ function downloadJeeReport() {
   y += 20;
 
   // Per-question breakdown
-  rep.questions.forEach((q, i) => {
+  for (let i = 0; i < rep.questions.length; i++) {
+    const q = rep.questions[i];
     ensureSpace(30);
-    const plainQ = latexToPlain(q.q);
+    const plainQ = latexToPlain(q.q) || latexToPlain(q.ocrStem);
     const plainExp = latexToPlain(q.exp);
     const plainCAns = latexToPlain(q.cAnsText);
     const status = q.isUnattempted ? 'SKIPPED' : (q.isCorrect ? 'CORRECT' : 'INCORRECT');
@@ -4023,9 +4193,20 @@ function downloadJeeReport() {
       y += 14;
     }
 
-    writeLines(`Q${i + 1}.  ${plainQ}`, { size: 11.5, bold: true });
+    writeLines(`Q${i + 1}.  ${plainQ || '(question shown as image below)'}`, { size: 11.5, bold: true });
     writeLines(`Status: ${status}`, { size: 9.5, bold: true, color: statusColor });
     y += 2;
+
+    // If this question came from the image-based JEE dataset, fetch and
+    // embed the actual question photo instead of leaving a text placeholder.
+    if (q.imgUrl) {
+      const imgInfo = await loadImageForPdf(q.imgUrl);
+      if (imgInfo) {
+        placeImage(imgInfo);
+      } else {
+        writeLines('[Question image could not be embedded — view in-app]', { size: 9, color: [150, 150, 150] });
+      }
+    }
 
     // List every answer choice, marking the correct one, so the candidate
     // can see the full question context rather than just isolated text.
@@ -4055,9 +4236,10 @@ function downloadJeeReport() {
     writeLines(plainExp, { size: 9.5, color: [70, 70, 70] });
     writeLines(`In short: the correct answer is ${plainCAns}.`, { size: 9.5, color: [30, 130, 110] });
     y += 14;
-  });
+  }
 
   doc.save(`JEE_Report_${rep.chapName.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+  if (btn) { btn.disabled = false; btn.textContent = btnOldText; }
 }
 
 // Renders a shareable completion certificate to a canvas and downloads it as a PNG.
