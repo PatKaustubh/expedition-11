@@ -2050,10 +2050,17 @@ const Factory = {
 
   async generate(subjId, chapId, level, qCount = Q_PER_LEVEL) {
     // JEE mock levels ("Combined Arena") pull real previous-year questions live
-    // from Hugging Face. Fall back to the procedural generator if that fails.
+    // from Hugging Face. Fall back to the procedural generator if that fails —
+    // and top up with it if HF only returns a partial batch, so a "75 question"
+    // mock always actually has 75 questions instead of whatever HF handed back.
     if (subjId === 'mixed') {
       const hfQs = await this.hfGenerate(chapId, qCount);
-      if (hfQs.length > 0) return hfQs;
+      if (hfQs.length >= qCount) return hfQs.slice(0, qCount);
+      if (hfQs.length > 0) {
+        console.warn(`Live JEE dataset only returned ${hfQs.length}/${qCount} questions; topping up with local fallback.`);
+        const topUp = this.fallbackGenerate(subjId, chapId, level, qCount - hfQs.length);
+        return [...hfQs, ...topUp];
+      }
       console.warn('Live JEE dataset unavailable or empty; using local fallback generator.');
     }
 
@@ -3433,6 +3440,9 @@ const MAX_LOCKDOWN_STRIKES = 5; // auto-submit once lapses exceed this count
 function enterExamLockdown() {
   examLockdown.active = true;
   examLockdown.strikes = 0;
+  clearTimeout(lockdownStrikeBatchTimer);
+  lockdownStrikeBatchTimer = null;
+  lockdownStrikeBatch = [];
   document.addEventListener('fullscreenchange', onLockdownFullscreenChange);
   document.addEventListener('visibilitychange', onLockdownVisibilityChange);
   window.addEventListener('blur', onLockdownWindowBlur);
@@ -3456,7 +3466,26 @@ function requestExamFullscreen() {
   if (req) req.call(el).catch(() => {});
 }
 
+// A single real "tab switch" or "left fullscreen" action often fires blur,
+// visibilitychange, AND fullscreenchange within the same tick — without this
+// batching, one lapse was silently being counted as 2-3 strikes, which threw
+// off the "N more lapses" messaging and made the strike count unreliable.
+let lockdownStrikeBatch = [];
+let lockdownStrikeBatchTimer = null;
+
 function flagLockdownViolation(reason) {
+  if (!examLockdown.active) return;
+  lockdownStrikeBatch.push(reason);
+  if (lockdownStrikeBatchTimer) return; // a batch is already queued for this burst of events
+  lockdownStrikeBatchTimer = setTimeout(() => {
+    const reasons = [...new Set(lockdownStrikeBatch)].join(', ');
+    lockdownStrikeBatch = [];
+    lockdownStrikeBatchTimer = null;
+    registerLockdownStrike(reasons);
+  }, 200);
+}
+
+function registerLockdownStrike(reason) {
   if (!examLockdown.active) return;
   examLockdown.strikes++;
   const note = document.getElementById('lockdownStrikeNote');
@@ -3467,7 +3496,11 @@ function flagLockdownViolation(reason) {
     if (note) note.textContent = `Recorded lapse #${examLockdown.strikes} (${reason}). Lapse limit (${MAX_LOCKDOWN_STRIKES}) reached — your exam is being auto-submitted now.`;
     document.getElementById('lockdownWarning').classList.add('show');
     examLockdown.active = false; // stop listening so we don't fire twice while submitting
-    setTimeout(() => { submitJeeExam(); }, 1600);
+    // Submit right away rather than after a delay: a delayed setTimeout can
+    // get throttled or paused entirely while the tab is in the background
+    // (exactly when a lapse is most likely to have just happened), making
+    // the auto-submit appear to silently not fire until the user tabs back in.
+    submitJeeExam();
     return;
   }
 
@@ -3580,10 +3613,27 @@ function renderPalette() {
 // image. This lets image-only JEE dataset questions show up as real,
 // selectable text on the dashboard instead of just a photo.
 async function ocrExtractFromImage(imgUrl) {
-  if (!window.Tesseract) return null;
+  if (!window.Tesseract) {
+    console.warn('OCR skipped: Tesseract.js did not load (check network/CDN access).');
+    return null;
+  }
   if (state.ocrCache[imgUrl] !== undefined) return state.ocrCache[imgUrl];
   try {
-    const { data } = await Tesseract.recognize(imgUrl, 'eng');
+    // Feeding Tesseract the bare URL makes it load the image via <canvas>,
+    // which silently fails (returns garbage/empty text with no thrown error
+    // in some Tesseract.js versions) whenever the image host doesn't send
+    // CORS headers — which is the case for this dataset's image CDN. Fetching
+    // the raw bytes ourselves and handing over a Blob instead sidesteps the
+    // canvas entirely, since Tesseract processes the bytes directly.
+    const res = await fetch(imgUrl);
+    if (!res.ok) throw new Error(`Image fetch failed (${res.status})`);
+    const blob = await res.blob();
+
+    // Guard against a stuck/misconfigured worker hanging the question view forever.
+    const recognizePromise = Tesseract.recognize(blob, 'eng');
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('OCR timed out')), 20000));
+    const { data } = await Promise.race([recognizePromise, timeoutPromise]);
+
     const text = (data && data.text) ? data.text.trim() : null;
     state.ocrCache[imgUrl] = text;
     return text;
