@@ -243,6 +243,9 @@ body { padding-top: 30px; }
 @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(360px) rotate(600deg); opacity: 0; } }
 
 .btn-row { display: flex; justify-content: center; gap: 16px; margin-top: 30px; }
+.complete-actions { display: flex; flex-direction: column; gap: 14px; margin-top: 24px; }
+.complete-actions-row { display: flex; gap: 14px; }
+.complete-actions-row .btn { flex: 1; margin-top: 0; }
 .btn { border: none; border-radius: 12px; padding: 16px 32px; cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
 .btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
 .btn.primary { background: var(--sea); color: #fff; box-shadow: 0 4px 15px rgba(42, 157, 143, 0.3); }
@@ -852,13 +855,15 @@ body { padding-top: 30px; }
       <div class="level-stars-row" id="levelStarsRow"></div>
       <div class="level-stats-grid" id="levelStatsGrid"></div>
       <div class="terminal" id="grandSummary" style="display:none;"></div>
-      <div class="btn-row" id="jeeReportActions" style="display:none; gap:10px; flex-wrap:wrap;">
-        <button class="btn ghost" onclick="downloadJeeReport()">⬇ Download Report (PDF)</button>
-        <button class="btn ghost" onclick="downloadJeeCertificate()">🏆 Download Certificate</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn ghost" onclick="abortGame()">Menu</button>
-        <button class="btn primary" id="nextLvlBtn" onclick="startNextLevel()">Next Level &rarr;</button>
+      <div class="complete-actions">
+        <div class="complete-actions-row" id="jeeReportActions" style="display:none;">
+          <button class="btn ghost" onclick="downloadJeeReport()">⬇ Download Report (PDF)</button>
+          <button class="btn ghost" onclick="downloadJeeCertificate()">🏆 Download Certificate</button>
+        </div>
+        <div class="complete-actions-row">
+          <button class="btn ghost" onclick="abortGame()">Menu</button>
+          <button class="btn primary" id="nextLvlBtn" onclick="startNextLevel()">Next Level &rarr;</button>
+        </div>
       </div>
     </div>
     <div class="score-fx-layer" id="scoreFxLayer"></div>
@@ -1934,14 +1939,52 @@ const Factory = {
   // tries several common field names before giving up on a row.
   async hfGenerate(chapId, qCount) {
     const dataset = this.HF_JEE_DATASETS[chapId] || 'farhananis005/jee-sft-v1';
+    const windowSize = Math.max(qCount * 8, 80);
+
+    // Ask the datasets-server how many rows actually exist before picking a
+    // random offset. A random offset over a fixed 2000-row guess was the
+    // cause of the 422s: this dataset (and others we might point to later)
+    // can have far fewer rows, and datasets-server 422s whenever
+    // offset + length exceeds the real row count.
+    let totalRows = null;
     try {
-      const windowSize = Math.max(qCount * 8, 80);
-      const offset = Math.floor(Math.random() * 2000);
-      const url = `https://datasets-server.huggingface.co/rows?dataset=${encodeURIComponent(dataset)}&config=default&split=train&offset=${offset}&length=${windowSize}`;
+      const sizeUrl = `https://datasets-server.huggingface.co/size?dataset=${encodeURIComponent(dataset)}`;
+      const sizeRes = await fetch(sizeUrl);
+      if (sizeRes.ok) {
+        const sizeData = await sizeRes.json();
+        const splitInfo = sizeData?.size?.splits?.find(s => s.split === 'train') || sizeData?.size?.splits?.[0];
+        if (splitInfo && typeof splitInfo.num_rows === 'number') totalRows = splitInfo.num_rows;
+      }
+    } catch (err) {
+      // Non-fatal — we'll just fall back to a conservative offset below.
+    }
+
+    // Fetch a window of rows, retrying once from offset 0 with a small
+    // window if the first attempt 422s for any reason we didn't anticipate.
+    const fetchWindow = async (offset, length) => {
+      const url = `https://datasets-server.huggingface.co/rows?dataset=${encodeURIComponent(dataset)}&config=default&split=train&offset=${offset}&length=${length}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HF datasets-server responded ${res.status}`);
       const data = await res.json();
-      const rows = (data.rows || []).map(r => r.row);
+      return (data.rows || []).map(r => r.row);
+    };
+
+    try {
+      let offset = 0;
+      let length = windowSize;
+      if (totalRows && totalRows > 0) {
+        length = Math.min(windowSize, totalRows);
+        offset = totalRows > length ? Math.floor(Math.random() * (totalRows - length)) : 0;
+      }
+
+      let rows;
+      try {
+        rows = await fetchWindow(offset, length);
+      } catch (firstErr) {
+        // Fall back to the safest possible request: first page, smallest window.
+        rows = await fetchWindow(0, Math.min(length, 20));
+      }
+
       let normalized = rows.map(r => this.normalizeHFRow(r)).filter(Boolean);
       if (normalized.length === 0) return [];
       normalized = this.shuffleArray(normalized).slice(0, qCount);
@@ -3784,7 +3827,7 @@ function submitJeeExam() {
         <div class="jsc-q">${r.q}</div>
         <div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Your Answer:</span> <b style="color:${statusColor};">${r.uAnsText}</b></div>
         ${!r.isCorrect ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Correct Answer:</span> <b style="color:var(--sea);">${r.cAnsText}</b></div>` : ''}
-        <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}</div>
+        <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}<br><em>In short: the correct answer is ${r.cAnsText}.</em></div>
         <div class="jsc-footer">
           <button class="jsc-share-btn" onclick="shareJeeSolution(${r.idx}, this)">🔗 Share Solution</button>
         </div>
@@ -3825,14 +3868,80 @@ function submitJeeExam() {
   playScoreAnimation(accuracyPct);
 }
 
+// Converts LaTeX-ish markup (the raw $...$ math strings used throughout the
+// question bank) into plain, readable text for contexts that can't render
+// MathJax — the downloadable PDF report and the plain-text "share solution"
+// copy. Handles the common constructs used by the generators: \hat, \vec,
+// \frac, \sqrt, \times, \cdot, \log, \lim, \sin/\cos/\tan, \implies, \text,
+// sub/superscripts, and the $ / $$ delimiters themselves.
+function latexToPlain(input) {
+  if (!input) return '';
+  let s = String(input);
+
+  // Strip any leftover HTML first (e.g. question images).
+  s = s.replace(/<img[^>]*>/gi, '[image — view in-app]').replace(/<[^>]+>/g, ' ');
+
+  // Normalize escaped backslashes that show up from double-escaped JS strings.
+  s = s.replace(/\\\\/g, '\\');
+
+  // \text{...} -> ... (drop the wrapper, keep the words)
+  s = s.replace(/\\text\{([^}]*)\}/g, '$1');
+
+  // \frac{a}{b} -> (a)/(b)
+  s = s.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)');
+
+  // \sqrt{a} -> √(a)
+  s = s.replace(/\\sqrt\{([^}]*)\}/g, '√($1)');
+
+  // \vec{X} -> X-vector, \hat{i}/\hat{j}/\hat{k} -> î/ĵ/k̂
+  s = s.replace(/\\hat\{i\}/g, 'î').replace(/\\hat\{j\}/g, 'ĵ').replace(/\\hat\{k\}/g, 'k̂');
+  s = s.replace(/\\vec\{([^}]*)\}/g, '$1');
+
+  // \lim_{x \to 0} -> lim(x→0)
+  s = s.replace(/\\lim_\{([^}]*)\}/g, (m, p1) => `lim(${p1.replace(/\\to/g, '→')})`);
+
+  // Sub/superscripts: ^{...} and _{...} -> ^(...) and _(...); single-char ^x / _x left as-is
+  s = s.replace(/\^\{([^}]*)\}/g, '^($1)');
+  s = s.replace(/_\{([^}]*)\}/g, '_($1)');
+
+  // Common operators & symbols
+  s = s.replace(/\\cdot/g, '·')
+       .replace(/\\times/g, '×')
+       .replace(/\\div/g, '÷')
+       .replace(/\\pm/g, '±')
+       .replace(/\\implies/g, '⇒')
+       .replace(/\\to/g, '→')
+       .replace(/\\infty/g, '∞')
+       .replace(/\\log/g, 'log')
+       .replace(/\\ln/g, 'ln')
+       .replace(/\\sin/g, 'sin')
+       .replace(/\\cos/g, 'cos')
+       .replace(/\\tan/g, 'tan')
+       .replace(/\\pi/g, 'π')
+       .replace(/\\theta/g, 'θ')
+       .replace(/\\alpha/g, 'α')
+       .replace(/\\beta/g, 'β')
+       .replace(/\\Delta/g, 'Δ');
+
+  // Drop any remaining backslash-commands we didn't special-case, and stray braces.
+  s = s.replace(/\\[a-zA-Z]+/g, '').replace(/[{}]/g, '');
+
+  // Remove math delimiters ($$, $) and collapse whitespace.
+  s = s.replace(/\$\$/g, '').replace(/\$/g, '');
+  s = s.replace(/\s+/g, ' ').trim();
+
+  return s;
+}
+
 // Shares (or copies) one question's solution text — handy for study groups.
 function shareJeeSolution(idx, btnEl) {
   const rep = state.lastJeeReport;
   if (!rep) return;
   const q = rep.questions[idx];
-  const plainQ = q.q.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const plainExp = q.exp.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const text = `JEE Question ${idx + 1} (${rep.chapName})\n\n${plainQ}\n\nCorrect Answer: ${q.cAnsText}\n\nExplanation:\n${plainExp}`;
+  const plainQ = latexToPlain(q.q);
+  const plainExp = latexToPlain(q.exp);
+  const optionLines = q.opts.map((o, i) => `  ${String.fromCharCode(65 + i)}. ${latexToPlain(o)}${i === q.ans ? '  ✓ correct' : ''}`).join('\n');
+  const text = `JEE Question ${idx + 1} (${rep.chapName})\n\n${plainQ}\n\nOptions:\n${optionLines}\n\nYour Answer: ${latexToPlain(q.uAnsText)}\nCorrect Answer: ${latexToPlain(q.cAnsText)}\n\nWhy: ${plainExp}`;
 
   if (navigator.share) {
     navigator.share({ title: `JEE Question ${idx + 1} Solution`, text }).catch(() => {});
@@ -3900,17 +4009,52 @@ function downloadJeeReport() {
   // Per-question breakdown
   rep.questions.forEach((q, i) => {
     ensureSpace(30);
-    const plainQ = q.q.replace(/<img[^>]*>/gi, '[Question image — view in-app]').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const plainExp = q.exp.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const plainQ = latexToPlain(q.q);
+    const plainExp = latexToPlain(q.exp);
+    const plainCAns = latexToPlain(q.cAnsText);
     const status = q.isUnattempted ? 'SKIPPED' : (q.isCorrect ? 'CORRECT' : 'INCORRECT');
     const statusColor = q.isUnattempted ? [140, 140, 140] : (q.isCorrect ? [30, 130, 110] : [190, 60, 90]);
 
-    writeLines(`Q${i + 1}.  ${plainQ}`, { size: 11, bold: true });
+    // Divider between questions so each block is easy to tell apart.
+    if (i > 0) {
+      ensureSpace(16);
+      doc.setDrawColor(225, 225, 225);
+      doc.line(margin, y, pageW - margin, y);
+      y += 14;
+    }
+
+    writeLines(`Q${i + 1}.  ${plainQ}`, { size: 11.5, bold: true });
     writeLines(`Status: ${status}`, { size: 9.5, bold: true, color: statusColor });
-    writeLines(`Your Answer: ${q.uAnsText}`, { size: 10 });
-    if (!q.isCorrect) writeLines(`Correct Answer: ${q.cAnsText}`, { size: 10, color: [30, 130, 110] });
-    writeLines(`Explanation: ${plainExp}`, { size: 9.5, color: [70, 70, 70] });
-    y += 12;
+    y += 2;
+
+    // List every answer choice, marking the correct one, so the candidate
+    // can see the full question context rather than just isolated text.
+    (q.opts || []).forEach((opt, oi) => {
+      const label = String.fromCharCode(65 + oi);
+      const isCorrectOpt = oi === q.ans;
+      const isChosenWrong = !q.isUnattempted && !q.isCorrect && (opt === q.uAnsText);
+      let marker = '';
+      if (isCorrectOpt) marker = '  \u2713 Correct Answer';
+      else if (isChosenWrong) marker = '  \u2717 Your Answer';
+      writeLines(`   ${label}. ${latexToPlain(opt)}${marker}`, {
+        size: 10,
+        bold: isCorrectOpt || isChosenWrong,
+        color: isCorrectOpt ? [30, 130, 110] : (isChosenWrong ? [190, 60, 90] : [20, 20, 20])
+      });
+    });
+
+    if (q.isUnattempted) {
+      writeLines(`You did not attempt this question. Correct Answer: ${plainCAns}`, { size: 10, color: [140, 140, 140] });
+    }
+    y += 4;
+
+    // Elaborated explanation: the raw "exp" string plus a plain restatement
+    // of the correct answer, so a candidate reading in isolation understands
+    // both the method and the final result.
+    writeLines(`Explanation:`, { size: 10, bold: true, color: [70, 70, 70] });
+    writeLines(plainExp, { size: 9.5, color: [70, 70, 70] });
+    writeLines(`In short: the correct answer is ${plainCAns}.`, { size: 9.5, color: [30, 130, 110] });
+    y += 14;
   });
 
   doc.save(`JEE_Report_${rep.chapName.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
