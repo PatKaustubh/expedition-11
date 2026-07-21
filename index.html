@@ -81,7 +81,7 @@ body { padding-top: 30px; }
 .title-wrap p { color: var(--parchment-dim); font-size: 1.05rem; margin: 0; line-height: 1.6; }
 
 /* SUBJECT & CHAPTER CARDS */
-.grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; justify-content: center; }
 .pyq-banner { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; border-radius: 16px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: linear-gradient(135deg, rgba(201,156,81,0.1), rgba(42,157,143,0.08)); cursor: pointer; transition: border-color 0.2s, transform 0.2s; flex-wrap: wrap; }
 .pyq-banner:hover { border-color: var(--brass, #c99c51); transform: translateY(-2px); }
 .pyq-banner-left { display: flex; align-items: center; gap: 16px; }
@@ -99,7 +99,7 @@ body { padding-top: 30px; }
 .card-item p { margin: 0; font-size: 0.85rem; color: var(--parchment-dim); line-height: 1.5; }
 
 /* LEVELS GRID */
-.levels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; }
+.levels-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; justify-content: center; }
 .level-btn { padding: 18px; border-radius: 16px; border: 1px solid var(--glass-border); background: var(--glass); color: var(--parchment); font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
 .level-btn.unlocked { border-color: var(--line); background: rgba(255,255,255,0.02); }
 .level-btn.unlocked:hover { background: rgba(201, 156, 81, 0.1); transform: scale(1.04); border-color: var(--brass-light); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
@@ -1664,7 +1664,7 @@ const AudioSys = {
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = this.muted ? 0 : 1;
+      this.masterGain.gain.value = (this.muted || this.examLocked) ? 0 : 1;
       this.masterGain.connect(this.ctx.destination);
       this.isInit = true;
       this.ensureRunning();
@@ -2060,7 +2060,19 @@ const Factory = {
       return null; // no gradable single answer (e.g. a NUMERIC-type row) — skip
     }
 
-    if (!explanation) explanation = 'No detailed explanation was provided for this question.';
+    // Some upstream dataset rows mangle compact \frac shorthand (e.g. \frac14,
+  // \frac1k) into plain "1 4" / "1 k" text once the backslash+command is
+  // stripped somewhere in their pipeline. Repair that back into a proper
+  // \frac{a}{b} — but only inside actual math segments (\(...\) / \[...\]),
+  // so we never touch ordinary prose that might happen to contain two
+  // adjacent numbers.
+  function repairBareFractions(mathText) {
+    return mathText.replace(/(\d+)\s+(\d{1,3}|[a-zA-Z])(?![a-zA-Z0-9])/g, '\\frac{$1}{$2}');
+  }
+  explanation = explanation.replace(/\\\(([\s\S]*?)\\\)/g, (m, inner) => `\\(${repairBareFractions(inner)}\\)`)
+                            .replace(/\\\[([\s\S]*?)\\\]/g, (m, inner) => `\\[${repairBareFractions(inner)}\\]`);
+
+  if (!explanation) explanation = 'No detailed explanation was provided for this question.';
     return {
       q: qHtml, opts, ans: ansIdx, exp: explanation,
       subject: row.subject || '', difficulty: row.difficulty || '',
@@ -4034,7 +4046,10 @@ function submitJeeExam() {
         <div class="jsc-q">${r.q}${r.ocrStem ? `<div style="margin-top:8px;">${r.ocrStem}</div>` : ''}</div>
         <div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Your Answer:</span> <b style="color:${statusColor};">${r.uAnsText}</b></div>
         ${!r.isCorrect ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Correct Answer:</span> <b style="color:var(--sea);">${r.cAnsText}</b></div>` : ''}
-        <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}<br><em>In short: the correct answer is ${r.cAnsText}.</em></div>
+        <div class="jsc-exp-wrap" style="display:flex; gap:14px; margin-top:8px; ${r.imgUrl ? 'flex-wrap:wrap;' : ''}">
+          ${r.imgUrl ? `<img src="${r.imgUrl}" alt="Question reference" loading="lazy" style="max-width:220px; flex:0 0 auto; border-radius:10px; background:#fff; padding:6px; align-self:flex-start;">` : ''}
+          <div class="jsc-exp" style="flex:1; min-width:200px; margin-top:0;"><strong>Explanation:</strong><br>${r.exp}<br><em>In short: the correct answer is ${r.cAnsText}.</em></div>
+        </div>
         <div class="jsc-footer">
           <button class="jsc-share-btn" onclick="shareJeeSolution(${r.idx}, this)">🔗 Share Solution</button>
         </div>
@@ -4228,6 +4243,19 @@ async function downloadJeeReport() {
       y += lh;
     });
   }
+  function writeLinesAt(text, x, w, opts = {}) {
+    const size = opts.size || 10.5;
+    const lh = opts.lineHeight || size * 1.35;
+    doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+    doc.setFontSize(size);
+    if (opts.color) doc.setTextColor(...opts.color); else doc.setTextColor(20, 20, 20);
+    const lines = doc.splitTextToSize(text, w);
+    lines.forEach(line => {
+      ensureSpace(lh);
+      doc.text(line, x, y);
+      y += lh;
+    });
+  }
   // Places a fetched question image on the page, scaled to fit within maxW
   // and a sensible max height, breaking to a new page first if it won't fit.
   function placeImage(imgInfo) {
@@ -4283,19 +4311,16 @@ async function downloadJeeReport() {
       y += 14;
     }
 
-    writeLines(`Q${i + 1}.  ${plainQ || '(question shown as image below)'}`, { size: 11.5, bold: true });
+    writeLines(`Q${i + 1}.  ${plainQ || '(question shown as image alongside its explanation below)'}`, { size: 11.5, bold: true });
     writeLines(`Status: ${status}`, { size: 9.5, bold: true, color: statusColor });
     y += 2;
 
-    // If this question came from the image-based JEE dataset, fetch and
-    // embed the actual question photo instead of leaving a text placeholder.
+    // Fetch the question image now (if any) — we place it beside the
+    // explanation further down instead of full-width here, since the
+    // explanation is the most useful thing to read it next to.
+    let imgInfo = null;
     if (q.imgUrl) {
-      const imgInfo = await loadImageForPdf(q.imgUrl);
-      if (imgInfo) {
-        placeImage(imgInfo);
-      } else {
-        writeLines('[Question image could not be embedded — view in-app]', { size: 9, color: [150, 150, 150] });
-      }
+      imgInfo = await loadImageForPdf(q.imgUrl);
     }
 
     // List every answer choice, marking the correct one, so the candidate
@@ -4321,10 +4346,27 @@ async function downloadJeeReport() {
 
     // Elaborated explanation: the raw "exp" string plus a plain restatement
     // of the correct answer, so a candidate reading in isolation understands
-    // both the method and the final result.
-    writeLines(`Explanation:`, { size: 10, bold: true, color: [70, 70, 70] });
-    writeLines(plainExp, { size: 9.5, color: [70, 70, 70] });
-    writeLines(`In short: the correct answer is ${plainCAns}.`, { size: 9.5, color: [30, 130, 110] });
+    // both the method and the final result. When a question image is
+    // available, place it as a thumbnail on the left of the explanation —
+    // it's often the clearest reference for the numbers being discussed.
+    if (imgInfo) {
+      const thumbMaxW = 150, thumbMaxH = 150;
+      let tw = thumbMaxW, th = (imgInfo.h / imgInfo.w) * tw;
+      if (th > thumbMaxH) { th = thumbMaxH; tw = (imgInfo.w / imgInfo.h) * th; }
+      ensureSpace(Math.max(th, 40) + 10);
+      const yStart = y;
+      doc.addImage(imgInfo.dataUrl, imgInfo.format, margin, yStart, tw, th);
+      const textX = margin + thumbMaxW + 14;
+      const textW = maxW - thumbMaxW - 14;
+      writeLinesAt(`Explanation:`, textX, textW, { size: 10, bold: true, color: [70, 70, 70] });
+      writeLinesAt(plainExp, textX, textW, { size: 9.5, color: [70, 70, 70] });
+      writeLinesAt(`In short: the correct answer is ${plainCAns}.`, textX, textW, { size: 9.5, color: [30, 130, 110] });
+      y = Math.max(y, yStart + th + 10);
+    } else {
+      writeLines(`Explanation:`, { size: 10, bold: true, color: [70, 70, 70] });
+      writeLines(plainExp, { size: 9.5, color: [70, 70, 70] });
+      writeLines(`In short: the correct answer is ${plainCAns}.`, { size: 9.5, color: [30, 130, 110] });
+    }
     y += 14;
   }
 
