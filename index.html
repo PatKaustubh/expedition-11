@@ -1939,7 +1939,11 @@ const Factory = {
       ]
     };
     let pool = concepts[chapId] || [
-      () => ({ q: `A force $F = ${a}\\hat{i} + ${b}\\hat{j}$ acts on a particle. Work done moving from origin to $(1,1)$?`, ans: `$${a+b} \\text{ J}$`, opts: [`$${a*b} \\text{ J}$`, `$${a-b} \\text{ J}$`, `$0 \\text{ J}$`], exp: `Work $W = \\vec{F} \\cdot \\vec{d} = (${a})(1) + (${b})(1)$.` })
+      () => {
+        let fa = a, fb = b;
+        if (fa === fb) fb = fa + 1; // avoid a-b colliding with the hardcoded "0 J" distractor below
+        return { q: `A force $F = ${fa}\\hat{i} + ${fb}\\hat{j}$ acts on a particle. Work done moving from origin to $(1,1)$?`, ans: `$${fa+fb} \\text{ J}$`, opts: [`$${fa*fb} \\text{ J}$`, `$${fa-fb} \\text{ J}$`, `$0 \\text{ J}$`], exp: `Work $W = \\vec{F} \\cdot \\vec{d} = (${fa})(1) + (${fb})(1)$.` };
+      }
     ];
     return pool[variant % pool.length]();
   },
@@ -2191,6 +2195,12 @@ async function openDailyChallenge() {
 }
 function closeDailyChallenge() { document.getElementById('dailyChallengeModal').classList.remove('show'); }
 
+function typesetMath(el) {
+  if (window.MathJax && el) {
+    MathJax.typesetPromise([el]).catch((err) => console.log('MathJax error:', err));
+  }
+}
+
 function renderDailyQuestion() {
   if (!dailyRun) return;
   const q = dailyRun.questions[dailyRun.idx];
@@ -2215,6 +2225,7 @@ function renderDailyQuestion() {
     btn.onclick = () => handleDailyAnswer(i, btn);
     grid.appendChild(btn);
   });
+  typesetMath(body);
 }
 
 function handleDailyAnswer(selIdx, btnNode) {
@@ -2232,6 +2243,7 @@ function handleDailyAnswer(selIdx, btnNode) {
   const fb = document.getElementById('dailyFeedback');
   fb.style.display = 'block';
   fb.innerHTML = isCorrect ? '✓ Correct!' : `✗ Incorrect. The correct answer was <b>${q.opts[q.ans]}</b>`;
+  typesetMath(fb);
 
   const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
   const nextBtn = document.createElement('button');
@@ -2375,6 +2387,7 @@ function renderMistakeQuestion() {
     btn.onclick = () => handleMistakeAnswer(i);
     grid.appendChild(btn);
   });
+  typesetMath(body);
 }
 
 function handleMistakeAnswer(selIdx) {
@@ -2399,6 +2412,7 @@ function handleMistakeAnswer(selIdx) {
   } else {
     fb.innerHTML = `✗ Still not quite. The correct answer is <b>${item.opts[item.ans]}</b> — it'll stay in your bank.`;
   }
+  typesetMath(fb);
   const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
   const nextBtn = document.createElement('button');
   nextBtn.className = 'btn primary';
@@ -2756,6 +2770,7 @@ function renderPyqQuestion() {
     btn.onclick = () => handlePyqAnswer(i);
     grid.appendChild(btn);
   });
+  typesetMath(body);
 }
 
 function handlePyqAnswer(selIdx) {
@@ -2775,6 +2790,7 @@ function handlePyqAnswer(selIdx) {
   fb.innerHTML = isCorrect
     ? '✓ Correct!' + (item.sol ? `<div style="margin-top:6px; opacity:0.85;">${item.sol}</div>` : '')
     : `✗ Incorrect. Correct answer: <b>${item.opts[item.ans]}</b>` + (item.sol ? `<div style="margin-top:6px; opacity:0.85;">${item.sol}</div>` : '');
+  typesetMath(fb);
   const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
   const nextBtn = document.createElement('button');
   nextBtn.className = 'btn primary';
