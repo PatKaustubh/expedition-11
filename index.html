@@ -331,6 +331,33 @@ body { padding-top: 30px; }
   position: relative;
 }
 
+/* Compact 2-up grid for the smaller feature widgets so they stop reading as
+   one long scrolling list. Leaderboard stays full-width above the grid. */
+.side-panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.side-panels-grid .side-panel {
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 118px;
+}
+.side-panels-grid .widget-hdr h3 {
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+.side-panels-grid .panel-hint {
+  margin-top: auto;
+  padding-top: 10px;
+  font-size: 0.64rem;
+}
+@media (max-width: 480px) {
+  .side-panels-grid { grid-template-columns: 1fr; }
+}
+
 #leaderboardList, #studentResolutionsList {
   max-height: 160px;
   overflow-y: auto;
@@ -503,55 +530,57 @@ body { padding-top: 30px; }
         <div class="panel-hint">Click to open full leaderboard</div>
       </div>
 
-      <div class="side-panel resolutions-panel" onclick="openResolutionsPopup()">
-        <div class="widget-hdr">
-          <h3>🔧 Resolutions Inbox</h3>
+      <div class="side-panels-grid">
+        <div class="side-panel resolutions-panel" onclick="openResolutionsPopup()">
+          <div class="widget-hdr">
+            <h3>🔧 Resolutions</h3>
+          </div>
+          <div id="studentResolutionsList" style="max-height: 90px; overflow-y: auto; font-size: 0.8rem;"></div>
+          <div class="panel-hint">Open resolutions</div>
         </div>
-        <div id="studentResolutionsList" style="max-height: 160px; overflow-y: auto;"></div>
-        <div class="panel-hint">Click to open all resolutions</div>
-      </div>
 
-      <div class="side-panel daily-panel" onclick="openDailyChallenge()">
-        <div class="widget-hdr">
-          <h3>🗓️ Daily Challenge</h3>
+        <div class="side-panel daily-panel" onclick="openDailyChallenge()">
+          <div class="widget-hdr">
+            <h3>🗓️ Daily Challenge</h3>
+          </div>
+          <div id="dailyPanelStatus" style="padding: 4px 0; font-size: 0.8rem; color: var(--parchment-dim, #c5bba8);"></div>
+          <div class="panel-hint" id="dailyPanelHint">Attempt today's challenge</div>
         </div>
-        <div id="dailyPanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);"></div>
-        <div class="panel-hint" id="dailyPanelHint">Click to attempt today's challenge</div>
-      </div>
 
-      <div class="side-panel mistake-panel" onclick="openMistakeBank()">
-        <div class="widget-hdr">
-          <h3>🎯 Mistake Bank</h3>
+        <div class="side-panel mistake-panel" onclick="openMistakeBank()">
+          <div class="widget-hdr">
+            <h3>🎯 Mistake Bank</h3>
+          </div>
+          <div id="mistakePanelStatus" style="padding: 4px 0; font-size: 0.8rem; color: var(--parchment-dim, #c5bba8);"></div>
+          <div class="panel-hint">Revise wrong answers</div>
         </div>
-        <div id="mistakePanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);"></div>
-        <div class="panel-hint">Click to revise questions you got wrong</div>
-      </div>
 
-      <div class="side-panel streak-panel" onclick="openActivityPopup()">
-        <div class="widget-hdr">
-          <h3>📊 Activity</h3>
+        <div class="side-panel streak-panel" onclick="openActivityPopup()">
+          <div class="widget-hdr">
+            <h3>📊 Activity</h3>
+          </div>
+          <div id="activityPanelStatus" style="padding: 4px 0; font-size: 0.8rem; color: var(--parchment-dim, #c5bba8);"></div>
+          <div class="panel-hint">See your streak</div>
         </div>
-        <div id="activityPanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);"></div>
-        <div class="panel-hint">Click to see your practice streak</div>
-      </div>
 
-      <div class="side-panel focus-panel" onclick="openFocusTimer()">
-        <div class="widget-hdr">
-          <h3>⏱️ Focus Timer</h3>
+        <div class="side-panel focus-panel" onclick="openFocusTimer()">
+          <div class="widget-hdr">
+            <h3>⏱️ Focus Timer</h3>
+          </div>
+          <div id="focusPanelStatus" style="padding: 4px 0; font-size: 0.8rem; color: var(--parchment-dim, #c5bba8);">Distraction-free session</div>
+          <div class="panel-hint">Click to open</div>
         </div>
-        <div id="focusPanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);">Start a distraction-free study session</div>
-        <div class="panel-hint">Click to open</div>
-      </div>
 
-      <div class="side-panel goal-panel" onclick="openWeeklyGoal()">
-        <div class="widget-hdr">
-          <h3>🎯 Weekly Goal</h3>
+        <div class="side-panel goal-panel" onclick="openWeeklyGoal()">
+          <div class="widget-hdr">
+            <h3>🎯 Weekly Goal</h3>
+          </div>
+          <div id="goalPanelBarWrap" style="background: rgba(255,255,255,0.08); border-radius: 8px; height: 6px; overflow: hidden; margin: 6px 0 4px;">
+            <div id="goalPanelBar" style="height: 100%; width: 0%; background: var(--sea, #2A9D8F); transition: width 0.3s;"></div>
+          </div>
+          <div id="goalPanelStatus" style="font-size: 0.75rem; color: var(--parchment-dim, #c5bba8);"></div>
+          <div class="panel-hint">Set weekly XP goal</div>
         </div>
-        <div id="goalPanelBarWrap" style="background: rgba(255,255,255,0.08); border-radius: 8px; height: 8px; overflow: hidden; margin: 8px 0 4px;">
-          <div id="goalPanelBar" style="height: 100%; width: 0%; background: var(--sea, #2A9D8F); transition: width 0.3s;"></div>
-        </div>
-        <div id="goalPanelStatus" style="font-size: 0.8rem; color: var(--parchment-dim, #c5bba8);"></div>
-        <div class="panel-hint">Click to set/track your weekly XP goal</div>
       </div>
     </div>
   </div>

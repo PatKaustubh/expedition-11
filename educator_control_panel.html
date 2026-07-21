@@ -151,6 +151,20 @@ body { padding-top: 30px; }
         <span id="pyqImportError" style="display:none; color:var(--coral); font-size:0.75rem; align-self:center;"></span>
         <button class="btn primary" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromTextarea()">Import to shared bank</button>
       </div>
+
+      <div style="border-top:1px solid var(--glass-border); margin:4px 0 16px; padding-top:16px;">
+        <div style="font-size:0.8rem; font-weight:600; margin-bottom:6px;">Or import from a URL</div>
+        <div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.78rem; margin-bottom:10px; line-height:1.5;">
+          Paste a link to a JSON file in the same format as above (a raw GitHub file, a Gist, your own hosted dataset, etc.). Only use sources you have the rights to redistribute — most official JEE/NEET papers are copyrighted by the exam authority, so double-check a dataset's license before importing it here.
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <input id="pyqImportUrl" type="url" class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;" placeholder="https://example.com/pyq-questions.json">
+          <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromUrl()" id="pyqUrlImportBtn">Fetch &amp; import</button>
+        </div>
+        <span id="pyqUrlImportError" style="display:none; color:var(--coral); font-size:0.75rem;"></span>
+        <span id="pyqUrlImportStatus" style="display:none; color:var(--parchment-dim); font-size:0.75rem;"></span>
+      </div>
+
       <div id="pyqAdminList"></div>
     </div>
   </div>
@@ -1028,19 +1042,9 @@ async function deletePyqEntry(id) {
   await loadPyqAdmin();
 }
 
-async function importPyqFromTextarea() {
-  const input = document.getElementById('pyqImportInput');
-  const errEl = document.getElementById('pyqImportError');
-  errEl.style.display = 'none';
-  let parsed;
-  try {
-    parsed = JSON.parse(input.value);
-    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array.');
-  } catch (e) {
-    errEl.textContent = 'Invalid JSON: ' + e.message;
-    errEl.style.display = 'inline';
-    return;
-  }
+// Shared shape-check for PYQ items, regardless of whether they came from the
+// textarea or a fetched URL. Returns { valid, errors }.
+function validatePyqItems(parsed) {
   const valid = [];
   const errors = [];
   parsed.forEach((item, i) => {
@@ -1059,6 +1063,23 @@ async function importPyqFromTextarea() {
       sol: item.sol || ''
     });
   });
+  return { valid, errors };
+}
+
+async function importPyqFromTextarea() {
+  const input = document.getElementById('pyqImportInput');
+  const errEl = document.getElementById('pyqImportError');
+  errEl.style.display = 'none';
+  let parsed;
+  try {
+    parsed = JSON.parse(input.value);
+    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array.');
+  } catch (e) {
+    errEl.textContent = 'Invalid JSON: ' + e.message;
+    errEl.style.display = 'inline';
+    return;
+  }
+  const { valid, errors } = validatePyqItems(parsed);
   if (errors.length) {
     errEl.textContent = errors.slice(0, 3).join(' ');
     errEl.style.display = 'inline';
@@ -1073,7 +1094,72 @@ async function importPyqFromTextarea() {
   input.value = '';
   await loadPyqAdmin();
 }
+
+// Fetch a JSON array of PYQ-shaped items from an educator-supplied URL and
+// import it the same way as a pasted batch. We deliberately don't ship any
+// bundled/hardcoded question dataset here — the educator points at a source
+// they've vetted for licensing, and this just does the fetch + validate +
+// import plumbing for them.
+async function importPyqFromUrl() {
+  const urlInput = document.getElementById('pyqImportUrl');
+  const errEl = document.getElementById('pyqUrlImportError');
+  const statusEl = document.getElementById('pyqUrlImportStatus');
+  const btn = document.getElementById('pyqUrlImportBtn');
+  errEl.style.display = 'none';
+  statusEl.style.display = 'none';
+
+  const url = urlInput.value.trim();
+  if (!url) {
+    errEl.textContent = 'Enter a URL first.';
+    errEl.style.display = 'inline';
+    return;
+  }
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+    if (!/^https?:$/.test(parsedUrl.protocol)) throw new Error('URL must start with http:// or https://');
+  } catch (e) {
+    errEl.textContent = 'Invalid URL: ' + e.message;
+    errEl.style.display = 'inline';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Fetching...';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+    const parsed = await res.json();
+    if (!Array.isArray(parsed)) throw new Error('Expected the URL to return a JSON array.');
+
+    const { valid, errors } = validatePyqItems(parsed);
+    if (!valid.length) {
+      errEl.textContent = errors.length
+        ? 'No valid items found. ' + errors.slice(0, 3).join(' ')
+        : 'No items found in that file.';
+      errEl.style.display = 'inline';
+      return;
+    }
+    if (!window.Admin_DB) throw new Error('Database not connected.');
+    const result = await window.Admin_DB.importPyqBatch(valid);
+    if (!result.ok) throw new Error(result.error || 'unknown error');
+
+    statusEl.textContent = `Imported ${valid.length} question${valid.length === 1 ? '' : 's'}`
+      + (errors.length ? ` (${errors.length} skipped — wrong shape).` : '.');
+    statusEl.style.display = 'inline';
+    urlInput.value = '';
+    await loadPyqAdmin();
+  } catch (e) {
+    errEl.textContent = 'Import failed: ' + e.message + ' (the source may not allow cross-origin fetches — try downloading the file and pasting its contents into the box above instead).';
+    errEl.style.display = 'inline';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Fetch & import';
+  }
+}
+
 window.importPyqFromTextarea = importPyqFromTextarea;
+window.importPyqFromUrl = importPyqFromUrl;
 window.deletePyqEntry = deletePyqEntry;
 window.loadPyqAdmin = loadPyqAdmin;
 
