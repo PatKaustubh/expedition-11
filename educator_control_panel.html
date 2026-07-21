@@ -130,6 +130,7 @@ body { padding-top: 30px; }
       <button class="tab-btn" id="tabResolved" onclick="switchTab('Resolved')">Resolved Archives</button>
       <button class="tab-btn" id="tabLeaderboard" onclick="switchTab('Leaderboard')">Leaderboard</button>
       <button class="tab-btn" id="tabRemoved" onclick="switchTab('Removed')">Removed Candidates</button>
+      <button class="tab-btn" id="tabPyq" onclick="switchTab('Pyq')">PYQ Bank</button>
     </div>
 
     <div class="report-list" id="reportCardsList">
@@ -140,6 +141,17 @@ body { padding-top: 30px; }
     </div>
     <div class="report-list" id="removedList" style="display:none;">
       <!-- Removed candidates + discussion threads rendered here -->
+    </div>
+    <div class="report-list" id="pyqPanelWrap" style="display:none; flex-direction:column;">
+      <div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.8rem; margin-bottom:14px;">
+        Paste questions you have legitimate rights to use (official papers you've sourced, your own material, etc.) as a JSON array. Each item needs: <code>year</code>, <code>exam</code>, <code>subject</code> (math/physics/chemistry), <code>chapter</code>, <code>q</code>, <code>opts</code> (array of 4), <code>ans</code> (0-indexed correct option), optional <code>sol</code>.
+      </div>
+      <textarea id="pyqImportInput" class="reply-textarea" style="min-height:120px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;" placeholder='[{"year":2023,"exam":"JEE Main","subject":"math","chapter":"Sets","q":"...","opts":["a","b","c","d"],"ans":0,"sol":"..."}]'></textarea>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin:10px 0 18px;">
+        <span id="pyqImportError" style="display:none; color:var(--coral); font-size:0.75rem; align-self:center;"></span>
+        <button class="btn primary" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromTextarea()">Import to shared bank</button>
+      </div>
+      <div id="pyqAdminList"></div>
     </div>
   </div>
 </div>
@@ -441,31 +453,36 @@ window.Admin_DB = {
 
   // ── Removed-candidates review & discussion ──────────────────────────────
   async getRemovedCandidatesOnce() {
-    if (!dbReady) return [];
+    if (!dbReady) return { ok: false, error: 'Not connected to the shared database.', list: [] };
     try {
       const snap = await db.ref('removedCandidates').once('value');
       const val = snap.val() || {};
-      return Object.keys(val).map(uid => ({ uid, ...val[uid] }));
+      setAdminBackendStatus('live');
+      return { ok: true, list: Object.keys(val).map(uid => ({ uid, ...val[uid] })) };
     } catch (e) {
       console.error("[Admin] Failed to fetch removed candidates.", e);
-      return [];
+      setAdminBackendStatus('local', 'Removed-candidates fetch failed: ' + e.message);
+      return { ok: false, error: e.message, list: [] };
     }
   },
 
   listenDiscussion(uid, callback) {
-    if (!dbReady) { callback([]); return () => {}; }
+    if (!dbReady) { callback({ ok: false, error: 'Not connected.', messages: [] }); return () => {}; }
     const ref = db.ref('removalDiscussion/' + uid + '/messages');
     const handler = (snapshot) => {
       const val = snapshot.val() || {};
-      callback(Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)));
+      callback({ ok: true, messages: Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)) });
     };
-    const errHandler = () => callback([]);
+    const errHandler = (e) => {
+      console.error("[Admin] Discussion listener failed (likely a rules/permission issue).", e);
+      callback({ ok: false, error: e.message, messages: [] });
+    };
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
   },
 
   async sendDiscussionMessage(uid, text) {
-    if (!dbReady || !text || !text.trim()) return { ok: false };
+    if (!dbReady || !text || !text.trim()) return { ok: false, error: 'Not connected.' };
     try {
       const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
       await db.ref('removalDiscussion/' + uid + '/messages/' + id).set({
@@ -473,6 +490,7 @@ window.Admin_DB = {
       });
       return { ok: true };
     } catch (e) {
+      console.error("[Admin] Failed to send discussion reply (likely a rules/permission issue).", e);
       return { ok: false, error: e.message };
     }
   },
@@ -483,6 +501,50 @@ window.Admin_DB = {
     if (!dbReady) return { ok: false };
     try {
       await db.ref('removedCandidates/' + uid).remove();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  },
+
+  // ── PYQ (Previous Year Questions) bank ──────────────────────────────────
+  // Educator-sourced content only — we don't auto-populate this from
+  // external datasets due to licensing/copyright uncertainty around
+  // redistributing exam questions. The educator pastes questions they have
+  // legitimate rights to use (official papers, their own textbook, etc.)
+  // and we sync them to every student via Firebase.
+  async getPyqOnce() {
+    if (!dbReady) return { ok: false, error: 'Not connected.', list: [] };
+    try {
+      const snap = await db.ref('pyqBank').once('value');
+      const val = snap.val() || {};
+      return { ok: true, list: Object.keys(val).map(id => ({ id, ...val[id] })) };
+    } catch (e) {
+      console.error('[Admin] Failed to fetch PYQ bank.', e);
+      return { ok: false, error: e.message, list: [] };
+    }
+  },
+
+  async importPyqBatch(items) {
+    if (!dbReady || !items || !items.length) return { ok: false, imported: 0 };
+    try {
+      const updates = {};
+      items.forEach(item => {
+        const id = 'pyq_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        updates[id] = item;
+      });
+      await db.ref('pyqBank').update(updates);
+      return { ok: true, imported: items.length };
+    } catch (e) {
+      console.error('[Admin] PYQ import failed.', e);
+      return { ok: false, imported: 0, error: e.message };
+    }
+  },
+
+  async deletePyq(id) {
+    if (!dbReady) return { ok: false };
+    try {
+      await db.ref('pyqBank/' + id).remove();
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e.message };
@@ -543,14 +605,17 @@ function switchTab(tab) {
   document.getElementById('tabResolved').classList.toggle('active', tab === 'Resolved');
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'Leaderboard');
   document.getElementById('tabRemoved').classList.toggle('active', tab === 'Removed');
+  document.getElementById('tabPyq').classList.toggle('active', tab === 'Pyq');
 
   const reportsList = document.getElementById('reportCardsList');
   const lbList = document.getElementById('leaderboardList');
   const removedList = document.getElementById('removedList');
+  const pyqList = document.getElementById('pyqPanelWrap');
 
   reportsList.style.display = 'none';
   lbList.style.display = 'none';
   removedList.style.display = 'none';
+  pyqList.style.display = 'none';
 
   if (tab === 'Leaderboard') {
     lbList.style.display = 'flex';
@@ -558,6 +623,9 @@ function switchTab(tab) {
   } else if (tab === 'Removed') {
     removedList.style.display = 'flex';
     loadRemovedCandidates();
+  } else if (tab === 'Pyq') {
+    pyqList.style.display = 'flex';
+    loadPyqAdmin();
   } else {
     reportsList.style.display = 'flex';
     renderReports();
@@ -796,6 +864,7 @@ function closeClearLbModal() {
 
 // ── Removed Candidates tab ──────────────────────────────────────────────
 let currentRemoved = [];
+let currentRemovedError = null;
 let openDiscussionUid = null;
 let discussionUnsub = null;
 
@@ -803,7 +872,10 @@ async function loadRemovedCandidates() {
   const container = document.getElementById('removedList');
   if (!container) return;
   container.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">Loading...</div>`;
-  currentRemoved = window.Admin_DB ? await window.Admin_DB.getRemovedCandidatesOnce() : [];
+  if (!window.Admin_DB) { currentRemoved = []; currentRemovedError = 'Admin_DB not initialized.'; renderRemovedCandidates(); return; }
+  const result = await window.Admin_DB.getRemovedCandidatesOnce();
+  currentRemoved = result.list || [];
+  currentRemovedError = result.ok ? null : result.error;
   renderRemovedCandidates();
 }
 window.loadRemovedCandidates = loadRemovedCandidates;
@@ -814,6 +886,10 @@ function renderRemovedCandidates() {
 
   if (!dbReady) {
     container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">Not connected</p><p style="font-size:0.9rem; opacity:0.7;">This requires a live connection to the shared database.</p></div>`;
+    return;
+  }
+  if (currentRemovedError) {
+    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--coral);"><p style="font-size:1.2rem; margin-bottom:5px;">Couldn't load removed candidates</p><p style="font-size:0.85rem; opacity:0.85; font-family:'JetBrains Mono',monospace;">${currentRemovedError}</p><p style="font-size:0.85rem; margin-top:10px; opacity:0.7;">This is almost always a Firebase Rules issue — the "removedCandidates" and "removalDiscussion" paths need read/write rules added, same as "leaderboard" and "reports" already have.</p></div>`;
     return;
   }
   if (!currentRemoved.length) {
@@ -862,9 +938,14 @@ function openDiscussionThread(uid) {
       <textarea id="discInput-${uid}" class="reply-textarea" style="min-height:50px;" placeholder="Reply with clarification..."></textarea>
       <button class="btn primary" style="align-self:flex-end; padding:10px 16px; font-size:0.75rem;" onclick="sendDiscussionReply('${uid}')">Send</button>
     </div>`;
-  discussionUnsub = window.Admin_DB.listenDiscussion(uid, (messages) => {
+  discussionUnsub = window.Admin_DB.listenDiscussion(uid, (result) => {
     const msgsEl = document.getElementById('discMsgs-' + uid);
     if (!msgsEl) return;
+    if (!result.ok) {
+      msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--coral);">Couldn't load messages: ${result.error || 'permission denied'}. Check Firebase Rules for "removalDiscussion".</div>`;
+      return;
+    }
+    const messages = result.messages;
     if (!messages.length) {
       msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet.</div>`;
       return;
@@ -883,7 +964,8 @@ async function sendDiscussionReply(uid) {
   const input = document.getElementById('discInput-' + uid);
   const text = input.value.trim();
   if (!text || !window.Admin_DB) return;
-  await window.Admin_DB.sendDiscussionMessage(uid, text);
+  const result = await window.Admin_DB.sendDiscussionMessage(uid, text);
+  if (!result.ok) { alert('Failed to send reply: ' + (result.error || 'unknown error')); return; }
   input.value = '';
 }
 
@@ -901,6 +983,99 @@ async function restoreCandidate(uid) {
 window.toggleDiscussion = toggleDiscussion;
 window.sendDiscussionReply = sendDiscussionReply;
 window.restoreCandidate = restoreCandidate;
+
+// ── PYQ Bank tab ─────────────────────────────────────────────────────────
+let currentPyq = [];
+
+async function loadPyqAdmin() {
+  const wrap = document.getElementById('pyqAdminList');
+  wrap.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--parchment-dim);">Loading...</div>`;
+  if (!window.Admin_DB) { wrap.innerHTML = ''; return; }
+  const result = await window.Admin_DB.getPyqOnce();
+  if (!result.ok) {
+    wrap.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--coral);"><p>Couldn't load PYQ bank: ${result.error}</p><p style="font-size:0.8rem; opacity:0.8; margin-top:6px;">Add a Firebase Rule for "pyqBank" (same pattern as "leaderboard").</p></div>`;
+    return;
+  }
+  currentPyq = result.list;
+  renderPyqAdminList();
+}
+
+function renderPyqAdminList() {
+  const wrap = document.getElementById('pyqAdminList');
+  if (!currentPyq.length) {
+    wrap.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">No PYQs imported yet.</div>`;
+    return;
+  }
+  const sorted = [...currentPyq].sort((a, b) => (b.year || 0) - (a.year || 0));
+  wrap.innerHTML = sorted.map(q => `
+    <div class="report-card">
+      <div class="report-meta">
+        <span class="meta-badge">${q.exam || 'PYQ'} ${q.year || ''}</span>
+        <span class="report-time">${q.subject || ''} · ${q.chapter || ''}</span>
+      </div>
+      <div class="report-comment">${(q.q || '').slice(0, 160)}${(q.q || '').length > 160 ? '…' : ''}</div>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button class="btn ghost" style="padding:6px 12px; font-size:0.7rem;" onclick="deletePyqEntry('${q.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function deletePyqEntry(id) {
+  if (!window.Admin_DB) return;
+  const result = await window.Admin_DB.deletePyq(id);
+  if (!result.ok) { alert('Failed to delete: ' + (result.error || 'unknown error')); return; }
+  await loadPyqAdmin();
+}
+
+async function importPyqFromTextarea() {
+  const input = document.getElementById('pyqImportInput');
+  const errEl = document.getElementById('pyqImportError');
+  errEl.style.display = 'none';
+  let parsed;
+  try {
+    parsed = JSON.parse(input.value);
+    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array.');
+  } catch (e) {
+    errEl.textContent = 'Invalid JSON: ' + e.message;
+    errEl.style.display = 'inline';
+    return;
+  }
+  const valid = [];
+  const errors = [];
+  parsed.forEach((item, i) => {
+    if (!item.q || !Array.isArray(item.opts) || item.opts.length < 2 || typeof item.ans !== 'number') {
+      errors.push(`Item ${i + 1} is missing required fields (q, opts[], ans).`);
+      return;
+    }
+    valid.push({
+      year: item.year || null,
+      exam: item.exam || 'PYQ',
+      subject: item.subject || 'math',
+      chapter: item.chapter || '',
+      q: item.q,
+      opts: item.opts,
+      ans: item.ans,
+      sol: item.sol || ''
+    });
+  });
+  if (errors.length) {
+    errEl.textContent = errors.slice(0, 3).join(' ');
+    errEl.style.display = 'inline';
+    if (!valid.length) return;
+  }
+  if (!window.Admin_DB) return;
+  const result = await window.Admin_DB.importPyqBatch(valid);
+  if (!result.ok) {
+    alert('Import failed: ' + (result.error || 'unknown error'));
+    return;
+  }
+  input.value = '';
+  await loadPyqAdmin();
+}
+window.importPyqFromTextarea = importPyqFromTextarea;
+window.deletePyqEntry = deletePyqEntry;
+window.loadPyqAdmin = loadPyqAdmin;
 
 async function confirmClearLbEntries() {
   const uids = pendingLbRemoval;

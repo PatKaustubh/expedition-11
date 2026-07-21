@@ -52,6 +52,11 @@ body { padding-top: 30px; }
 .brand-text h1 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0; letter-spacing: 0.5px; color: var(--brass-light); }
 .brand-text p { margin: 0; font-size: 0.75rem; color: var(--parchment-dim); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
 .stats { display: flex; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; align-items: center; }
+.badges-row { display: flex; gap: 4px; cursor: pointer; min-height: 22px; align-items: center; }
+.badge-chip { font-size: 1.2rem; line-height: 1; filter: drop-shadow(0 0 4px rgba(232,195,130,0.4)); }
+.badge-inline { display: inline-flex; gap: 2px; margin-left: 6px; font-size: 0.9rem; vertical-align: middle; }
+.exam-countdown-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line, rgba(201,156,81,0.3)); cursor: pointer; white-space: nowrap; }
+.exam-countdown-chip:hover { border-color: var(--brass, #c99c51); }
 .stat { text-align: center; }
 .stat .num { font-size: 1.2rem; font-weight: 700; color: var(--brass-light); display: block; }
 .stat .lbl { font-size: 0.65rem; letter-spacing: 1px; color: var(--parchment-dim); text-transform: uppercase; }
@@ -75,6 +80,16 @@ body { padding-top: 30px; }
 
 /* SUBJECT & CHAPTER CARDS */
 .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.pyq-banner { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; border-radius: 16px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: linear-gradient(135deg, rgba(201,156,81,0.1), rgba(42,157,143,0.08)); cursor: pointer; transition: border-color 0.2s, transform 0.2s; flex-wrap: wrap; }
+.pyq-banner:hover { border-color: var(--brass, #c99c51); transform: translateY(-2px); }
+.pyq-banner-left { display: flex; align-items: center; gap: 16px; }
+.pyq-banner-icon { font-size: 2rem; }
+.pyq-banner-left h3 { margin: 0 0 2px; font-family: 'Playfair Display', serif; font-size: 1.15rem; }
+.pyq-banner-left p { margin: 0; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8); }
+.pyq-banner-cta { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--brass, #c99c51); white-space: nowrap; }
+.pyq-subject-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pyq-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: transparent; color: var(--parchment-dim, #c5bba8); cursor: pointer; transition: all 0.15s; }
+.pyq-chip.active { background: rgba(42,157,143,0.25); border-color: var(--sea, #2A9D8F); color: #fff; }
 .card-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px 20px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); text-align: center; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
 .card-item:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--brass-light) inset; background: rgba(255,255,255,0.03); }
 .card-item .ico { font-size: 3.2rem; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); margin-bottom: 5px; }
@@ -449,6 +464,8 @@ body { padding-top: 30px; }
     <div class="stats">
       <div class="stat"><span class="num" id="xpVal">0</span><span class="lbl">XP</span></div>
       <div class="stat"><span class="num" id="streakVal">0</span><span class="lbl">Streak</span></div>
+      <div id="badgesRow" class="badges-row" onclick="openBadgesPopup()" title="View badges"></div>
+      <div id="examCountdownChip" class="exam-countdown-chip" onclick="openExamCountdownSettings()" title="Click to set/edit your exam date"></div>
       <button class="back-btn" style="font-size:0.8rem;padding:8px 14px;" onclick="openResetModal()" title="Reset all progress">↺ Reset</button>
     </div>
   </div>
@@ -460,6 +477,17 @@ body { padding-top: 30px; }
         <p>Pick a subject to begin your expedition.</p>
       </div>
       <div class="grid-container" id="subjectGrid"></div>
+
+      <div class="pyq-banner" onclick="openPyqBrowser()">
+        <div class="pyq-banner-left">
+          <div class="pyq-banner-icon">📚</div>
+          <div>
+            <h3>Previous Year Questions</h3>
+            <p id="pyqPanelStatus">Browse by year &amp; subject</p>
+          </div>
+        </div>
+        <div class="pyq-banner-cta">Browse PYQs →</div>
+      </div>
     </div>
 
     <div class="side-panels-wrap">
@@ -481,6 +509,49 @@ body { padding-top: 30px; }
         </div>
         <div id="studentResolutionsList" style="max-height: 160px; overflow-y: auto;"></div>
         <div class="panel-hint">Click to open all resolutions</div>
+      </div>
+
+      <div class="side-panel daily-panel" onclick="openDailyChallenge()">
+        <div class="widget-hdr">
+          <h3>🗓️ Daily Challenge</h3>
+        </div>
+        <div id="dailyPanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);"></div>
+        <div class="panel-hint" id="dailyPanelHint">Click to attempt today's challenge</div>
+      </div>
+
+      <div class="side-panel mistake-panel" onclick="openMistakeBank()">
+        <div class="widget-hdr">
+          <h3>🎯 Mistake Bank</h3>
+        </div>
+        <div id="mistakePanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);"></div>
+        <div class="panel-hint">Click to revise questions you got wrong</div>
+      </div>
+
+      <div class="side-panel streak-panel" onclick="openActivityPopup()">
+        <div class="widget-hdr">
+          <h3>📊 Activity</h3>
+        </div>
+        <div id="activityPanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);"></div>
+        <div class="panel-hint">Click to see your practice streak</div>
+      </div>
+
+      <div class="side-panel focus-panel" onclick="openFocusTimer()">
+        <div class="widget-hdr">
+          <h3>⏱️ Focus Timer</h3>
+        </div>
+        <div id="focusPanelStatus" style="padding: 6px 2px; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8);">Start a distraction-free study session</div>
+        <div class="panel-hint">Click to open</div>
+      </div>
+
+      <div class="side-panel goal-panel" onclick="openWeeklyGoal()">
+        <div class="widget-hdr">
+          <h3>🎯 Weekly Goal</h3>
+        </div>
+        <div id="goalPanelBarWrap" style="background: rgba(255,255,255,0.08); border-radius: 8px; height: 8px; overflow: hidden; margin: 8px 0 4px;">
+          <div id="goalPanelBar" style="height: 100%; width: 0%; background: var(--sea, #2A9D8F); transition: width 0.3s;"></div>
+        </div>
+        <div id="goalPanelStatus" style="font-size: 0.8rem; color: var(--parchment-dim, #c5bba8);"></div>
+        <div class="panel-hint">Click to set/track your weekly XP goal</div>
       </div>
     </div>
   </div>
@@ -505,6 +576,115 @@ body { padding-top: 30px; }
         <button class="popup-close" onclick="closeResolutionsPopup()">✕ Close</button>
       </div>
       <div id="resolutionsPopupList" class="popup-list"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="badgesPopup" onclick="if(event.target===this) closeBadgesPopup()">
+    <div class="modal-box list-popup">
+      <div class="widget-hdr">
+        <h3>🎖️ Badges</h3>
+        <button class="popup-close" onclick="closeBadgesPopup()">✕ Close</button>
+      </div>
+      <div id="badgesPopupList" class="popup-list"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="dailyChallengeModal">
+    <div class="modal-box" style="max-width: 560px; text-align: left;">
+      <div id="dailyChallengeBody"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mistakeBankModal">
+    <div class="modal-box" style="max-width: 560px; text-align: left;">
+      <div id="mistakeBankBody"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="activityPopup" onclick="if(event.target===this) closeActivityPopup()">
+    <div class="modal-box" style="max-width: 620px; text-align: left;">
+      <div class="widget-hdr">
+        <h3>📊 Activity Streak</h3>
+        <button class="popup-close" onclick="closeActivityPopup()">✕ Close</button>
+      </div>
+      <div id="activitySummaryLine" style="font-size: 0.9rem; color: var(--parchment-dim,#c5bba8); margin-bottom: 14px;"></div>
+      <div id="activityHeatmap" style="display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="examCountdownModal">
+    <div class="modal-box" style="max-width: 380px;">
+      <h3>🎯 Exam Countdown</h3>
+      <p>Set the date of your target exam — the countdown chip in the header will track it for you.</p>
+      <input type="date" id="examDateInput" class="intro-input" style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:center; gap:12px;">
+        <button class="btn ghost" onclick="closeExamCountdownSettings()">Cancel</button>
+        <button class="btn primary" onclick="saveExamCountdown()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="focusTimerModal">
+    <div class="modal-box" style="max-width: 380px; text-align: center;">
+      <h3>⏱️ Focus Timer</h3>
+      <p id="focusTimerSubtitle">A quiet countdown for a focused study block — no ads, no distractions.</p>
+      <div id="focusTimerDisplay" style="font-family:'JetBrains Mono',monospace; font-size: 2.6rem; font-weight: 700; color: var(--brass-light, #e8c382); margin: 10px 0 18px;">25:00</div>
+      <div id="focusTimerSetup" style="display:flex; gap:8px; justify-content:center; margin-bottom:18px;">
+        <button class="btn ghost" style="padding:8px 14px; font-size:0.8rem;" onclick="setFocusDuration(15)">15m</button>
+        <button class="btn ghost" style="padding:8px 14px; font-size:0.8rem;" onclick="setFocusDuration(25)">25m</button>
+        <button class="btn ghost" style="padding:8px 14px; font-size:0.8rem;" onclick="setFocusDuration(45)">45m</button>
+      </div>
+      <div style="display:flex; justify-content:center; gap:12px;">
+        <button class="btn ghost" onclick="closeFocusTimer()">Close</button>
+        <button class="btn primary" id="focusTimerToggleBtn" onclick="toggleFocusTimer()">Start</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="weeklyGoalModal">
+    <div class="modal-box" style="max-width: 420px; text-align: left;">
+      <h3 style="text-align:center;">🎯 Weekly XP Goal</h3>
+      <p style="text-align:center;">Set a target and track how much of it you've earned this week (resets every Monday).</p>
+      <label style="display:block; font-size:0.8rem; color: var(--parchment-dim,#c5bba8); margin-bottom:6px;">Weekly XP target</label>
+      <input type="number" id="weeklyGoalInput" class="intro-input" min="10" step="10" placeholder="e.g. 500" style="margin-bottom:14px;">
+      <div id="weeklyGoalProgressWrap" style="background: rgba(255,255,255,0.08); border-radius: 10px; height: 14px; overflow: hidden; margin-bottom:8px;">
+        <div id="weeklyGoalProgressBar" style="height:100%; width:0%; background: var(--sea,#2A9D8F); transition: width 0.3s;"></div>
+      </div>
+      <div id="weeklyGoalDetail" style="font-size:0.85rem; color: var(--parchment-dim,#c5bba8); margin-bottom:18px;"></div>
+      <div style="display:flex; justify-content:center; gap:12px;">
+        <button class="btn ghost" onclick="closeWeeklyGoal()">Close</button>
+        <button class="btn primary" onclick="saveWeeklyGoal()">Save Goal</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="pyqBrowserModal" onclick="if(event.target===this) closePyqBrowser()">
+    <div class="modal-box list-popup" style="max-width: 560px;">
+      <div class="widget-hdr">
+        <h3>📚 Previous Year Questions</h3>
+        <button class="popup-close" onclick="closePyqBrowser()">✕ Close</button>
+      </div>
+      <div id="pyqPlaceholderNotice" style="display:none; background: rgba(231,111,81,0.1); border: 1px solid rgba(231,111,81,0.3); border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; color: var(--parchment-dim,#c5bba8); margin-bottom: 12px;">
+        ⚠️ These are sample placeholder questions, not real exam questions — see <code>pyqbank.js</code> to add genuine past-year questions.
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
+        <div id="pyqSubjectFilter" class="pyq-subject-chips">
+          <button type="button" class="pyq-chip active" data-subj="math" onclick="togglePyqSubject('math')">Math</button>
+          <button type="button" class="pyq-chip active" data-subj="physics" onclick="togglePyqSubject('physics')">Physics</button>
+          <button type="button" class="pyq-chip active" data-subj="chemistry" onclick="togglePyqSubject('chemistry')">Chemistry</button>
+        </div>
+        <select id="pyqYearFilter" onchange="renderPyqList()" style="background:#0b1320; color:#fff; border:1px solid var(--line,rgba(201,156,81,0.3)); border-radius:8px; padding:8px 10px; font-size:0.8rem;">
+          <option value="">All years</option>
+        </select>
+        <button class="btn primary" style="padding:8px 16px; font-size:0.8rem; align-self:auto; margin-left:auto;" onclick="startPyqQuiz()">Practice filtered set →</button>
+      </div>
+      <div id="pyqPopupList" class="popup-list"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="pyqQuizModal">
+    <div class="modal-box" style="max-width: 560px; text-align: left;">
+      <div id="pyqQuizBody"></div>
     </div>
   </div>
   </div>
@@ -544,6 +724,7 @@ body { padding-top: 30px; }
         <div class="hud-chip prog">🎯 <span id="hudProg">1 / 20</span></div>
         <div class="hud-chip lives" id="hudLivesBox">❤️ <span id="hudLives">2</span></div>
         <div class="hud-chip combo" id="hudComboBox">🔥 <span id="hudCombo">x1</span></div>
+        <button class="hud-chip" id="lifelineBtn" onclick="useLifeline()" style="cursor:pointer; border:none; font-family:inherit;" title="Remove two wrong answers">🪄 50-50 <span id="lifelineCount">(1)</span></button>
         <div class="hud-chip exam-timer" id="examTimerDisplay" style="display:none;">03:00:00</div>
         <div class="hud-chip" id="musicToggleBtn" onclick="AudioSys.toggleMute()" style="cursor:pointer;user-select:none;" title="Toggle background music">🎵 <span id="musicToggleLabel">On</span></div>
       </div>
@@ -706,6 +887,7 @@ function getQuestionsForLevel(subject, chapter, level) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="pyqbank.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 // ============================================================================
@@ -802,7 +984,7 @@ window.DB_Engine = {
     if (state.isRemoved) return;
     const uid = getPlayerUid();
     const key = safeKeyPart(uid);
-    const payload = { uid, username: name, xp, timestamp: Date.now() };
+    const payload = { uid, username: name, xp, badges: (typeof computeBadges === 'function' ? computeBadges() : []), timestamp: Date.now() };
     if (!dbReady) {
       queueOfflineWrite({ type: 'score', key, payload });
       return;
@@ -830,6 +1012,7 @@ window.DB_Engine = {
       let leaders = Object.values(val).filter(d => d && d.username).map(d => ({
         username: d.username === state.explorerName ? d.username + " (You)" : d.username,
         xp: d.xp || 0,
+        badges: d.badges || [],
         isUser: d.username === state.explorerName
       }));
       if (!leaders.some(l => l.isUser)) {
@@ -907,7 +1090,7 @@ window.DB_Engine = {
     if (!dbReady) { callback(null); return () => {}; }
     const ref = db.ref('removedCandidates/' + safeKeyPart(uid));
     const handler = (snapshot) => callback(snapshot.val() || null);
-    const errHandler = () => callback(null);
+    const errHandler = (e) => { console.error('[Explorer] Removal-status listener failed (check Firebase Rules for "removedCandidates"):', e); callback(null); };
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
   },
@@ -920,7 +1103,7 @@ window.DB_Engine = {
       const val = snapshot.val() || {};
       callback(Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)));
     };
-    const errHandler = () => callback([]);
+    const errHandler = (e) => { console.error('[Explorer] Discussion listener failed (check Firebase Rules for "removalDiscussion"):', e); callback([]); };
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
   },
@@ -937,6 +1120,19 @@ window.DB_Engine = {
     } catch (e) {
       return { ok: false, error: e.message };
     }
+  },
+
+  // ── Shared PYQ bank (educator-curated, synced live to every student) ────
+  listenPyqBank(callback) {
+    if (!dbReady) { callback([]); return () => {}; }
+    const ref = db.ref('pyqBank');
+    const handler = (snapshot) => {
+      const val = snapshot.val() || {};
+      callback(Object.keys(val).map(id => ({ id, ...val[id] })));
+    };
+    const errHandler = (e) => { console.error('[Explorer] PYQ bank listener failed (check Firebase Rules for "pyqBank"):', e); callback([]); };
+    ref.on('value', handler, errHandler);
+    return () => ref.off('value', handler);
   }
 };
 
@@ -1095,7 +1291,9 @@ let state = {
   reviveCount: 0,
   combo: 0,
   isRemoved: false,
-  removalInfo: null
+  removalInfo: null,
+  lifelinesLeft: 1,
+  eliminatedOpts: []
 };
 let timerInt = null;
 let activeReports = []; 
@@ -1352,7 +1550,7 @@ function renderLeaderboard() {
     liveLeaderboard.forEach((p, idx) => {
       let row = document.createElement('div');
       row.className = `widget-row ${p.isUser ? 'user-row' : ''}`;
-      row.innerHTML = `<div class="rank-user"><span class="rank-num">#${idx + 1}</span><span>${p.username}</span></div><span class="score">${p.xp} XP</span>`;
+      row.innerHTML = `<div class="rank-user"><span class="rank-num">#${idx + 1}</span><span>${p.username}</span>${badgeIconsHtml(p.badges)}</div><span class="score">${p.xp} XP</span>`;
       target.appendChild(row);
     });
   };
@@ -1837,9 +2035,791 @@ window.addEventListener('popstate', function (e) {
   _restoringHistory = false;
 });
 
+/* ================= BADGES ================= */
+const BADGES = {
+  first_blood:  { icon: '🌱', label: 'First Steps',    desc: 'Earn your first XP.' },
+  century_club: { icon: '💯', label: 'Century Club',    desc: 'Reach 100 XP.' },
+  xp_master:    { icon: '🏆', label: 'XP Master',       desc: 'Reach 500 XP.' },
+  on_fire:      { icon: '🔥', label: 'On Fire',         desc: 'Hit a 5-answer correct streak.' },
+  unstoppable:  { icon: '⚡', label: 'Unstoppable',     desc: 'Hit a 10-answer correct streak.' },
+  perfectionist:{ icon: '⭐', label: 'Perfectionist',   desc: 'Earn 3 stars on a level.' },
+  polymath:     { icon: '🧭', label: 'Polymath',        desc: 'Start every subject.' },
+  daily_devotee:{ icon: '📅', label: 'Daily Devotee',   desc: '3-day daily challenge streak.' }
+};
+
+function computeBadges() {
+  const earned = new Set();
+  if (state.xp > 0) earned.add('first_blood');
+  if (state.xp >= 100) earned.add('century_club');
+  if (state.xp >= 500) earned.add('xp_master');
+  if (state.streak >= 5) earned.add('on_fire');
+  if (state.streak >= 10) earned.add('unstoppable');
+  Object.values(state.progress || {}).forEach(p => {
+    if (p && p.stars && Object.values(p.stars).some(s => s >= 3)) earned.add('perfectionist');
+  });
+  if (DATA.every(sub => sub.chapters.some(ch => state.progress[ch.id] && state.progress[ch.id].maxUnlocked > 1))) {
+    earned.add('polymath');
+  }
+  const dailyStreak = getDailyChallengeState().streak || 0;
+  if (dailyStreak >= 3) earned.add('daily_devotee');
+  return Array.from(earned);
+}
+
+function renderBadgesRow() {
+  const el = document.getElementById('badgesRow');
+  if (!el) return;
+  const earned = computeBadges();
+  state.badges = earned;
+  if (!earned.length) { el.innerHTML = ''; return; }
+  el.innerHTML = earned.map(id => {
+    const b = BADGES[id];
+    if (!b) return '';
+    return `<span class="badge-chip" title="${b.label}: ${b.desc}">${b.icon}</span>`;
+  }).join('');
+}
+
+function badgeIconsHtml(ids) {
+  if (!ids || !ids.length) return '';
+  return `<span class="badge-inline">${ids.map(id => BADGES[id] ? BADGES[id].icon : '').join('')}</span>`;
+}
+
+/* ================= DAILY CHALLENGE ================= */
+const DAILY_STORAGE_KEY = 'daily_challenge_state_v1';
+const DAILY_QUESTION_COUNT = 5;
+const DAILY_XP_PER_CORRECT = 8;
+const DAILY_STREAK_BONUS = 5;
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// Simple deterministic string hash -> seed for mulberry32, so every candidate
+// gets the SAME 5 questions on a given date without needing a server call.
+function hashSeed(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(arr, rand) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getDailyChallengeState() {
+  try { return JSON.parse(localStorage.getItem(DAILY_STORAGE_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function setDailyChallengeState(s) {
+  try { localStorage.setItem(DAILY_STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
+}
+
+// Picks a spread of chapters (seeded by today's date, so re-opening the modal
+// the same day is stable) and pulls real questions for them through the same
+// Factory the main game uses. NOTE: Factory's generators use Math.random()
+// internally, so — unlike the chapter selection — the exact question text
+// isn't guaranteed identical across different students/devices, just the
+// once-a-day gating and streak/bonus-XP mechanics are.
+async function buildDailyQuestionSet() {
+  const allChapters = [];
+  DATA.forEach(sub => {
+    if (sub.id === 'mixed') return;
+    sub.chapters.forEach(ch => allChapters.push({ subj: sub, ch }));
+  });
+  if (!allChapters.length) return [];
+  const rand = hashSeed('daily-' + todayStr());
+  const picks = seededShuffle(allChapters, rand).slice(0, DAILY_QUESTION_COUNT);
+  const questions = [];
+  for (const p of picks) {
+    const level = 1 + Math.floor(rand() * 5); // keep it to the "basic" tier
+    try {
+      const qs = await Factory.generate(p.subj.id, p.ch.id, level, 1);
+      if (qs && qs[0]) questions.push({ ...qs[0], __subject: p.subj.name, __chapter: p.ch.name });
+    } catch (e) { console.warn('[Daily Challenge] question fetch failed for', p.ch.id, e); }
+  }
+  return questions;
+}
+
+let dailyRun = null; // { questions, idx, correct, answered }
+
+function renderDailyPanel() {
+  const statusEl = document.getElementById('dailyPanelStatus');
+  const hintEl = document.getElementById('dailyPanelHint');
+  if (!statusEl) return;
+  const s = getDailyChallengeState();
+  const doneToday = s.lastCompletedDate === todayStr();
+  const streak = s.streak || 0;
+  statusEl.innerHTML = doneToday
+    ? `✅ Completed today${streak ? ` · 🔥 ${streak}-day streak` : ''}`
+    : `${DAILY_QUESTION_COUNT} questions · +${DAILY_XP_PER_CORRECT} XP each${streak ? ` · 🔥 ${streak}-day streak on the line` : ''}`;
+  if (hintEl) hintEl.textContent = doneToday ? 'Come back tomorrow for a new set' : "Click to attempt today's challenge";
+}
+
+async function openDailyChallenge() {
+  const s = getDailyChallengeState();
+  const doneToday = s.lastCompletedDate === todayStr();
+  if (doneToday) {
+    renderDailySummary(s.lastResult || { correct: s.lastCorrect || 0, total: DAILY_QUESTION_COUNT, bonusXp: 0 }, true);
+    document.getElementById('dailyChallengeModal').classList.add('show');
+    return;
+  }
+  document.getElementById('dailyChallengeBody').innerHTML = `<h3 style="margin-top:0;">🗓️ Daily Challenge</h3><p>Loading today's questions...</p>`;
+  document.getElementById('dailyChallengeModal').classList.add('show');
+  const questions = await buildDailyQuestionSet();
+  if (!questions.length) {
+    document.getElementById('dailyChallengeBody').innerHTML = `<h3 style="margin-top:0;">🗓️ Daily Challenge</h3><p>Couldn't load today's questions — check your connection and try again.</p><div style="display:flex; justify-content:flex-end;"><button class="btn primary" onclick="closeDailyChallenge()">Close</button></div>`;
+    return;
+  }
+  dailyRun = { questions, idx: 0, correct: 0, answered: false };
+  renderDailyQuestion();
+}
+function closeDailyChallenge() { document.getElementById('dailyChallengeModal').classList.remove('show'); }
+
+function renderDailyQuestion() {
+  if (!dailyRun) return;
+  const q = dailyRun.questions[dailyRun.idx];
+  const body = document.getElementById('dailyChallengeBody');
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="margin:0;">🗓️ Daily Challenge</h3>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">Q${dailyRun.idx + 1}/${dailyRun.questions.length}</span>
+    </div>
+    <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${q.__subject} · ${q.__chapter}</div>
+    <div style="margin-bottom:14px; font-size:1.05rem;">${q.q}</div>
+    <div id="dailyOptGrid" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div id="dailyFeedback" style="margin-top:12px; font-size:0.9rem; display:none;"></div>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <button class="btn ghost" onclick="closeDailyChallenge()">Close</button>
+    </div>`;
+  const grid = document.getElementById('dailyOptGrid');
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = opt;
+    btn.onclick = () => handleDailyAnswer(i, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function handleDailyAnswer(selIdx, btnNode) {
+  if (!dailyRun || dailyRun.answered) return;
+  dailyRun.answered = true;
+  const q = dailyRun.questions[dailyRun.idx];
+  const isCorrect = selIdx === q.ans;
+  if (isCorrect) dailyRun.correct++;
+  const grid = document.getElementById('dailyOptGrid');
+  Array.from(grid.children).forEach((b, i) => {
+    if (i === q.ans) b.classList.add('correct');
+    else if (i === selIdx) b.classList.add('wrong');
+    b.onclick = null;
+  });
+  const fb = document.getElementById('dailyFeedback');
+  fb.style.display = 'block';
+  fb.innerHTML = isCorrect ? '✓ Correct!' : `✗ Incorrect. The correct answer was <b>${q.opts[q.ans]}</b>`;
+
+  const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn primary';
+  nextBtn.textContent = (dailyRun.idx < dailyRun.questions.length - 1) ? 'Next →' : 'Finish';
+  nextBtn.onclick = advanceDailyChallenge;
+  footer.insertBefore(nextBtn, footer.firstChild);
+}
+
+function advanceDailyChallenge() {
+  if (!dailyRun) return;
+  if (dailyRun.idx < dailyRun.questions.length - 1) {
+    dailyRun.idx++;
+    dailyRun.answered = false;
+    renderDailyQuestion();
+  } else {
+    finishDailyChallenge();
+  }
+}
+
+function finishDailyChallenge() {
+  if (!dailyRun) return;
+  const s = getDailyChallengeState();
+  const wasYesterday = s.lastCompletedDate === yesterdayStr();
+  const newStreak = wasYesterday ? (s.streak || 0) + 1 : 1;
+  const bonusXp = dailyRun.correct * DAILY_XP_PER_CORRECT + (newStreak > 1 ? DAILY_STREAK_BONUS : 0);
+
+  state.xp += bonusXp;
+  doSave();
+  updateStats();
+  if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+
+  const result = { correct: dailyRun.correct, total: dailyRun.questions.length, bonusXp };
+  setDailyChallengeState({ lastCompletedDate: todayStr(), streak: newStreak, lastCorrect: dailyRun.correct, lastResult: result });
+  renderDailySummary(result, false, newStreak);
+  renderDailyPanel();
+  dailyRun = null;
+}
+
+function renderDailySummary(result, alreadyDoneToday, streakOverride) {
+  const s = getDailyChallengeState();
+  const streak = streakOverride || s.streak || 0;
+  const body = document.getElementById('dailyChallengeBody');
+  body.innerHTML = `
+    <h3 style="margin-top:0;">🗓️ Daily Challenge${alreadyDoneToday ? ' — already completed' : ' — complete!'}</h3>
+    <p style="font-size:1rem;">You got <b>${result.correct}/${result.total}</b> correct${!alreadyDoneToday ? ` and earned <b>+${result.bonusXp} XP</b>` : ''}.</p>
+    ${streak ? `<p style="color: var(--brass-light, #e8c382);">🔥 ${streak}-day streak</p>` : ''}
+    <p style="font-size:0.85rem; color: var(--parchment-dim,#c5bba8);">Come back tomorrow for a fresh set of questions.</p>
+    <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+      <button class="btn primary" onclick="closeDailyChallenge()">Close</button>
+    </div>`;
+}
+
+/* ================= MISTAKE BANK (spaced-revision) ================= */
+const MISTAKE_STORAGE_KEY = 'mistake_bank_v1';
+
+function mistakeKey(subjId, chapId, qText) {
+  // Cheap deterministic string hash — good enough for a local dedupe key.
+  let h = 0;
+  const s = subjId + '|' + chapId + '|' + qText;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return 'm' + h;
+}
+function getMistakeBank() {
+  try { return JSON.parse(localStorage.getItem(MISTAKE_STORAGE_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function setMistakeBank(bank) {
+  try { localStorage.setItem(MISTAKE_STORAGE_KEY, JSON.stringify(bank)); } catch (e) {}
+  renderMistakePanel();
+}
+// Called from handleAnswer(): stash the missed question so it can be revised later.
+function recordMistake(qData) {
+  if (!state.curSubj || !state.curChap) return;
+  const key = mistakeKey(state.curSubj.id, state.curChap.id, qData.q);
+  const bank = getMistakeBank();
+  bank[key] = {
+    q: qData.q, opts: qData.opts, ans: qData.ans,
+    subject: state.curSubj.name, chapter: state.curChap.name,
+    misses: (bank[key]?.misses || 0) + 1, lastMissedAt: Date.now()
+  };
+  setMistakeBank(bank);
+}
+// Called when a question is answered correctly — if it was previously in the
+// mistake bank, being answered correctly on a "Revise" run clears it out.
+function clearMistakeIfPresent(subjId, chapId, qText) {
+  const key = mistakeKey(subjId, chapId, qText);
+  const bank = getMistakeBank();
+  if (bank[key]) { delete bank[key]; setMistakeBank(bank); }
+}
+
+function renderMistakePanel() {
+  const el = document.getElementById('mistakePanelStatus');
+  if (!el) return;
+  const count = Object.keys(getMistakeBank()).length;
+  el.textContent = count ? `${count} question${count === 1 ? '' : 's'} to revise` : 'No mistakes logged yet — nice!';
+}
+
+let mistakeRun = null;
+
+function openMistakeBank() {
+  const bank = getMistakeBank();
+  const items = Object.entries(bank).map(([key, v]) => ({ key, ...v }));
+  const body = document.getElementById('mistakeBankBody');
+  if (!items.length) {
+    body.innerHTML = `
+      <h3 style="margin-top:0;">🎯 Mistake Bank</h3>
+      <p>You haven't missed any questions yet — or you've cleared them all. Nothing to revise right now!</p>
+      <div style="display:flex; justify-content:flex-end;"><button class="btn primary" onclick="closeMistakeBank()">Close</button></div>`;
+    document.getElementById('mistakeBankModal').classList.add('show');
+    return;
+  }
+  items.sort((a, b) => (b.misses || 0) - (a.misses || 0));
+  mistakeRun = { items, idx: 0, answered: false, cleared: 0 };
+  renderMistakeQuestion();
+  document.getElementById('mistakeBankModal').classList.add('show');
+}
+function closeMistakeBank() { document.getElementById('mistakeBankModal').classList.remove('show'); mistakeRun = null; }
+
+function renderMistakeQuestion() {
+  if (!mistakeRun) return;
+  const item = mistakeRun.items[mistakeRun.idx];
+  const body = document.getElementById('mistakeBankBody');
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="margin:0;">🎯 Mistake Bank</h3>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">${mistakeRun.idx + 1}/${mistakeRun.items.length}</span>
+    </div>
+    <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${item.subject} · ${item.chapter} · missed ${item.misses}×</div>
+    <div style="margin-bottom:14px; font-size:1.05rem;">${item.q}</div>
+    <div id="mistakeOptGrid" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div id="mistakeFeedback" style="margin-top:12px; font-size:0.9rem; display:none;"></div>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <button class="btn ghost" onclick="closeMistakeBank()">Close</button>
+    </div>`;
+  const grid = document.getElementById('mistakeOptGrid');
+  item.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = opt;
+    btn.onclick = () => handleMistakeAnswer(i);
+    grid.appendChild(btn);
+  });
+}
+
+function handleMistakeAnswer(selIdx) {
+  if (!mistakeRun || mistakeRun.answered) return;
+  mistakeRun.answered = true;
+  const item = mistakeRun.items[mistakeRun.idx];
+  const isCorrect = selIdx === item.ans;
+  const grid = document.getElementById('mistakeOptGrid');
+  Array.from(grid.children).forEach((b, i) => {
+    if (i === item.ans) b.classList.add('correct');
+    else if (i === selIdx) b.classList.add('wrong');
+    b.onclick = null;
+  });
+  const fb = document.getElementById('mistakeFeedback');
+  fb.style.display = 'block';
+  if (isCorrect) {
+    fb.innerHTML = '✓ Correct! Cleared from your mistake bank.';
+    const bank = getMistakeBank();
+    delete bank[item.key];
+    setMistakeBank(bank);
+    mistakeRun.cleared++;
+  } else {
+    fb.innerHTML = `✗ Still not quite. The correct answer is <b>${item.opts[item.ans]}</b> — it'll stay in your bank.`;
+  }
+  const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn primary';
+  nextBtn.textContent = (mistakeRun.idx < mistakeRun.items.length - 1) ? 'Next →' : 'Finish';
+  nextBtn.onclick = advanceMistakeRun;
+  footer.insertBefore(nextBtn, footer.firstChild);
+}
+
+function advanceMistakeRun() {
+  if (!mistakeRun) return;
+  if (mistakeRun.idx < mistakeRun.items.length - 1) {
+    mistakeRun.idx++;
+    mistakeRun.answered = false;
+    renderMistakeQuestion();
+  } else {
+    const cleared = mistakeRun.cleared;
+    const body = document.getElementById('mistakeBankBody');
+    body.innerHTML = `
+      <h3 style="margin-top:0;">🎯 Revision complete</h3>
+      <p>You cleared <b>${cleared}/${mistakeRun.items.length}</b> question${mistakeRun.items.length === 1 ? '' : 's'} from your mistake bank.</p>
+      <div style="display:flex; justify-content:flex-end;"><button class="btn primary" onclick="closeMistakeBank()">Close</button></div>`;
+    mistakeRun = null;
+  }
+}
+
+/* ================= ACTIVITY STREAK HEATMAP ================= */
+const ACTIVITY_STORAGE_KEY = 'activity_log_v1'; // { 'YYYY-MM-DD': xpEarnedThatDay }
+let __lastKnownXpForActivity = null;
+
+function logActivityXp() {
+  if (__lastKnownXpForActivity === null) { __lastKnownXpForActivity = state.xp; return; }
+  const delta = state.xp - __lastKnownXpForActivity;
+  __lastKnownXpForActivity = state.xp;
+  if (delta <= 0) return;
+  const log = getActivityLog();
+  const key = todayStr();
+  log[key] = (log[key] || 0) + delta;
+  try { localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(log)); } catch (e) {}
+  renderActivityPanel();
+  renderWeeklyGoalPanel();
+}
+function getActivityLog() {
+  try { return JSON.parse(localStorage.getItem(ACTIVITY_STORAGE_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function computeActivityStreak() {
+  const log = getActivityLog();
+  let streak = 0;
+  let d = new Date();
+  // Today doesn't have to have activity yet to keep yesterday's streak alive.
+  if (!log[todayStr()]) d.setDate(d.getDate() - 1);
+  while (true) {
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (log[key] > 0) { streak++; d.setDate(d.getDate() - 1); } else break;
+  }
+  return streak;
+}
+function renderActivityPanel() {
+  const el = document.getElementById('activityPanelStatus');
+  if (!el) return;
+  const streak = computeActivityStreak();
+  el.textContent = streak ? `🔥 ${streak}-day practice streak` : 'Practice today to start a streak';
+}
+function openActivityPopup() {
+  const log = getActivityLog();
+  const streak = computeActivityStreak();
+  document.getElementById('activitySummaryLine').textContent = streak
+    ? `🔥 ${streak}-day streak — keep it going!`
+    : 'No active streak yet — any XP earned today starts one.';
+  const grid = document.getElementById('activityHeatmap');
+  grid.innerHTML = '';
+  const days = 84; // 12 weeks
+  const today = new Date();
+  const cells = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    cells.push({ key, xp: log[key] || 0, dateLabel: d.toDateString() });
+  }
+  cells.forEach(c => {
+    const cell = document.createElement('div');
+    let bg = 'rgba(255,255,255,0.06)';
+    if (c.xp > 0 && c.xp < 30) bg = 'rgba(42,157,143,0.35)';
+    else if (c.xp >= 30 && c.xp < 80) bg = 'rgba(42,157,143,0.65)';
+    else if (c.xp >= 80) bg = 'rgba(42,157,143,0.95)';
+    cell.style.cssText = `aspect-ratio:1; border-radius:3px; background:${bg};`;
+    cell.title = `${c.dateLabel}: ${c.xp} XP`;
+    grid.appendChild(cell);
+  });
+  document.getElementById('activityPopup').classList.add('show');
+}
+function closeActivityPopup() { document.getElementById('activityPopup').classList.remove('show'); }
+
+/* ================= EXAM COUNTDOWN ================= */
+const EXAM_DATE_STORAGE_KEY = 'exam_countdown_date_v1';
+
+function renderExamCountdownChip() {
+  const chip = document.getElementById('examCountdownChip');
+  if (!chip) return;
+  const dateStr = localStorage.getItem(EXAM_DATE_STORAGE_KEY);
+  if (!dateStr) { chip.textContent = '🎯 Set exam date'; return; }
+  const target = new Date(dateStr + 'T00:00:00');
+  const now = new Date();
+  const diffDays = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+  if (diffDays > 0) chip.textContent = `🎯 T-${diffDays}d to exam`;
+  else if (diffDays === 0) chip.textContent = `🎯 Exam is today!`;
+  else chip.textContent = `🎯 Exam date passed`;
+}
+function openExamCountdownSettings() {
+  const existing = localStorage.getItem(EXAM_DATE_STORAGE_KEY);
+  document.getElementById('examDateInput').value = existing || '';
+  document.getElementById('examCountdownModal').classList.add('show');
+}
+function closeExamCountdownSettings() { document.getElementById('examCountdownModal').classList.remove('show'); }
+function saveExamCountdown() {
+  const val = document.getElementById('examDateInput').value;
+  if (val) localStorage.setItem(EXAM_DATE_STORAGE_KEY, val);
+  else localStorage.removeItem(EXAM_DATE_STORAGE_KEY);
+  renderExamCountdownChip();
+  closeExamCountdownSettings();
+}
+
+/* ================= FOCUS TIMER ================= */
+let focusState = { totalSeconds: 25 * 60, remaining: 25 * 60, running: false, interval: null };
+
+function setFocusDuration(mins) {
+  if (focusState.running) return;
+  focusState.totalSeconds = mins * 60;
+  focusState.remaining = mins * 60;
+  renderFocusDisplay();
+}
+function renderFocusDisplay() {
+  const m = Math.floor(focusState.remaining / 60);
+  const s = focusState.remaining % 60;
+  const el = document.getElementById('focusTimerDisplay');
+  if (el) el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function openFocusTimer() {
+  renderFocusDisplay();
+  document.getElementById('focusTimerToggleBtn').textContent = focusState.running ? 'Pause' : 'Start';
+  document.getElementById('focusTimerModal').classList.add('show');
+}
+function closeFocusTimer() { document.getElementById('focusTimerModal').classList.remove('show'); }
+function toggleFocusTimer() {
+  const btn = document.getElementById('focusTimerToggleBtn');
+  if (focusState.running) {
+    clearInterval(focusState.interval);
+    focusState.running = false;
+    btn.textContent = 'Start';
+    return;
+  }
+  focusState.running = true;
+  btn.textContent = 'Pause';
+  focusState.interval = setInterval(() => {
+    focusState.remaining--;
+    renderFocusDisplay();
+    if (focusState.remaining <= 0) {
+      clearInterval(focusState.interval);
+      focusState.running = false;
+      document.getElementById('focusTimerSubtitle').textContent = "Time's up! Great work — take a short break.";
+      document.getElementById('focusTimerToggleBtn').textContent = 'Start';
+      focusState.remaining = focusState.totalSeconds;
+      try { AudioSys.init(); AudioSys.hit(); } catch (e) {}
+      renderFocusDisplay();
+    }
+  }, 1000);
+}
+
+/* ================= WEEKLY GOAL ================= */
+const WEEKLY_GOAL_STORAGE_KEY = 'weekly_xp_goal_v1'; // { target: number }
+
+function getWeekKey(d) {
+  // ISO-ish week key: year + Monday-based week number, so the goal resets every Monday.
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7; // Mon=0..Sun=6
+  date.setUTCDate(date.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const weekNum = 1 + Math.round(((date - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return `${date.getUTCFullYear()}-W${weekNum}`;
+}
+function getThisWeekXp() {
+  const log = getActivityLog();
+  const thisWeekKey = getWeekKey(new Date());
+  let sum = 0;
+  Object.keys(log).forEach(dateKey => {
+    const d = new Date(dateKey + 'T00:00:00');
+    if (getWeekKey(d) === thisWeekKey) sum += log[dateKey];
+  });
+  return sum;
+}
+function getWeeklyGoalTarget() {
+  try { return JSON.parse(localStorage.getItem(WEEKLY_GOAL_STORAGE_KEY) || '{}').target || 0; }
+  catch (e) { return 0; }
+}
+function renderWeeklyGoalPanel() {
+  const target = getWeeklyGoalTarget();
+  const earned = getThisWeekXp();
+  const bar = document.getElementById('goalPanelBar');
+  const status = document.getElementById('goalPanelStatus');
+  if (!bar || !status) return;
+  if (!target) {
+    bar.style.width = '0%';
+    status.textContent = 'No goal set yet';
+    return;
+  }
+  const pct = Math.min(100, Math.round((earned / target) * 100));
+  bar.style.width = pct + '%';
+  status.textContent = earned >= target ? `🎉 Goal hit! ${earned}/${target} XP` : `${earned}/${target} XP this week`;
+}
+function openWeeklyGoal() {
+  const target = getWeeklyGoalTarget();
+  document.getElementById('weeklyGoalInput').value = target || '';
+  renderWeeklyGoalDetail();
+  document.getElementById('weeklyGoalModal').classList.add('show');
+}
+function closeWeeklyGoal() { document.getElementById('weeklyGoalModal').classList.remove('show'); }
+function renderWeeklyGoalDetail() {
+  const target = getWeeklyGoalTarget();
+  const earned = getThisWeekXp();
+  const bar = document.getElementById('weeklyGoalProgressBar');
+  const detail = document.getElementById('weeklyGoalDetail');
+  if (!target) {
+    bar.style.width = '0%';
+    detail.textContent = 'Set a target to start tracking this week.';
+    return;
+  }
+  const pct = Math.min(100, Math.round((earned / target) * 100));
+  bar.style.width = pct + '%';
+  detail.textContent = earned >= target
+    ? `🎉 You hit your goal — ${earned}/${target} XP this week!`
+    : `${earned}/${target} XP so far this week (${pct}%). Resets Monday.`;
+}
+function saveWeeklyGoal() {
+  const val = parseInt(document.getElementById('weeklyGoalInput').value, 10);
+  if (val > 0) localStorage.setItem(WEEKLY_GOAL_STORAGE_KEY, JSON.stringify({ target: val }));
+  renderWeeklyGoalDetail();
+  renderWeeklyGoalPanel();
+  closeWeeklyGoal();
+}
+
+/* ================= PREVIOUS YEAR QUESTIONS (PYQ) ================= */
+let firebasePyqBank = null; // populated live via DB_Engine.listenPyqBank; null = not loaded yet
+
+function getPyqBank() {
+  if (firebasePyqBank && firebasePyqBank.length) return firebasePyqBank;
+  return Array.isArray(window.PYQ_QUESTIONS) ? window.PYQ_QUESTIONS : [];
+}
+function isPyqPlaceholder() {
+  // Only the bundled local file contains sample text — if the educator has
+  // synced anything real via Firebase, we're never showing placeholders.
+  if (firebasePyqBank && firebasePyqBank.length) return false;
+  const bank = getPyqBank();
+  return bank.length > 0 && bank.every(q => /\[SAMPLE/.test(q.q || ''));
+}
+function renderPyqPanel() {
+  const el = document.getElementById('pyqPanelStatus');
+  if (!el) return;
+  const bank = getPyqBank();
+  if (!bank.length) { el.textContent = 'No PYQ bank loaded yet'; return; }
+  const years = Array.from(new Set(bank.map(q => q.year))).sort((a, b) => b - a);
+  el.textContent = `${bank.length} questions · ${years[years.length - 1]}–${years[0]}`;
+}
+
+let pyqActiveSubjects = new Set(['math', 'physics', 'chemistry']);
+
+function togglePyqSubject(subj) {
+  if (pyqActiveSubjects.has(subj)) {
+    // Don't allow deselecting the last remaining subject — that would show nothing.
+    if (pyqActiveSubjects.size === 1) return;
+    pyqActiveSubjects.delete(subj);
+  } else {
+    pyqActiveSubjects.add(subj);
+  }
+  document.querySelectorAll('.pyq-chip').forEach(chip => {
+    chip.classList.toggle('active', pyqActiveSubjects.has(chip.dataset.subj));
+  });
+  renderPyqList();
+}
+
+function openPyqBrowser() {
+  const bank = getPyqBank();
+  const yearSelect = document.getElementById('pyqYearFilter');
+  const currentYears = Array.from(yearSelect.options).slice(1).map(o => o.value);
+  const years = Array.from(new Set(bank.map(q => q.year))).sort((a, b) => b - a);
+  if (currentYears.join(',') !== years.join(',')) {
+    yearSelect.innerHTML = '<option value="">All years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+  }
+  pyqActiveSubjects = new Set(['math', 'physics', 'chemistry']);
+  document.querySelectorAll('.pyq-chip').forEach(chip => chip.classList.add('active'));
+  document.getElementById('pyqPlaceholderNotice').style.display = isPyqPlaceholder() ? 'block' : 'none';
+  renderPyqList();
+  document.getElementById('pyqBrowserModal').classList.add('show');
+}
+function closePyqBrowser() { document.getElementById('pyqBrowserModal').classList.remove('show'); }
+
+function getFilteredPyq() {
+  const year = document.getElementById('pyqYearFilter').value;
+  return getPyqBank().filter(q =>
+    pyqActiveSubjects.has(q.subject) && (!year || String(q.year) === year)
+  );
+}
+
+function renderPyqList() {
+  const list = document.getElementById('pyqPopupList');
+  const filtered = getFilteredPyq();
+  if (!filtered.length) {
+    list.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim,#c5bba8);">No questions match this filter.</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map((q, i) => `
+    <div class="widget-row" style="align-items:flex-start; flex-direction:column; gap:4px;">
+      <div style="display:flex; justify-content:space-between; width:100%; font-size:0.7rem; color: var(--brass-light,#e8c382); font-family:'JetBrains Mono',monospace;">
+        <span>${q.exam || 'PYQ'} · ${q.year || '—'}</span>
+        <span>${q.chapter || ''}</span>
+      </div>
+      <div style="font-size:0.9rem;">${(q.q || '').replace(/^\[SAMPLE[^\]]*\]\s*/, '')}</div>
+    </div>
+  `).join('');
+}
+
+let pyqRun = null;
+
+function startPyqQuiz() {
+  const items = getFilteredPyq();
+  if (!items.length) return;
+  closePyqBrowser();
+  pyqRun = { items: seededShuffle(items, Math.random), idx: 0, correct: 0, answered: false };
+  renderPyqQuestion();
+  document.getElementById('pyqQuizModal').classList.add('show');
+}
+function closePyqQuiz() { document.getElementById('pyqQuizModal').classList.remove('show'); pyqRun = null; }
+
+function renderPyqQuestion() {
+  if (!pyqRun) return;
+  const item = pyqRun.items[pyqRun.idx];
+  const body = document.getElementById('pyqQuizBody');
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="margin:0;">📚 ${item.exam || 'PYQ'} ${item.year || ''}</h3>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">${pyqRun.idx + 1}/${pyqRun.items.length}</span>
+    </div>
+    <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${item.chapter || ''}</div>
+    <div style="margin-bottom:14px; font-size:1.05rem;">${item.q}</div>
+    <div id="pyqOptGrid" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div id="pyqFeedback" style="margin-top:12px; font-size:0.9rem; display:none;"></div>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <button class="btn ghost" onclick="closePyqQuiz()">Close</button>
+    </div>`;
+  const grid = document.getElementById('pyqOptGrid');
+  item.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = opt;
+    btn.onclick = () => handlePyqAnswer(i);
+    grid.appendChild(btn);
+  });
+}
+
+function handlePyqAnswer(selIdx) {
+  if (!pyqRun || pyqRun.answered) return;
+  pyqRun.answered = true;
+  const item = pyqRun.items[pyqRun.idx];
+  const isCorrect = selIdx === item.ans;
+  if (isCorrect) pyqRun.correct++;
+  const grid = document.getElementById('pyqOptGrid');
+  Array.from(grid.children).forEach((b, i) => {
+    if (i === item.ans) b.classList.add('correct');
+    else if (i === selIdx) b.classList.add('wrong');
+    b.onclick = null;
+  });
+  const fb = document.getElementById('pyqFeedback');
+  fb.style.display = 'block';
+  fb.innerHTML = isCorrect
+    ? '✓ Correct!' + (item.sol ? `<div style="margin-top:6px; opacity:0.85;">${item.sol}</div>` : '')
+    : `✗ Incorrect. Correct answer: <b>${item.opts[item.ans]}</b>` + (item.sol ? `<div style="margin-top:6px; opacity:0.85;">${item.sol}</div>` : '');
+  const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn primary';
+  nextBtn.textContent = (pyqRun.idx < pyqRun.items.length - 1) ? 'Next →' : 'Finish';
+  nextBtn.onclick = advancePyqRun;
+  footer.insertBefore(nextBtn, footer.firstChild);
+}
+
+function advancePyqRun() {
+  if (!pyqRun) return;
+  if (pyqRun.idx < pyqRun.items.length - 1) {
+    pyqRun.idx++;
+    pyqRun.answered = false;
+    renderPyqQuestion();
+  } else {
+    const body = document.getElementById('pyqQuizBody');
+    body.innerHTML = `
+      <h3 style="margin-top:0;">📚 Set complete</h3>
+      <p>You got <b>${pyqRun.correct}/${pyqRun.items.length}</b> correct.</p>
+      <div style="display:flex; justify-content:flex-end;"><button class="btn primary" onclick="closePyqQuiz()">Close</button></div>`;
+    pyqRun = null;
+  }
+}
+
+function openBadgesPopup() {
+  const earned = computeBadges();
+  const list = document.getElementById('badgesPopupList');
+  list.innerHTML = Object.keys(BADGES).map(id => {
+    const b = BADGES[id];
+    const got = earned.includes(id);
+    return `<div class="widget-row" style="opacity:${got ? 1 : 0.4};">
+      <div class="rank-user"><span style="font-size:1.3rem; margin-right:8px;">${b.icon}</span><span>${b.label}</span></div>
+      <span class="score" style="font-size:0.75rem;">${got ? 'Earned' : b.desc}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('badgesPopup').classList.add('show');
+}
+function closeBadgesPopup() { document.getElementById('badgesPopup').classList.remove('show'); }
+
 function updateStats() {
   document.getElementById('xpVal').textContent = state.xp;
   document.getElementById('streakVal').textContent = state.streak;
+  renderBadgesRow();
+  logActivityXp();
+  renderMistakePanel();
 }
 
 /* ===== GAME-FEEL HELPERS ===== */
@@ -1966,6 +2946,11 @@ function startApp() {
       }
     });
     window.DB_Engine.listenDiscussion((messages) => renderRemovalDiscussion(messages));
+    window.DB_Engine.listenPyqBank((list) => {
+      firebasePyqBank = list;
+      renderPyqPanel();
+      if (document.getElementById('pyqBrowserModal').classList.contains('show')) renderPyqList();
+    });
   }
 }
 
@@ -2021,7 +3006,7 @@ function goToSubjects() {
     card.onclick = () => { document.body.className = sub.theme; state.curSubj = sub; loadChapters(); };
     grid.appendChild(card);
   });
-  updateStats(); renderLeaderboard(); showScreen('screen-subjects');
+  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqPanel(); showScreen('screen-subjects');
 }
 
 function loadChapters() {
@@ -2121,6 +3106,7 @@ async function startGame() {
   state.levelXpEarned = 0;
   state.reviveCount = 0;
   state.combo = 0;
+  state.lifelinesLeft = 1;
   updateComboHud();
   
   let isJee = state.curSubj.id === 'mixed';
@@ -2184,6 +3170,41 @@ function startExamTimer() {
   }, 1000);
 }
 
+function updateLifelineHud() {
+  const btn = document.getElementById('lifelineBtn');
+  if (!btn) return;
+  const isJee = state.curSubj && state.curSubj.id === 'mixed';
+  if (isJee) { btn.style.display = 'none'; return; }
+  btn.style.display = 'inline-flex';
+  const countEl = document.getElementById('lifelineCount');
+  countEl.textContent = `(${state.lifelinesLeft})`;
+  const used = state.eliminatedOpts && state.eliminatedOpts.length > 0;
+  btn.disabled = state.lifelinesLeft <= 0 || state.answered || used;
+  btn.style.opacity = btn.disabled ? '0.4' : '1';
+  btn.style.cursor = btn.disabled ? 'default' : 'pointer';
+}
+
+// 50-50 lifeline: fades out two wrong options, once per level, before answering.
+function useLifeline() {
+  if (state.answered || state.lifelinesLeft <= 0) return;
+  if (state.eliminatedOpts && state.eliminatedOpts.length > 0) return;
+  const qData = state.currentQuestions[state.qIdx];
+  const wrongIdxs = qData.opts.map((_, i) => i).filter(i => i !== qData.ans);
+  const toEliminate = seededShuffle(wrongIdxs, Math.random).slice(0, Math.min(2, wrongIdxs.length));
+  state.eliminatedOpts = toEliminate;
+  state.lifelinesLeft--;
+  const grid = document.getElementById('optGrid');
+  Array.from(grid.children).forEach((btn, i) => {
+    if (toEliminate.includes(i)) {
+      btn.disabled = true;
+      btn.style.opacity = '0.25';
+      btn.style.pointerEvents = 'none';
+      btn.onclick = null;
+    }
+  });
+  updateLifelineHud();
+}
+
 function updateGameHud() {
   let isJee = state.curSubj.id === 'mixed';
   let qCount = state.currentQuestions.length;
@@ -2225,10 +3246,12 @@ function renderPalette() {
 
 function renderQuestion() {
   state.answered = false;
+  state.eliminatedOpts = [];
   let isJee = state.curSubj.id === 'mixed';
   let qCount = state.currentQuestions.length;
   
   updateGameHud();
+  updateLifelineHud();
   
   let qData = state.currentQuestions[state.qIdx];
   document.getElementById('qTag').textContent = `${state.curChap.name} · Level ${state.curLvl} · Q${state.qIdx+1}`;
@@ -2302,6 +3325,7 @@ function handleAnswer(selIdx, btnNode) {
   // and mistakes draw from the level's shared heart pool instead of a per-question retry.
   state.answered = true;
   state.qSelected[state.qIdx] = selIdx;
+  updateLifelineHud();
   grid.querySelectorAll('.opt').forEach((b, i) => {
     b.disabled = true;
     if(i === qData.ans) b.classList.add('correct');
@@ -2319,6 +3343,7 @@ function handleAnswer(selIdx, btnNode) {
     AudioSys.hit();
     
     if(window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+    clearMistakeIfPresent(state.curSubj.id, state.curChap.id, qData.q);
     
     fb.innerHTML = mult > 1 ? `✓ Correct! +${xpGain} XP (x${mult} combo)` : `✓ Correct! +${xpGain} XP`;
     fb.className = 'feedback show ok';
@@ -2341,6 +3366,7 @@ function handleAnswer(selIdx, btnNode) {
     
     const c = document.getElementById('qCard');
     c.classList.remove('shaking'); void c.offsetWidth; c.classList.add('shaking');
+    recordMistake(qData);
     
     if (state.hearts > 0) {
       fb.innerHTML = `✗ Incorrect. −1 Heart. The correct answer was <b>${qData.opts[qData.ans]}</b>`;
