@@ -833,7 +833,7 @@ body { padding-top: 30px; }
         </div>
       </div>
       <div class="palette-grid" id="paletteGrid"></div>
-      <button class="btn danger" style="margin-top: 20px; width: 100%; letter-spacing: 2px;" onclick="confirmSubmitJee()">SUBMIT EXAM</button>
+      <button class="btn danger" id="submitExamBtn" style="margin-top: 20px; width: 100%; letter-spacing: 2px;" onclick="confirmSubmitJee()">SUBMIT EXAM</button>
     </div>
 
     <div class="ov-panel fail-ov" id="failOv" style="display:none;">
@@ -1657,7 +1657,7 @@ function renderLeaderboard() {
 /* ================= PROCEDURAL AUDIO ENGINE ================= */
 const AudioSys = {
   ctx: null, isInit: false, isPlayingAmbient: false, chimeInt: null, bassInt: null,
-  bassOsc: null, bassGain: null, masterGain: null,
+  bassOsc: null, bassGain: null, masterGain: null, examLocked: false,
   muted: (localStorage.getItem('musicMuted') === '1'),
   init() {
     if(this.isInit) return;
@@ -1672,6 +1672,7 @@ const AudioSys = {
     } catch(e) {}
   },
   toggleMute() {
+    if (this.examLocked) return; // Music is disabled for JEE mock series — no toggling mid-exam.
     this.muted = !this.muted;
     localStorage.setItem('musicMuted', this.muted ? '1' : '0');
     if (this.masterGain) {
@@ -1681,7 +1682,29 @@ const AudioSys = {
   },
   updateMuteLabel() {
     const el = document.getElementById('musicToggleLabel');
-    if (el) el.textContent = this.muted ? 'Off' : 'On';
+    if (el) el.textContent = this.examLocked ? 'Off' : (this.muted ? 'Off' : 'On');
+  },
+  // Forcibly silences music and locks the toggle button for the duration of a
+  // JEE mock exam — mocks should be distraction-free and not user-adjustable.
+  disableForExam() {
+    this.examLocked = true;
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.15);
+    }
+    this.updateMuteLabel();
+    const btn = document.getElementById('musicToggleBtn');
+    if (btn) { btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none'; btn.title = 'Music is disabled during JEE mocks'; }
+  },
+  // Restores the toggle button and the user's previous mute preference once
+  // the mock exam has ended.
+  enableAfterExam() {
+    this.examLocked = false;
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : 1, this.ctx.currentTime, 0.15);
+    }
+    this.updateMuteLabel();
+    const btn = document.getElementById('musicToggleBtn');
+    if (btn) { btn.style.opacity = ''; btn.style.pointerEvents = ''; btn.title = 'Toggle background music'; }
   },
   // Browsers create/keep AudioContext 'suspended' until explicitly resumed (and some
   // re-suspend it after inactivity). Call this before scheduling any sound so playback
@@ -3387,6 +3410,9 @@ async function startGame() {
   
   qCount = state.currentQuestions.length; 
   state.qSelected = Array(qCount).fill(null);
+  state.examSubmitted = false;
+  let submitBtnReset = document.getElementById('submitExamBtn');
+  if (submitBtnReset) { submitBtnReset.disabled = false; submitBtnReset.textContent = 'SUBMIT EXAM'; }
   
   document.getElementById('failOv').style.display = 'none';
   document.getElementById('completeOv').style.display = 'none';
@@ -3395,10 +3421,12 @@ async function startGame() {
     startExamTimer();
     document.getElementById('jeePalette').style.display = 'block';
     AudioSys.stopAmbient();
+    AudioSys.disableForExam();
     enterExamLockdown();
   } else {
     clearInterval(timerInt);
     document.getElementById('jeePalette').style.display = 'none';
+    AudioSys.enableAfterExam();
     AudioSys.startPeacefulAmbient();
   }
   
@@ -3451,6 +3479,7 @@ function enterExamLockdown() {
 
 function exitExamLockdown() {
   examLockdown.active = false;
+  AudioSys.enableAfterExam();
   document.removeEventListener('fullscreenchange', onLockdownFullscreenChange);
   document.removeEventListener('visibilitychange', onLockdownVisibilityChange);
   window.removeEventListener('blur', onLockdownWindowBlur);
@@ -3762,6 +3791,7 @@ function renderQuestion() {
     btn.className = 'opt';
     btn.innerHTML = opt; // Support rendering images inside options
     if (isJee && state.qSelected[state.qIdx] === i) btn.classList.add('selected');
+    if (isJee && state.examSubmitted) btn.disabled = true;
     btn.onclick = () => handleAnswer(i, btn);
     grid.appendChild(btn);
   });
@@ -3804,6 +3834,7 @@ function handleAnswer(selIdx, btnNode) {
   let isJee = state.curSubj.id === 'mixed';
   
   if (isJee) {
+    if (state.examSubmitted) return; // Exam already submitted — answers are locked.
     if (state.qSelected[state.qIdx] === selIdx) state.qSelected[state.qIdx] = null; 
     else state.qSelected[state.qIdx] = selIdx;
     renderQuestion(); 
@@ -3915,6 +3946,7 @@ function reviveLevel() {
 }
 
 function confirmSubmitJee() {
+  if (state.examSubmitted) return; // Already submitted — prevent double-submission.
   let unanswered = state.qSelected.filter(a => a === null).length;
   let msg = unanswered > 0
     ? `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}. You can still submit — unanswered questions will just be marked as skipped.`
@@ -3926,6 +3958,9 @@ function closeSubmitJeeModal() { document.getElementById('submitJeeModal').class
 function doSubmitJeeExam() { closeSubmitJeeModal(); submitJeeExam(); }
 
 function submitJeeExam() {
+  state.examSubmitted = true;
+  let submitBtn = document.getElementById('submitExamBtn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'EXAM SUBMITTED'; }
   clearInterval(timerInt);
   exitExamLockdown();
   AudioSys.startPeacefulAmbient();
@@ -4098,8 +4133,9 @@ function latexToPlain(input) {
   // Drop any remaining backslash-commands we didn't special-case, and stray braces.
   s = s.replace(/\\[a-zA-Z]+/g, '').replace(/[{}]/g, '');
 
-  // Remove math delimiters ($$, $) and collapse whitespace.
+  // Remove math delimiters ($$, $, \(, \), \[, \]) and collapse whitespace.
   s = s.replace(/\$\$/g, '').replace(/\$/g, '');
+  s = s.replace(/\\\(/g, '').replace(/\\\)/g, '').replace(/\\\[/g, '').replace(/\\\]/g, '');
   s = s.replace(/\s+/g, ' ').trim();
 
   return s;
@@ -4229,7 +4265,11 @@ async function downloadJeeReport() {
   for (let i = 0; i < rep.questions.length; i++) {
     const q = rep.questions[i];
     ensureSpace(30);
-    const plainQ = latexToPlain(q.q) || latexToPlain(q.ocrStem);
+    let plainQ = latexToPlain(q.q) || latexToPlain(q.ocrStem);
+    // If the "question text" is really just the internal image placeholder,
+    // don't print that placeholder as the heading — the real image gets
+    // embedded right below anyway, so showing both is redundant/confusing.
+    if (plainQ.trim() === '[image — view in-app]') plainQ = '';
     const plainExp = latexToPlain(q.exp);
     const plainCAns = latexToPlain(q.cAnsText);
     const status = q.isUnattempted ? 'SKIPPED' : (q.isCorrect ? 'CORRECT' : 'INCORRECT');
