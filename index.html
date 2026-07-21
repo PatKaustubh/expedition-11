@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2212%22 fill=%22%230b1320%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2222%22 fill=%22none%22 stroke=%22%23c99c51%22 stroke-width=%222%22/%3E%3Ctext x=%2232%22 y=%2240%22 font-family=%22Georgia,serif%22 font-size=%2220%22 font-weight=%22700%22 text-anchor=%22middle%22 fill=%22%23e8c382%22%3E11%3C/text%3E%3C/svg%3E">
 
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
   window.MathJax = {
     tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
@@ -122,6 +123,33 @@ body { padding-top: 30px; }
 .lockdown-warning-box h3 { margin: 0 0 12px; font-family: 'Playfair Display', serif; color: var(--coral); font-size: 1.4rem; }
 .lockdown-warning-box p { margin: 0 0 20px; color: var(--parchment-dim); line-height: 1.6; font-size: 0.95rem; }
 .lockdown-strike-note { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--coral); margin-bottom: 18px !important; }
+
+/* SCORE-TIER PAGE ANIMATIONS */
+.score-fx-layer { position: fixed; inset: 0; z-index: 9500; pointer-events: none; overflow: hidden; }
+.score-fx-layer .fw-burst { position: absolute; width: 6px; height: 6px; border-radius: 50%; opacity: 0; }
+@keyframes fwRise { 0% { transform: translateY(0); opacity: 1; } 70% { opacity: 1; } 100% { transform: translateY(-60vh); opacity: 0; } }
+@keyframes fwSpark { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
+@keyframes screenGlowPulse { 0%, 100% { box-shadow: inset 0 0 0px rgba(79,209,197,0); } 50% { box-shadow: inset 0 0 120px rgba(79,209,197,0.35); } }
+.fx-glow-pulse { animation: screenGlowPulse 1.6s ease-in-out 2; }
+@keyframes fxFadeComfort { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+.fx-comfort-banner { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); z-index: 9600; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px 28px; font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--parchment); text-align: center; animation: fxFadeComfort 3.2s ease both; backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+
+/* JEE SOLUTION SHARING — reworked review layout */
+.jee-report-summary-bar { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 18px; }
+.jee-report-summary-bar .srb-pill { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); }
+.jee-solution-card { background: rgba(255,255,255,0.035); border: 1px solid var(--glass-border); border-left-width: 4px; border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; text-align: left; }
+.jee-solution-card .jsc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.jee-solution-card .jsc-qnum { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px; color: var(--parchment-dim); text-transform: uppercase; }
+.jee-solution-card .jsc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.jee-solution-card .jsc-tag { font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; padding: 3px 9px; border-radius: 12px; background: rgba(255,255,255,0.06); color: var(--parchment-dim); border: 1px solid var(--glass-border); }
+.jee-solution-card .jsc-status { font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
+.jee-solution-card .jsc-q { margin-bottom: 10px; }
+.jee-solution-card .jsc-q img { max-width: 100%; border-radius: 10px; background: #fff; padding: 6px; }
+.jee-solution-card .jsc-ans-row { font-size: 0.88rem; margin-bottom: 6px; }
+.jee-solution-card .jsc-exp { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; color: var(--brass-light); border: 1px solid rgba(255,255,255,0.05); margin-top: 8px; line-height: 1.55; max-height: 260px; overflow-y: auto; }
+.jee-solution-card .jsc-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+.jsc-share-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); color: var(--parchment); cursor: pointer; transition: all .15s; }
+.jsc-share-btn:hover { border-color: var(--brass-light, var(--sea)); background: rgba(255,255,255,0.08); }
 
 @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 transparent; } 50% { box-shadow: 0 0 15px rgba(231, 111, 81, 0.6); } }
 
@@ -824,11 +852,16 @@ body { padding-top: 30px; }
       <div class="level-stars-row" id="levelStarsRow"></div>
       <div class="level-stats-grid" id="levelStatsGrid"></div>
       <div class="terminal" id="grandSummary" style="display:none;"></div>
+      <div class="btn-row" id="jeeReportActions" style="display:none; gap:10px; flex-wrap:wrap;">
+        <button class="btn ghost" onclick="downloadJeeReport()">⬇ Download Report (PDF)</button>
+        <button class="btn ghost" onclick="downloadJeeCertificate()">🏆 Download Certificate</button>
+      </div>
       <div class="btn-row">
         <button class="btn ghost" onclick="abortGame()">Menu</button>
         <button class="btn primary" id="nextLvlBtn" onclick="startNextLevel()">Next Level &rarr;</button>
       </div>
     </div>
+    <div class="score-fx-layer" id="scoreFxLayer"></div>
   </div>
 </div>
 
@@ -1889,7 +1922,92 @@ const Factory = {
     return qs;
   },
 
+  // Which Hugging Face dataset backs each JEE mock level.
+  HF_JEE_DATASETS: {
+    mix_1: 'farhananis005/jee-sft-v1',   // JEE Mains Mock I
+    mix_2: 'farhananis005/jee-sft-v1',   // JEE Mains Mock II
+    mix_3: '11-47/jee_advanced_25k'      // JEE Advanced Finale
+  },
+
+  // Pulls real JEE questions from the Hugging Face Datasets Server (client-side,
+  // no API key needed). Rows can vary in shape between datasets, so normalizeHFRow
+  // tries several common field names before giving up on a row.
+  async hfGenerate(chapId, qCount) {
+    const dataset = this.HF_JEE_DATASETS[chapId] || 'farhananis005/jee-sft-v1';
+    try {
+      const windowSize = Math.max(qCount * 8, 80);
+      const offset = Math.floor(Math.random() * 2000);
+      const url = `https://datasets-server.huggingface.co/rows?dataset=${encodeURIComponent(dataset)}&config=default&split=train&offset=${offset}&length=${windowSize}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HF datasets-server responded ${res.status}`);
+      const data = await res.json();
+      const rows = (data.rows || []).map(r => r.row);
+      let normalized = rows.map(r => this.normalizeHFRow(r)).filter(Boolean);
+      if (normalized.length === 0) return [];
+      normalized = this.shuffleArray(normalized).slice(0, qCount);
+      return normalized;
+    } catch (err) {
+      console.warn(`Live JEE dataset fetch failed for ${dataset}, using local fallback:`, err);
+      return [];
+    }
+  },
+
+  // Normalizes one dataset row into the { q, opts, ans, exp } shape the rest of the
+  // app already understands. Handles the "question is a rendered image, answer is a
+  // <answer>X</answer>-tagged explanation" shape used by these JEE datasets, while
+  // still supporting plain-text question/options fields if a dataset provides them.
+  normalizeHFRow(row) {
+    if (!row) return null;
+    let qHtml = '';
+
+    let imgUrl = null;
+    if (row.image) {
+      if (typeof row.image === 'string') imgUrl = row.image;
+      else if (row.image.src) imgUrl = row.image.src;
+      else if (row.image.url) imgUrl = row.image.url;
+      else if (row.image.path) imgUrl = row.image.path;
+    }
+    if (imgUrl) {
+      qHtml += `<img src="${imgUrl}" alt="JEE question" loading="lazy" style="max-width:100%;border-radius:12px;display:block;margin:0 auto 12px;background:#fff;padding:6px;">`;
+    }
+
+    const textQ = row.question || row.prompt || row.text || row.problem || null;
+    if (textQ) qHtml += `<div>${textQ}</div>`;
+    if (!qHtml) return null; // nothing to show — skip this row
+
+    let raw = String(row.answer || row.solution || row.explanation || '');
+    let letterMatch = raw.match(/<answer>\s*([A-D])\s*<\/answer>/i);
+    let explanation = raw.replace(/<answer>[\s\S]*?<\/answer>/i, '').trim();
+
+    let opts, ansIdx;
+    if (Array.isArray(row.options) && row.options.length >= 2) {
+      opts = row.options.map(String);
+      if (letterMatch) ansIdx = letterMatch[1].toUpperCase().charCodeAt(0) - 65;
+      else if (row.correct_answer !== undefined) ansIdx = opts.findIndex(o => String(o) === String(row.correct_answer));
+      if (ansIdx === undefined || ansIdx < 0 || ansIdx >= opts.length) ansIdx = 0;
+    } else if (letterMatch) {
+      opts = ['A', 'B', 'C', 'D'];
+      ansIdx = letterMatch[1].toUpperCase().charCodeAt(0) - 65;
+    } else {
+      return null; // no gradable single answer (e.g. a NUMERIC-type row) — skip
+    }
+
+    if (!explanation) explanation = 'No detailed explanation was provided for this question.';
+    return {
+      q: qHtml, opts, ans: ansIdx, exp: explanation,
+      subject: row.subject || '', difficulty: row.difficulty || ''
+    };
+  },
+
   async generate(subjId, chapId, level, qCount = Q_PER_LEVEL) {
+    // JEE mock levels ("Combined Arena") pull real previous-year questions live
+    // from Hugging Face. Fall back to the procedural generator if that fails.
+    if (subjId === 'mixed') {
+      const hfQs = await this.hfGenerate(chapId, qCount);
+      if (hfQs.length > 0) return hfQs;
+      console.warn('Live JEE dataset unavailable or empty; using local fallback generator.');
+    }
+
     // Sets, Relations & Functions, Trigonometry, and other curated topics have a
     // dedicated Firestore-backed question bank (tiered Basic/Intermediate/Advanced).
     // Use it directly, randomized per level.
@@ -3261,6 +3379,7 @@ function startExamTimer() {
    (accidental or not) are visible and logged, similar to typical browser-based
    exam proctoring. */
 let examLockdown = { active: false, strikes: 0 };
+const MAX_LOCKDOWN_STRIKES = 5; // auto-submit once lapses exceed this count
 
 function enterExamLockdown() {
   examLockdown.active = true;
@@ -3292,7 +3411,19 @@ function flagLockdownViolation(reason) {
   if (!examLockdown.active) return;
   examLockdown.strikes++;
   const note = document.getElementById('lockdownStrikeNote');
-  if (note) note.textContent = `Recorded lapse #${examLockdown.strikes} (${reason}). Repeated lapses may be flagged in your exam report.`;
+
+  if (examLockdown.strikes > MAX_LOCKDOWN_STRIKES) return; // already handled below, avoid double-submit
+
+  if (examLockdown.strikes >= MAX_LOCKDOWN_STRIKES) {
+    if (note) note.textContent = `Recorded lapse #${examLockdown.strikes} (${reason}). Lapse limit (${MAX_LOCKDOWN_STRIKES}) reached — your exam is being auto-submitted now.`;
+    document.getElementById('lockdownWarning').classList.add('show');
+    examLockdown.active = false; // stop listening so we don't fire twice while submitting
+    setTimeout(() => { submitJeeExam(); }, 1600);
+    return;
+  }
+
+  const remaining = MAX_LOCKDOWN_STRIKES - examLockdown.strikes;
+  if (note) note.textContent = `Recorded lapse #${examLockdown.strikes} (${reason}). Repeated lapses may be flagged in your exam report. ${remaining} more lapse${remaining === 1 ? '' : 's'} and your exam will be auto-submitted.`;
   document.getElementById('lockdownWarning').classList.add('show');
 }
 
@@ -3588,9 +3719,8 @@ function submitJeeExam() {
   let correctCount = 0;
   let incorrectCount = 0;
   let qCount = state.currentQuestions.length;
-  
-  let reportHtml = `<h4 style="text-align:center; color:var(--sea); margin-bottom:20px; font-family:'Playfair Display',serif;">Detailed Exam Analysis</h4>`;
-  
+  let questionReports = [];
+
   state.currentQuestions.forEach((q, i) => {
     let uAns = state.qSelected[i];
     let cAns = q.ans;
@@ -3599,27 +3729,69 @@ function submitJeeExam() {
 
     if (isCorr) correctCount++;
     else if (!isUn) incorrectCount++;
-    
-    let statusColor = isUn ? "var(--parchment-dim)" : (isCorr ? "var(--sea)" : "var(--coral)");
-    let uAnsText = isUn ? "None" : q.opts[uAns];
-    let cAnsText = q.opts[cAns];
+
+    questionReports.push({
+      idx: i,
+      q: q.q,
+      opts: q.opts,
+      uAnsText: isUn ? "None" : q.opts[uAns],
+      cAnsText: q.opts[cAns],
+      isCorrect: isCorr,
+      isUnattempted: isUn,
+      exp: q.exp,
+      subject: q.subject || '',
+      difficulty: q.difficulty || ''
+    });
+  });
+
+  let score = (correctCount * 4) - incorrectCount;
+  let maxScore = qCount * 4;
+  let accuracyPct = qCount > 0 ? Math.round((correctCount / qCount) * 100) : 0;
+
+  // Stash everything needed for the report/certificate downloads and the
+  // improved solution-sharing cards.
+  state.lastJeeReport = {
+    chapName: state.curChap.name,
+    date: new Date().toISOString(),
+    qCount, correctCount, incorrectCount,
+    unattempted: qCount - correctCount - incorrectCount,
+    score, maxScore, accuracyPct,
+    explorerName: state.explorerName,
+    questions: questionReports
+  };
+
+  let reportHtml = `
+    <h4 style="text-align:center; color:var(--sea); margin-bottom:14px; font-family:'Playfair Display',serif;">Detailed Exam Analysis &amp; Solutions</h4>
+    <div class="jee-report-summary-bar">
+      <span class="srb-pill" style="color:var(--sea);">✓ ${correctCount} Correct</span>
+      <span class="srb-pill" style="color:var(--coral);">✗ ${incorrectCount} Incorrect</span>
+      <span class="srb-pill" style="color:var(--parchment-dim);">— ${qCount - correctCount - incorrectCount} Skipped</span>
+      <span class="srb-pill" style="color:var(--brass-light);">🎯 ${accuracyPct}% Accuracy</span>
+    </div>
+  `;
+
+  questionReports.forEach((r) => {
+    let statusColor = r.isUnattempted ? "var(--parchment-dim)" : (r.isCorrect ? "var(--sea)" : "var(--coral)");
+    let statusLabel = r.isUnattempted ? "SKIPPED" : (r.isCorrect ? "CORRECT" : "INCORRECT");
+    let tags = [r.subject, r.difficulty].filter(Boolean).map(t => `<span class="jsc-tag">${t}</span>`).join('');
 
     reportHtml += `
-      <div style="background:rgba(255,255,255,0.05); border-left: 4px solid ${statusColor}; padding: 15px; margin-bottom: 10px; border-radius: 6px; text-align:left; overflow-x:auto;">
-        <div style="font-weight:bold; color:var(--parchment); margin-bottom: 8px;">Q${i+1}. ${q.q}</div>
-        <div style="font-size:0.9rem; margin-bottom: 5px;">
-          <span style="color:var(--parchment-dim);">Your Answer:</span> <span style="color:${statusColor}; font-weight:bold;">${uAnsText}</span>
+      <div class="jee-solution-card" style="border-left-color:${statusColor};">
+        <div class="jsc-head">
+          <span class="jsc-qnum">Question ${r.idx + 1}</span>
+          <div class="jsc-tags">${tags}<span class="jsc-status" style="color:${statusColor}; background:rgba(255,255,255,0.06);">${statusLabel}</span></div>
         </div>
-        ${!isCorr ? `<div style="font-size:0.9rem; margin-bottom: 8px;"><span style="color:var(--parchment-dim);">Correct Answer:</span> <span style="color:var(--sea); font-weight:bold;">${cAnsText}</span></div>` : ''}
-        <div style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; color:var(--brass-light); border:1px solid rgba(255,255,255,0.05); margin-top:10px; overflow-x:auto;">
-          <strong>Explanation:</strong><br>${q.exp}
+        <div class="jsc-q">${r.q}</div>
+        <div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Your Answer:</span> <b style="color:${statusColor};">${r.uAnsText}</b></div>
+        ${!r.isCorrect ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Correct Answer:</span> <b style="color:var(--sea);">${r.cAnsText}</b></div>` : ''}
+        <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}</div>
+        <div class="jsc-footer">
+          <button class="jsc-share-btn" onclick="shareJeeSolution(${r.idx}, this)">🔗 Share Solution</button>
         </div>
       </div>
     `;
   });
-  
-  let score = (correctCount * 4) - incorrectCount; 
-  
+
   AudioSys.win();
   let prog = state.progress[state.curChap.id];
   if(state.curLvl === prog.maxUnlocked && prog.maxUnlocked <= TOTAL_LEVELS) { prog.maxUnlocked++; doSave(); }
@@ -3629,15 +3801,18 @@ function submitJeeExam() {
   let sub = document.getElementById('compSub');
   let term = document.getElementById('grandSummary');
   let nextBtn = document.getElementById('nextLvlBtn');
+  let reportActions = document.getElementById('jeeReportActions');
   
   title.textContent = "EXAM COMPLETED";
   title.style.color = "var(--brass-light)";
-  sub.innerHTML = `<span style="font-size:1.8rem; color:var(--sea); font-weight:700;">Score: ${score} / ${qCount * 4}</span> <br><br> Correct: ${correctCount} &nbsp;|&nbsp; Incorrect: ${incorrectCount} &nbsp;|&nbsp; Unattempted: ${qCount - correctCount - incorrectCount}`;
+  sub.innerHTML = `<span style="font-size:1.8rem; color:var(--sea); font-weight:700;">Score: ${score} / ${maxScore}</span> <br><br> Correct: ${correctCount} &nbsp;|&nbsp; Incorrect: ${incorrectCount} &nbsp;|&nbsp; Unattempted: ${qCount - correctCount - incorrectCount}`;
   
   term.innerHTML = reportHtml;
   term.style.display = 'block';
-  term.style.maxHeight = '400px';
+  term.style.maxHeight = '460px';
   term.style.overflowY = 'auto';
+
+  if (reportActions) reportActions.style.display = 'flex';
   
   if(state.curLvl < TOTAL_LEVELS) nextBtn.style.display = 'block';
   else nextBtn.style.display = 'none';
@@ -3647,6 +3822,208 @@ function submitJeeExam() {
   }
   
   compOv.style.display = 'flex';
+  playScoreAnimation(accuracyPct);
+}
+
+// Shares (or copies) one question's solution text — handy for study groups.
+function shareJeeSolution(idx, btnEl) {
+  const rep = state.lastJeeReport;
+  if (!rep) return;
+  const q = rep.questions[idx];
+  const plainQ = q.q.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const plainExp = q.exp.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const text = `JEE Question ${idx + 1} (${rep.chapName})\n\n${plainQ}\n\nCorrect Answer: ${q.cAnsText}\n\nExplanation:\n${plainExp}`;
+
+  if (navigator.share) {
+    navigator.share({ title: `JEE Question ${idx + 1} Solution`, text }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (btnEl) { const old = btnEl.textContent; btnEl.textContent = '✓ Copied'; setTimeout(() => btnEl.textContent = old, 1500); }
+    }).catch(() => alert('Could not copy to clipboard.'));
+  } else {
+    window.prompt('Copy the solution text below:', text);
+  }
+}
+
+// Builds a downloadable PDF exam report from the last JEE attempt.
+function downloadJeeReport() {
+  const rep = state.lastJeeReport;
+  if (!rep) return;
+
+  const JsPdfCtor = window.jspdf && window.jspdf.jsPDF;
+  if (!JsPdfCtor) { alert('PDF library failed to load — check your internet connection and try again.'); return; }
+
+  const doc = new JsPdfCtor({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 48;
+  const maxW = pageW - margin * 2;
+  let y = margin;
+
+  function ensureSpace(lineHeight) {
+    if (y + lineHeight > pageH - margin) { doc.addPage(); y = margin; }
+  }
+  function writeLines(text, opts = {}) {
+    const size = opts.size || 10.5;
+    const lh = opts.lineHeight || size * 1.35;
+    doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+    doc.setFontSize(size);
+    if (opts.color) doc.setTextColor(...opts.color); else doc.setTextColor(20, 20, 20);
+    const lines = doc.splitTextToSize(text, maxW);
+    lines.forEach(line => {
+      ensureSpace(lh);
+      doc.text(line, margin, y);
+      y += lh;
+    });
+  }
+
+  // Header
+  doc.setFillColor(12, 18, 32);
+  doc.rect(0, 0, pageW, 90, 'F');
+  doc.setTextColor(232, 195, 130);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+  doc.text('EXPEDITION 11 — JEE EXAM REPORT', margin, 40);
+  doc.setTextColor(220, 226, 236);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+  doc.text(`Candidate: ${rep.explorerName}   |   Exam: ${rep.chapName}`, margin, 62);
+  doc.text(`Date: ${new Date(rep.date).toLocaleString()}`, margin, 78);
+  y = 120;
+
+  // Score summary
+  writeLines(`Score: ${rep.score} / ${rep.maxScore}    Accuracy: ${rep.accuracyPct}%`, { size: 14, bold: true, color: [12, 18, 32] });
+  writeLines(`Correct: ${rep.correctCount}   |   Incorrect: ${rep.incorrectCount}   |   Unattempted: ${rep.unattempted}`, { size: 11 });
+  y += 10;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(margin, y, pageW - margin, y);
+  y += 20;
+
+  // Per-question breakdown
+  rep.questions.forEach((q, i) => {
+    ensureSpace(30);
+    const plainQ = q.q.replace(/<img[^>]*>/gi, '[Question image — view in-app]').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const plainExp = q.exp.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const status = q.isUnattempted ? 'SKIPPED' : (q.isCorrect ? 'CORRECT' : 'INCORRECT');
+    const statusColor = q.isUnattempted ? [140, 140, 140] : (q.isCorrect ? [30, 130, 110] : [190, 60, 90]);
+
+    writeLines(`Q${i + 1}.  ${plainQ}`, { size: 11, bold: true });
+    writeLines(`Status: ${status}`, { size: 9.5, bold: true, color: statusColor });
+    writeLines(`Your Answer: ${q.uAnsText}`, { size: 10 });
+    if (!q.isCorrect) writeLines(`Correct Answer: ${q.cAnsText}`, { size: 10, color: [30, 130, 110] });
+    writeLines(`Explanation: ${plainExp}`, { size: 9.5, color: [70, 70, 70] });
+    y += 12;
+  });
+
+  doc.save(`JEE_Report_${rep.chapName.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+}
+
+// Renders a shareable completion certificate to a canvas and downloads it as a PNG.
+function downloadJeeCertificate() {
+  const rep = state.lastJeeReport;
+  if (!rep) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = 1400; canvas.height = 990;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grad.addColorStop(0, '#0c1220'); grad.addColorStop(1, '#05070d');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 6;
+  ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+  ctx.strokeStyle = 'rgba(201,156,81,0.5)'; ctx.lineWidth = 2;
+  ctx.strokeRect(46, 46, canvas.width - 92, canvas.height - 92);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#e8c382';
+  ctx.font = '700 26px Georgia, serif';
+  ctx.fillText('EXPEDITION 11', canvas.width / 2, 140);
+  ctx.font = '700 52px Georgia, serif';
+  ctx.fillStyle = '#eef2f8';
+  ctx.fillText('Certificate of Completion', canvas.width / 2, 210);
+
+  ctx.font = '400 22px Georgia, serif';
+  ctx.fillStyle = '#a6b3c9';
+  ctx.fillText('This certifies that', canvas.width / 2, 320);
+
+  ctx.font = '700 46px Georgia, serif';
+  ctx.fillStyle = '#9df1e6';
+  ctx.fillText(rep.explorerName || 'Explorer', canvas.width / 2, 390);
+
+  ctx.font = '400 22px Georgia, serif';
+  ctx.fillStyle = '#a6b3c9';
+  ctx.fillText(`has successfully completed`, canvas.width / 2, 440);
+
+  ctx.font = '700 32px Georgia, serif';
+  ctx.fillStyle = '#eef2f8';
+  ctx.fillText(rep.chapName, canvas.width / 2, 485);
+
+  ctx.font = '700 30px "Courier New", monospace';
+  ctx.fillStyle = '#4fd1c5';
+  ctx.fillText(`Score: ${rep.score} / ${rep.maxScore}   |   Accuracy: ${rep.accuracyPct}%`, canvas.width / 2, 560);
+
+  ctx.font = '400 18px "Courier New", monospace';
+  ctx.fillStyle = '#a6b3c9';
+  ctx.fillText(new Date(rep.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }), canvas.width / 2, 610);
+
+  ctx.font = '400 16px Georgia, serif';
+  ctx.fillStyle = '#6c8cff';
+  ctx.fillText('Issued by Expedition 11 · Class 11 Math, Physics & Chemistry', canvas.width / 2, canvas.height - 90);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `JEE_Certificate_${(rep.explorerName || 'Explorer').replace(/\s+/g, '_')}_${Date.now()}.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
+// Different completion-screen animation per score tier.
+function playScoreAnimation(pct) {
+  const layer = document.getElementById('scoreFxLayer');
+  if (!layer) return;
+  layer.innerHTML = '';
+
+  if (pct >= 90) {
+    // Fireworks — several bursts of radiating sparks.
+    const colors = ['#4fd1c5', '#ff5d8f', '#b892ff', '#e8c382', '#6c8cff'];
+    for (let burst = 0; burst < 6; burst++) {
+      setTimeout(() => {
+        const cx = 15 + Math.random() * 70, cy = 20 + Math.random() * 40;
+        const color = colors[burst % colors.length];
+        for (let i = 0; i < 24; i++) {
+          const angle = (Math.PI * 2 * i) / 24;
+          const dist = 80 + Math.random() * 60;
+          const spark = document.createElement('div');
+          spark.className = 'fw-burst';
+          spark.style.left = cx + 'vw'; spark.style.top = cy + 'vh';
+          spark.style.background = color;
+          spark.style.boxShadow = `0 0 8px ${color}`;
+          spark.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+          spark.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+          spark.style.animation = 'fwSpark 1s ease-out forwards';
+          layer.appendChild(spark);
+        }
+        setTimeout(() => layer.innerHTML = '', 1100);
+      }, burst * 350);
+    }
+  } else if (pct >= 70) {
+    // Confetti — reuse the existing celebratory particle burst.
+    spawnConfetti();
+  } else if (pct >= 40) {
+    // Gentle encouraging glow pulse — solid effort, room to grow.
+    document.body.classList.add('fx-glow-pulse');
+    setTimeout(() => document.body.classList.remove('fx-glow-pulse'), 3300);
+  } else {
+    // Low score — no confetti; a quiet, supportive message instead.
+    const banner = document.createElement('div');
+    banner.className = 'fx-comfort-banner';
+    banner.textContent = "Tough one — review the solutions below and try again. Every attempt sharpens the next.";
+    layer.appendChild(banner);
+    setTimeout(() => banner.remove(), 3300);
+  }
 }
 
 function nextQuestion() {
@@ -3686,6 +4063,8 @@ function levelComplete() {
   let nextBtn = document.getElementById('nextLvlBtn');
   let starsRow = document.getElementById('levelStarsRow');
   let statsGrid = document.getElementById('levelStatsGrid');
+  let reportActions = document.getElementById('jeeReportActions');
+  if (reportActions) reportActions.style.display = 'none';
   
   if(state.curLvl < TOTAL_LEVELS) {
     title.textContent = "LEVEL CLEARED!";
@@ -3713,7 +4092,7 @@ function levelComplete() {
   `;
   
   compOv.style.display = 'flex';
-  spawnConfetti();
+  playScoreAnimation(accuracy);
 }
 
 function startNextLevel() { state.curLvl++; startGame(); }
@@ -3744,6 +4123,9 @@ window.openResetModal = openResetModal;
 window.closeResetModal = closeResetModal;
 window.confirmResetProgress = confirmResetProgress;
 window.showScreen = showScreen;
+window.shareJeeSolution = shareJeeSolution;
+window.downloadJeeReport = downloadJeeReport;
+window.downloadJeeCertificate = downloadJeeCertificate;
 
 window.onload = function() {
   loadSave();
