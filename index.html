@@ -119,6 +119,26 @@ body { padding-top: 30px; }
 .pyq-subject-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .pyq-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: transparent; color: var(--parchment-dim, #c5bba8); cursor: pointer; transition: all 0.15s; }
 .pyq-chip.active { background: rgba(42,157,143,0.25); border-color: var(--sea, #2A9D8F); color: #fff; }
+
+/* PYQ subject cards — mirrors .card-item but with a locked overlay */
+.pyq-section-title { display: flex; align-items: center; justify-content: space-between; margin: 30px 0 14px; flex-wrap: wrap; gap: 8px; }
+.pyq-section-title h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0; color: var(--brass-light); }
+.pyq-section-title p { margin: 2px 0 0; font-size: 0.85rem; color: var(--parchment-dim); }
+.pyq-card { position: relative; overflow: hidden; }
+.pyq-card .pyq-lock-badge { position: absolute; top: 14px; right: 14px; font-size: 0.95rem; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border); border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.5px; color: var(--parchment-dim); text-transform: uppercase; }
+.pyq-card .pyq-years-hint { margin-top: -4px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--parchment-dim); letter-spacing: 0.5px; }
+
+/* Under-development notice inside the years modal */
+.pyq-dev-notice { display: flex; align-items: flex-start; gap: 10px; background: rgba(255,180,84,0.1); border: 1px solid rgba(255,180,84,0.35); border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; color: var(--parchment-dim, #c5bba8); margin-bottom: 16px; line-height: 1.5; }
+.pyq-dev-notice .icn { font-size: 1.1rem; flex-shrink: 0; }
+
+/* Year multiselect chips */
+.pyq-year-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.pyq-year-chip { position: relative; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.95rem; padding: 14px 0; width: 84px; text-align: center; border-radius: 12px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: rgba(255,255,255,0.02); color: var(--parchment); cursor: pointer; transition: all 0.15s; opacity: 0.55; }
+.pyq-year-chip:hover { border-color: var(--brass); opacity: 0.8; }
+.pyq-year-chip.selected { background: rgba(42,157,143,0.22); border-color: var(--sea, #2A9D8F); color: #fff; opacity: 1; }
+.pyq-year-chip .chk { position: absolute; top: 6px; right: 8px; font-size: 0.7rem; }
+.pyq-year-chip .lock-mini { display: block; font-size: 0.65rem; margin-top: 4px; font-weight: 500; letter-spacing: 0.5px; color: var(--parchment-dim); }
 .card-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px 20px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); text-align: center; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
 .card-item:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--brass-light) inset; background: rgba(255,255,255,0.03); }
 .card-item .ico { font-size: 3.2rem; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); margin-bottom: 5px; }
@@ -271,9 +291,26 @@ body { padding-top: 30px; }
 @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(360px) rotate(600deg); opacity: 0; } }
 
 .btn-row { display: flex; justify-content: center; gap: 16px; margin-top: 30px; }
-.complete-actions { display: flex; flex-direction: column; gap: 14px; margin-top: 24px; }
-.complete-actions-row { display: flex; gap: 14px; }
-.complete-actions-row .btn { flex: 1; margin-top: 0; }
+.complete-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+/* flex-wrap here is the actual fix: previously these were flex:1 in a rigid
+   row, so in any narrow container (a docked results panel, a small viewport)
+   they'd get squeezed into cramped, oddly-wrapping vertical pills instead of
+   gracefully becoming full-width stacked buttons. min-width keeps a button
+   from ever getting narrower than it can comfortably render its label. */
+.complete-actions-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.complete-actions-row .btn {
+  flex: 1 1 200px;
+  min-width: 200px;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .complete-actions-row .btn { flex: 1 1 100%; min-width: 100%; font-size: 0.95rem; padding: 14px 20px; }
+}
 .btn { border: none; border-radius: 12px; padding: 16px 32px; cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
 .btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
 .btn.primary { background: var(--sea); color: #fff; box-shadow: 0 4px 15px rgba(42, 157, 143, 0.3); }
@@ -587,15 +624,23 @@ body { padding-top: 30px; }
       </div>
       <div class="grid-container" id="subjectGrid"></div>
 
-      <div class="pyq-banner" onclick="openPyqBrowser()">
+      <div class="pyq-section-title">
+        <div>
+          <h3>📚 Previous Year Questions</h3>
+          <p>Pick a subject to see which years we've got covered.</p>
+        </div>
+      </div>
+      <div class="grid-container" id="pyqSubjectGrid"></div>
+
+      <div class="pyq-banner pyq-mixed-banner" onclick="openPyqMixedModal()">
         <div class="pyq-banner-left">
-          <div class="pyq-banner-icon">📚</div>
+          <div class="pyq-banner-icon">🌐</div>
           <div>
-            <h3>Previous Year Questions</h3>
-            <p id="pyqPanelStatus">Browse by year &amp; subject</p>
+            <h3>Mixed Practice — All Subjects</h3>
+            <p>Pick a year for Math, Physics &amp; Chemistry and practice them together</p>
           </div>
         </div>
-        <div class="pyq-banner-cta">Browse PYQs →</div>
+        <div class="pyq-banner-cta">🔒 Coming soon</div>
       </div>
     </div>
 
@@ -776,36 +821,43 @@ body { padding-top: 30px; }
     </div>
   </div>
 
-  <div class="modal-backdrop" id="pyqBrowserModal" onclick="if(event.target===this) closePyqBrowser()">
-    <div class="modal-box list-popup" style="max-width: 560px;">
+  <div class="modal-backdrop" id="pyqYearsModal" onclick="if(event.target===this) closePyqYearsModal()">
+    <div class="modal-box" style="max-width: 480px;">
       <div class="widget-hdr">
-        <h3>📚 Previous Year Questions</h3>
-        <button class="popup-close" onclick="closePyqBrowser()">✕ Close</button>
+        <h3 id="pyqYearsModalTitle">📚 Previous Year Questions</h3>
+        <button class="popup-close" onclick="closePyqYearsModal()">✕ Close</button>
       </div>
-      <div id="pyqPlaceholderNotice" style="display:none; background: rgba(231,111,81,0.1); border: 1px solid rgba(231,111,81,0.3); border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; color: var(--parchment-dim,#c5bba8); margin-bottom: 12px;">
-        ⚠️ These are sample placeholder questions, not real exam questions — see <code>pyqbank.js</code> to add genuine past-year questions.
+      <div class="pyq-dev-notice">
+        <span class="icn">🚧</span>
+        <span>This section is <strong>under development</strong> and will be live soon. All years are currently locked — you'll be notified the moment practice sets open up.</span>
       </div>
-      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
-        <div id="pyqSubjectFilter" class="pyq-subject-chips">
-          <button type="button" class="pyq-chip active" data-subj="math" onclick="togglePyqSubject('math')">Math</button>
-          <button type="button" class="pyq-chip active" data-subj="physics" onclick="togglePyqSubject('physics')">Physics</button>
-          <button type="button" class="pyq-chip active" data-subj="chemistry" onclick="togglePyqSubject('chemistry')">Chemistry</button>
-        </div>
-        <select id="pyqYearFilter" onchange="renderPyqList()" style="background:#0b1320; color:#fff; border:1px solid var(--line,rgba(201,156,81,0.3)); border-radius:8px; padding:8px 10px; font-size:0.8rem;">
-          <option value="">All years</option>
-        </select>
-        <button class="btn primary" style="padding:8px 16px; font-size:0.8rem; align-self:auto; margin-left:auto;" onclick="startPyqQuiz()">Practice filtered set →</button>
+      <div id="pyqYearGrid" class="pyq-year-grid"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn ghost" onclick="closePyqYearsModal()">Close</button>
+        <button class="btn primary" disabled style="opacity:0.5; cursor:not-allowed;" title="Coming soon">🔒 Practice selected years</button>
       </div>
-      <div id="pyqPopupList" class="popup-list"></div>
     </div>
   </div>
 
-  <div class="modal-backdrop" id="pyqQuizModal">
-    <div class="modal-box" style="max-width: 560px; text-align: left;">
-      <div id="pyqQuizBody"></div>
+  <div class="modal-backdrop" id="pyqMixedModal" onclick="if(event.target===this) closePyqMixedModal()">
+    <div class="modal-box" style="max-width: 560px;">
+      <div class="widget-hdr">
+        <h3>🌐 Mixed Practice — All Subjects</h3>
+        <button class="popup-close" onclick="closePyqMixedModal()">✕ Close</button>
+      </div>
+      <div class="pyq-dev-notice">
+        <span class="icn">🚧</span>
+        <span>This section is <strong>under development</strong> and will be live soon. Choose a year per subject below to preview the flow — everything stays locked until the mixed question bank goes live.</span>
+      </div>
+      <div id="pyqMixedSubjectYears"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px;">
+        <button class="btn ghost" onclick="closePyqMixedModal()">Close</button>
+        <button class="btn primary" disabled style="opacity:0.5; cursor:not-allowed;" title="Coming soon">🔒 Start mixed practice</button>
+      </div>
     </div>
   </div>
   </div>
+
 
   <div class="screen" id="screen-chapters">
     <div class="path-header">
@@ -3037,165 +3089,93 @@ function saveWeeklyGoal() {
   closeWeeklyGoal();
 }
 
-/* ================= PREVIOUS YEAR QUESTIONS (PYQ) ================= */
-let firebasePyqBank = null; // populated live via DB_Engine.listenPyqBank; null = not loaded yet
+/* ================= PREVIOUS YEAR QUESTIONS (PYQ) =================
+   Whole feature is currently locked/under development. Subjects are
+   shown as cards (mirroring the main subject grid); clicking one opens
+   a modal listing the years we have in our database (2021–2025) as
+   multiselect chips. Selection is purely cosmetic for now — nothing is
+   unlocked until the real question bank goes live. */
+const PYQ_YEARS = [2021, 2022, 2023, 2024, 2025];
+const PYQ_SUBJECTS = [
+  { id: 'math', name: 'Mathematics', icon: '📐', theme: 'theme-math' },
+  { id: 'physics', name: 'Physics', icon: '⚛️', theme: 'theme-physics' },
+  { id: 'chemistry', name: 'Chemistry', icon: '⚗️', theme: 'theme-chemistry' },
+];
 
-function getPyqBank() {
-  if (firebasePyqBank && firebasePyqBank.length) return firebasePyqBank;
-  return Array.isArray(window.PYQ_QUESTIONS) ? window.PYQ_QUESTIONS : [];
-}
-function isPyqPlaceholder() {
-  // Only the bundled local file contains sample text — if the educator has
-  // synced anything real via Firebase, we're never showing placeholders.
-  if (firebasePyqBank && firebasePyqBank.length) return false;
-  const bank = getPyqBank();
-  return bank.length > 0 && bank.every(q => /\[SAMPLE/.test(q.q || ''));
-}
-function renderPyqPanel() {
-  const el = document.getElementById('pyqPanelStatus');
-  if (!el) return;
-  const bank = getPyqBank();
-  if (!bank.length) { el.textContent = 'No PYQ bank loaded yet'; return; }
-  const years = Array.from(new Set(bank.map(q => q.year))).sort((a, b) => b - a);
-  el.textContent = `${bank.length} questions · ${years[years.length - 1]}–${years[0]}`;
-}
+let pyqSelectedYears = new Set();
 
-let pyqActiveSubjects = new Set(['math', 'physics', 'chemistry']);
-
-function togglePyqSubject(subj) {
-  if (pyqActiveSubjects.has(subj)) {
-    // Don't allow deselecting the last remaining subject — that would show nothing.
-    if (pyqActiveSubjects.size === 1) return;
-    pyqActiveSubjects.delete(subj);
-  } else {
-    pyqActiveSubjects.add(subj);
-  }
-  document.querySelectorAll('.pyq-chip').forEach(chip => {
-    chip.classList.toggle('active', pyqActiveSubjects.has(chip.dataset.subj));
+function renderPyqSubjectGrid() {
+  const grid = document.getElementById('pyqSubjectGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  PYQ_SUBJECTS.forEach(subj => {
+    const card = document.createElement('div');
+    card.className = 'card-item pyq-card';
+    card.innerHTML = `
+      <div class="pyq-lock-badge">🔒 Locked</div>
+      <div class="ico">${subj.icon}</div>
+      <h3>${subj.name}</h3>
+      <p class="pyq-years-hint">${PYQ_YEARS[0]}–${PYQ_YEARS[PYQ_YEARS.length - 1]} · coming soon</p>`;
+    card.onclick = () => openPyqYearsModal(subj);
+    grid.appendChild(card);
   });
-  renderPyqList();
 }
 
-function openPyqBrowser() {
-  const bank = getPyqBank();
-  const yearSelect = document.getElementById('pyqYearFilter');
-  const currentYears = Array.from(yearSelect.options).slice(1).map(o => o.value);
-  const years = Array.from(new Set(bank.map(q => q.year))).sort((a, b) => b - a);
-  if (currentYears.join(',') !== years.join(',')) {
-    yearSelect.innerHTML = '<option value="">All years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-  }
-  pyqActiveSubjects = new Set(['math', 'physics', 'chemistry']);
-  document.querySelectorAll('.pyq-chip').forEach(chip => chip.classList.add('active'));
-  document.getElementById('pyqPlaceholderNotice').style.display = isPyqPlaceholder() ? 'block' : 'none';
-  renderPyqList();
-  document.getElementById('pyqBrowserModal').classList.add('show');
-}
-function closePyqBrowser() { document.getElementById('pyqBrowserModal').classList.remove('show'); }
-
-function getFilteredPyq() {
-  const year = document.getElementById('pyqYearFilter').value;
-  return getPyqBank().filter(q =>
-    pyqActiveSubjects.has(q.subject) && (!year || String(q.year) === year)
-  );
-}
-
-function renderPyqList() {
-  const list = document.getElementById('pyqPopupList');
-  const filtered = getFilteredPyq();
-  if (!filtered.length) {
-    list.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim,#c5bba8);">No questions match this filter.</div>`;
-    return;
-  }
-  list.innerHTML = filtered.map((q, i) => `
-    <div class="widget-row" style="align-items:flex-start; flex-direction:column; gap:4px;">
-      <div style="display:flex; justify-content:space-between; width:100%; font-size:0.7rem; color: var(--brass-light,#e8c382); font-family:'JetBrains Mono',monospace;">
-        <span>${q.exam || 'PYQ'} · ${q.year || '—'}</span>
-        <span>${q.chapter || ''}</span>
-      </div>
-      <div style="font-size:0.9rem;">${(q.q || '').replace(/^\[SAMPLE[^\]]*\]\s*/, '')}</div>
+function openPyqYearsModal(subj) {
+  pyqSelectedYears = new Set();
+  document.getElementById('pyqYearsModalTitle').textContent = `${subj.icon} ${subj.name} — Previous Year Questions`;
+  const yearGrid = document.getElementById('pyqYearGrid');
+  yearGrid.innerHTML = PYQ_YEARS.map(y => `
+    <div class="pyq-year-chip" data-year="${y}" onclick="togglePyqYear(${y})">
+      ${y}
+      <span class="lock-mini">🔒 Locked</span>
     </div>
   `).join('');
+  document.getElementById('pyqYearsModal').classList.add('show');
+}
+function closePyqYearsModal() { document.getElementById('pyqYearsModal').classList.remove('show'); }
+
+function togglePyqYear(year) {
+  if (pyqSelectedYears.has(year)) pyqSelectedYears.delete(year);
+  else pyqSelectedYears.add(year);
+  document.querySelectorAll('.pyq-year-chip').forEach(chip => {
+    chip.classList.toggle('selected', pyqSelectedYears.has(Number(chip.dataset.year)));
+  });
 }
 
-let pyqRun = null;
+/* ---- Mixed practice (all subjects, independent year picks per subject) ---- */
+let pyqMixedSelections = {}; // subj.id -> Set of selected years
 
-function startPyqQuiz() {
-  const items = getFilteredPyq();
-  if (!items.length) return;
-  closePyqBrowser();
-  pyqRun = { items: seededShuffle(items, Math.random), idx: 0, correct: 0, answered: false };
-  renderPyqQuestion();
-  document.getElementById('pyqQuizModal').classList.add('show');
-}
-function closePyqQuiz() { document.getElementById('pyqQuizModal').classList.remove('show'); pyqRun = null; }
-
-function renderPyqQuestion() {
-  if (!pyqRun) return;
-  const item = pyqRun.items[pyqRun.idx];
-  const body = document.getElementById('pyqQuizBody');
-  body.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <h3 style="margin:0;">📚 ${item.exam || 'PYQ'} ${item.year || ''}</h3>
-      <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">${pyqRun.idx + 1}/${pyqRun.items.length}</span>
+function openPyqMixedModal() {
+  pyqMixedSelections = {};
+  PYQ_SUBJECTS.forEach(s => pyqMixedSelections[s.id] = new Set());
+  const wrap = document.getElementById('pyqMixedSubjectYears');
+  wrap.innerHTML = PYQ_SUBJECTS.map(subj => `
+    <div style="margin-bottom:18px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; font-weight:700; margin-bottom:8px; color:var(--brass-light);">${subj.icon} ${subj.name}</div>
+      <div class="pyq-year-grid" id="pyqMixedYearGrid-${subj.id}">
+        ${PYQ_YEARS.map(y => `
+          <div class="pyq-year-chip" data-year="${y}" onclick="togglePyqMixedYear('${subj.id}', ${y})">
+            ${y}
+            <span class="lock-mini">🔒 Locked</span>
+          </div>
+        `).join('')}
+      </div>
     </div>
-    <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${item.chapter || ''}</div>
-    <div style="margin-bottom:14px; font-size:1.05rem;">${item.q}</div>
-    <div id="pyqOptGrid" style="display:flex; flex-direction:column; gap:8px;"></div>
-    <div id="pyqFeedback" style="margin-top:12px; font-size:0.9rem; display:none;"></div>
-    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
-      <button class="btn ghost" onclick="closePyqQuiz()">Close</button>
-    </div>`;
-  const grid = document.getElementById('pyqOptGrid');
-  item.opts.forEach((opt, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'opt';
-    btn.innerHTML = opt;
-    btn.onclick = () => handlePyqAnswer(i);
-    grid.appendChild(btn);
-  });
-  typesetMath(body);
+  `).join('');
+  document.getElementById('pyqMixedModal').classList.add('show');
 }
+function closePyqMixedModal() { document.getElementById('pyqMixedModal').classList.remove('show'); }
 
-function handlePyqAnswer(selIdx) {
-  if (!pyqRun || pyqRun.answered) return;
-  pyqRun.answered = true;
-  const item = pyqRun.items[pyqRun.idx];
-  const isCorrect = selIdx === item.ans;
-  if (isCorrect) pyqRun.correct++;
-  const grid = document.getElementById('pyqOptGrid');
-  Array.from(grid.children).forEach((b, i) => {
-    if (i === item.ans) b.classList.add('correct');
-    else if (i === selIdx) b.classList.add('wrong');
-    b.onclick = null;
+function togglePyqMixedYear(subjId, year) {
+  const set = pyqMixedSelections[subjId];
+  if (set.has(year)) set.delete(year);
+  else set.add(year);
+  const grid = document.getElementById(`pyqMixedYearGrid-${subjId}`);
+  if (!grid) return;
+  grid.querySelectorAll('.pyq-year-chip').forEach(chip => {
+    chip.classList.toggle('selected', set.has(Number(chip.dataset.year)));
   });
-  const fb = document.getElementById('pyqFeedback');
-  fb.style.display = 'block';
-  fb.innerHTML = isCorrect
-    ? '✓ Correct!' + (item.sol ? `<div style="margin-top:6px; opacity:0.85;">${item.sol}</div>` : '')
-    : `✗ Incorrect. Correct answer: <b>${item.opts[item.ans]}</b>` + (item.sol ? `<div style="margin-top:6px; opacity:0.85;">${item.sol}</div>` : '');
-  typesetMath(fb);
-  const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'btn primary';
-  nextBtn.textContent = (pyqRun.idx < pyqRun.items.length - 1) ? 'Next →' : 'Finish';
-  nextBtn.onclick = advancePyqRun;
-  footer.insertBefore(nextBtn, footer.firstChild);
-}
-
-function advancePyqRun() {
-  if (!pyqRun) return;
-  if (pyqRun.idx < pyqRun.items.length - 1) {
-    pyqRun.idx++;
-    pyqRun.answered = false;
-    renderPyqQuestion();
-  } else {
-    const body = document.getElementById('pyqQuizBody');
-    body.innerHTML = `
-      <h3 style="margin-top:0;">📚 Set complete</h3>
-      <p>You got <b>${pyqRun.correct}/${pyqRun.items.length}</b> correct.</p>
-      <div style="display:flex; justify-content:flex-end;"><button class="btn primary" onclick="closePyqQuiz()">Close</button></div>`;
-    pyqRun = null;
-  }
 }
 
 function openBadgesPopup() {
@@ -3345,11 +3325,7 @@ function startApp() {
       }
     });
     window.DB_Engine.listenDiscussion((messages) => renderRemovalDiscussion(messages));
-    window.DB_Engine.listenPyqBank((list) => {
-      firebasePyqBank = list;
-      renderPyqPanel();
-      if (document.getElementById('pyqBrowserModal').classList.contains('show')) renderPyqList();
-    });
+    // PYQ bank sync disabled — section is locked/under development for now.
   }
 }
 
@@ -3391,10 +3367,22 @@ function sendRemovalDiscussionMsg() {
   input.value = '';
 }
 
+// Sets the body's theme class while preserving any "mode" classes that
+// should persist across navigation regardless of subject/theme — most
+// importantly focus-active, which previously got silently wiped out any
+// time goToSubjects()/subject-card clicks did a raw `className = ...`
+// reset. Add future cross-navigation flags here rather than back at each
+// call site, so this stays the single source of truth for it.
+function setBodyThemeClass(themeClass) {
+  const persist = ['focus-active', 'fx-glow-pulse'].filter(c => document.body.classList.contains(c));
+  document.body.className = themeClass || '';
+  persist.forEach(c => document.body.classList.add(c));
+}
+
 function goToSubjects() {
   AudioSys.startPeacefulAmbient();
   document.getElementById('appTitleText').textContent = 'Expedition Hub';
-  document.body.className = '';
+  setBodyThemeClass('');
   state.curSubj = null;
   const grid = document.getElementById('subjectGrid');
   grid.innerHTML = '';
@@ -3402,10 +3390,10 @@ function goToSubjects() {
     let card = document.createElement('div');
     card.className = 'card-item';
     card.innerHTML = `<div class="ico">${sub.icon}</div><h3>${sub.name}</h3><p>${sub.chapters.length} Chapters</p>`;
-    card.onclick = () => { document.body.className = sub.theme; state.curSubj = sub; loadChapters(); };
+    card.onclick = () => { setBodyThemeClass(sub.theme); state.curSubj = sub; loadChapters(); };
     grid.appendChild(card);
   });
-  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqPanel(); showScreen('screen-subjects');
+  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); showScreen('screen-subjects');
 }
 
 function loadChapters() {
@@ -4233,6 +4221,40 @@ function latexToPlain(input) {
 
   // \begin{cases}/\end{cases} etc. (piecewise/aligned blocks) -> drop the wrapper, keep the rows
   s = s.replace(/\\begin\{[a-zA-Z*]+\}/g, '').replace(/\\end\{[a-zA-Z*]+\}/g, '');
+
+  // Reaction-scheme arrows. These datasets frequently encode chemistry
+  // reaction arrows with reagents stacked above/below via TeX idioms like
+  // \buildrel{reagent}\over\longrightarrow or
+  // \mathrel{\mathop{\kern0pt\longrightarrow}\limits_{solvent}^{reagent}} —
+  // none of that means anything to a plain-text reader, so collapse it down
+  // to "→ (reagent/solvent)" instead of dumping raw macro soup.
+  s = s.replace(/\\kern[\d.]*pt/g, '');
+  s = s.replace(/\\longrightarrow/g, '→').replace(/\\longleftarrow/g, '←')
+       .replace(/\\rightleftharpoons/g, '⇌').replace(/\\rightarrow/g, '→').replace(/\\leftarrow/g, '←');
+  // \buildrel{X}\over→  ->  →(X)
+  s = s.replace(/\\buildrel\s*\{([^{}]*)\}\s*\\over\s*→/g, (m, top) => ` →(${top.trim()}) `);
+  // \mathop{→}\limits_{under}^{over}  ->  →(over/under)
+  // Helper: strip a captured group's own outer parens before we wrap it in
+  // ours, so "(Major Product)" doesn't become "((Major Product))".
+  const unwrapParens = t => { t = t.trim(); return /^\(.*\)$/.test(t) ? t.slice(1, -1) : t; };
+  s = s.replace(/\\mathop\s*\{([^{}]*)\}\s*\\limits_\{([^{}]*)\}\^\{([^{}]*)\}/g,
+    (m, arrow, under, over) => `${arrow.trim()}(${unwrapParens(over)}/${unwrapParens(under)})`);
+  s = s.replace(/\\mathop\s*\{([^{}]*)\}\s*\\limits_\{([^{}]*)\}/g,
+    (m, arrow, under) => `${arrow.trim()}(${unwrapParens(under)})`);
+  s = s.replace(/\\mathop\s*\{([^{}]*)\}\s*\\limits\^\{([^{}]*)\}/g,
+    (m, arrow, over) => `${arrow.trim()}(${unwrapParens(over)})`);
+  // Unwrap any remaining bare \mathrel{...} / \mathop{...} wrappers.
+  s = s.replace(/\\mathrel\s*\{([^{}]*)\}/g, '$1').replace(/\\mathop\s*\{([^{}]*)\}/g, '$1');
+  // \mathop{'A'}\limits_{(Major\,\Pr oduct)}  ->  'A' (Major Product)
+  // (leftover \limits_{...} not attached to an arrow, e.g. labeling a product)
+  s = s.replace(/\\limits_\{([^{}]*)\}\^\{([^{}]*)\}/g, (m, under, over) => ` (${unwrapParens(over)}/${unwrapParens(under)})`);
+  s = s.replace(/\\limits_\{([^{}]*)\}/g, (m, under) => ` (${unwrapParens(under)})`);
+  s = s.replace(/\\limits\^\{([^{}]*)\}/g, (m, over) => ` (${unwrapParens(over)})`);
+  // Known dataset artifact: "Product" gets mangled into "\Pr oduct" (the \Pr
+  // probability-operator macro glued onto the tail of the word, with the
+  // space that used to separate them left dangling). Merge it straight back
+  // into the plain word instead of leaving "\Pr" + a gap in the output.
+  s = s.replace(/\\Pr\s*(?=oduct)/gi, 'Pr');
 
   // \text{...} -> ... (drop the wrapper, keep the words)
   s = s.replace(/\\text\{([^}]*)\}/g, '$1');
