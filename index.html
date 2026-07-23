@@ -3139,19 +3139,19 @@ async function fetchPyqAvailability() {
   return pyqAvailabilityPromise;
 }
 
-async function fetchPyqPages(subjId, year) {
+async function fetchPyqData(subjId, year) {
   const key = `${subjId}_${year}`;
   if (_pyqPageCache.has(key)) return _pyqPageCache.get(key);
-  if (!dbReady) return [];
+  if (!dbReady) return { pages: [], questions: [] };
   try {
     const snap = await db.ref('pyqBank/' + key).once('value');
-    const val = snap.val();
-    const pages = (val && val.pages) || [];
-    _pyqPageCache.set(key, pages);
-    return pages;
+    const val = snap.val() || {};
+    const data = { pages: val.pages || [], questions: val.questions || [] };
+    _pyqPageCache.set(key, data);
+    return data;
   } catch (err) {
     console.warn(`[PYQ] fetch failed for ${key}:`, err);
-    return [];
+    return { pages: [], questions: [] };
   }
 }
 
@@ -3245,12 +3245,20 @@ async function startPyqPracticeSingle() {
   const years = Array.from(pyqSelectedYears).sort();
   closePyqYearsModal();
   openPyqViewerLoading(`${subj.icon} ${subj.name} — ${years.join(', ')}`);
+
+  const allQuestions = [];
   const allPages = [];
   for (const y of years) {
-    const pages = await fetchPyqPages(subj.id, y);
-    pages.forEach(p => allPages.push({ ...p, year: y, subject: subj.name }));
+    const data = await fetchPyqData(subj.id, y);
+    data.questions.forEach(q => allQuestions.push({ ...q, year: y, subjectName: subj.name }));
+    data.pages.forEach(p => allPages.push({ ...p, year: y, subject: subj.name }));
   }
-  renderPyqViewer(`${subj.icon} ${subj.name} — ${years.join(', ')}`, allPages);
+
+  if (allQuestions.length) {
+    startPyqQuiz(`${subj.icon} ${subj.name} — ${years.join(', ')}`, allQuestions);
+  } else {
+    renderPyqViewer(`${subj.icon} ${subj.name} — ${years.join(', ')}`, allPages);
+  }
 }
 
 /* ---- Mixed practice (all subjects, independent year picks per subject) ---- */
@@ -3328,15 +3336,21 @@ async function startPyqPracticeMixed() {
   if (totalSelected === 0) return;
   closePyqMixedModal();
   openPyqViewerLoading('🌐 Mixed Practice — All Subjects');
+  const allQuestions = [];
   const allPages = [];
   for (const subj of PYQ_SUBJECTS) {
     const years = Array.from(pyqMixedSelections[subj.id] || []).sort();
     for (const y of years) {
-      const pages = await fetchPyqPages(subj.id, y);
-      pages.forEach(p => allPages.push({ ...p, year: y, subject: subj.name }));
+      const data = await fetchPyqData(subj.id, y);
+      data.questions.forEach(q => allQuestions.push({ ...q, year: y, subjectName: subj.name }));
+      data.pages.forEach(p => allPages.push({ ...p, year: y, subject: subj.name }));
     }
   }
-  renderPyqViewer('🌐 Mixed Practice — All Subjects', allPages);
+  if (allQuestions.length) {
+    startPyqQuiz('🌐 Mixed Practice — All Subjects', allQuestions);
+  } else {
+    renderPyqViewer('🌐 Mixed Practice — All Subjects', allPages);
+  }
 }
 
 /* ---- Shared read-only viewer for fetched PYQ pages (raw page text, MathJax-typeset) ---- */
@@ -3346,6 +3360,16 @@ function openPyqViewerLoading(title) {
   document.getElementById('pyqViewerModal').classList.add('show');
 }
 function closePyqViewerModal() { document.getElementById('pyqViewerModal').classList.remove('show'); }
+
+// Strips third-party source watermark/promo text baked into some extracted
+// PDF pages (e.g. "www.esaral.com 3 JEE Exam Solution JEE | NEET | Clas 8 - 10 Download eSaral APP").
+// No-op on pages that don't contain it (e.g. the 2021 batch, which is already clean).
+function cleanPyqPageText(text) {
+  return (text || '')
+    .replace(/www\.esaral\.com\s*\d*\s*JEE\s*Exam\s*Solution\s*JEE\s*\|\s*NEET\s*\|\s*Clas\s*8\s*-\s*10\s*Download\s*eSaral\s*APP/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 
 function renderPyqViewer(title, pages) {
   document.getElementById('pyqViewerTitle').textContent = title;
@@ -3357,10 +3381,94 @@ function renderPyqViewer(title, pages) {
   body.innerHTML = pages.map(p => `
     <div class="widget-row" style="align-items:flex-start; flex-direction:column; gap:6px;">
       <div style="font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--brass-light,#e8c382);">${p.subject || ''} · ${p.year || ''} · Page ${p.pageNumber}</div>
-      <div style="font-size:0.88rem; white-space:pre-wrap; line-height:1.65;">${escapeHtml(p.text)}</div>
+      <div style="font-size:0.88rem; white-space:pre-wrap; line-height:1.65;">${escapeHtml(cleanPyqPageText(p.text))}</div>
     </div>
   `).join('');
   typesetMath(body);
+}
+
+/* ---- Real interactive PYQ quiz: one question at a time, click an option,
+   correct/wrong revealed immediately, explanation shown at the bottom. ---- */
+let pyqQuiz = null; // { title, questions, idx, correct, answered }
+
+function startPyqQuiz(title, questions) {
+  pyqQuiz = { title, questions: seededShuffle(questions, Math.random), idx: 0, correct: 0, answered: false };
+  document.getElementById('pyqViewerTitle').textContent = title;
+  renderPyqQuizQuestion();
+}
+
+function renderPyqQuizQuestion() {
+  if (!pyqQuiz) return;
+  pyqQuiz.answered = false;
+  const q = pyqQuiz.questions[pyqQuiz.idx];
+  const body = document.getElementById('pyqViewerBody');
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--brass-light,#e8c382);">
+      <span>${q.subjectName || q.subject || ''} · ${q.year || ''}${q.sourcePage ? ' · p.' + q.sourcePage : ''}</span>
+      <span>Q${pyqQuiz.idx + 1}/${pyqQuiz.questions.length} · ${pyqQuiz.correct} correct</span>
+    </div>
+    <div style="font-size:1rem; margin-bottom:16px; line-height:1.55;">${escapeHtml(q.q)}</div>
+    <div id="pyqQuizOptGrid" class="opt-grid"></div>
+    <div id="pyqQuizFeedback" class="feedback"></div>
+    <div id="pyqQuizNextRow" style="display:flex; justify-content:flex-end; margin-top:16px; gap:10px;"></div>
+  `;
+  const grid = document.getElementById('pyqQuizOptGrid');
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = escapeHtml(opt);
+    btn.onclick = () => handlePyqQuizAnswer(i, btn);
+    grid.appendChild(btn);
+  });
+  typesetMath(body);
+}
+
+function handlePyqQuizAnswer(selIdx, btnNode) {
+  if (!pyqQuiz || pyqQuiz.answered) return;
+  pyqQuiz.answered = true;
+  const q = pyqQuiz.questions[pyqQuiz.idx];
+  const isCorrect = selIdx === q.ans;
+  if (isCorrect) pyqQuiz.correct++;
+
+  const grid = document.getElementById('pyqQuizOptGrid');
+  Array.from(grid.children).forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.ans) b.classList.add('correct');
+    else if (i === selIdx) b.classList.add('wrong');
+  });
+
+  // The explanation always appears at the bottom, right after answering.
+  const fb = document.getElementById('pyqQuizFeedback');
+  fb.className = 'feedback show ' + (isCorrect ? 'ok' : 'bad');
+  fb.innerHTML = (isCorrect ? '✓ Correct!' : `✗ Incorrect — correct answer: <b>${escapeHtml(q.opts[q.ans])}</b>`) +
+    (q.sol ? `<div style="margin-top:10px; font-weight:400; text-align:left; font-size:0.88rem; line-height:1.55;">${escapeHtml(q.sol)}</div>` : '');
+  typesetMath(fb);
+
+  const nextRow = document.getElementById('pyqQuizNextRow');
+  const isLast = pyqQuiz.idx >= pyqQuiz.questions.length - 1;
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn primary';
+  nextBtn.textContent = isLast ? 'Finish' : 'Next →';
+  nextBtn.onclick = advancePyqQuiz;
+  nextRow.appendChild(nextBtn);
+}
+
+function advancePyqQuiz() {
+  if (!pyqQuiz) return;
+  if (pyqQuiz.idx < pyqQuiz.questions.length - 1) {
+    pyqQuiz.idx++;
+    renderPyqQuizQuestion();
+  } else {
+    const total = pyqQuiz.questions.length;
+    const correct = pyqQuiz.correct;
+    document.getElementById('pyqViewerBody').innerHTML = `
+      <div style="text-align:center; padding:20px 0;">
+        <h3 style="margin-top:0;">📚 Set complete</h3>
+        <p style="font-size:1.05rem;">You got <b>${correct}/${total}</b> correct.</p>
+        <button class="btn primary" onclick="closePyqViewerModal()">Close</button>
+      </div>`;
+    pyqQuiz = null;
+  }
 }
 
 function openBadgesPopup() {
