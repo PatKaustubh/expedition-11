@@ -3106,11 +3106,11 @@ function saveWeeklyGoal() {
 /* ================= PREVIOUS YEAR QUESTIONS (PYQ) =================
    Subjects are shown as cards (mirroring the main subject grid); clicking
    one opens a modal listing years 2021-2025 as multiselect chips. Which
-   years are actually unlocked is driven by Firestore: collection
-   "pyqBank", doc "_availability" -> { physics: [2021], chemistry: [2021], math: [2021] }.
-   Individual year data lives in docs "{subject}_{year}" -> { pages: [...] }.
-   This reuses the same Firestore app/App Check init as the main question
-   bank (see _initFirebase / FIREBASE_CONFIG above). */
+   years are actually unlocked is driven by Realtime Database (the same
+   `db`/`dbReady` connection DB_Engine already uses for leaderboard/reports):
+   node "pyqBank/_availability" -> { physics: [2021], chemistry: [2021], math: [2021] }.
+   Individual year data lives at "pyqBank/{subject}_{year}" -> { pages: [...] }.
+   Rules for this path already exist (same as the old shared PYQ bank). */
 const PYQ_YEARS = [2021, 2022, 2023, 2024, 2025];
 const PYQ_SUBJECTS = [
   { id: 'math', name: 'Mathematics', icon: '📐', theme: 'theme-math' },
@@ -3126,12 +3126,12 @@ async function fetchPyqAvailability() {
   if (pyqAvailability) return pyqAvailability;
   if (pyqAvailabilityPromise) return pyqAvailabilityPromise;
   pyqAvailabilityPromise = (async () => {
+    if (!dbReady) { pyqAvailability = {}; return pyqAvailability; }
     try {
-      await _initFirebase();
-      const snap = await _fbFns.getDoc(_fbFns.doc(_fbDb, 'pyqBank', '_availability'));
-      pyqAvailability = snap.exists() ? (snap.data() || {}) : {};
+      const snap = await db.ref('pyqBank/_availability').once('value');
+      pyqAvailability = snap.val() || {};
     } catch (err) {
-      console.warn('[PYQ] availability fetch failed:', err);
+      console.warn('[PYQ] availability fetch failed (check Firebase Rules for "pyqBank"):', err);
       pyqAvailability = {};
     }
     return pyqAvailability;
@@ -3142,10 +3142,11 @@ async function fetchPyqAvailability() {
 async function fetchPyqPages(subjId, year) {
   const key = `${subjId}_${year}`;
   if (_pyqPageCache.has(key)) return _pyqPageCache.get(key);
+  if (!dbReady) return [];
   try {
-    await _initFirebase();
-    const snap = await _fbFns.getDoc(_fbFns.doc(_fbDb, 'pyqBank', key));
-    const pages = snap.exists() ? (snap.data().pages || []) : [];
+    const snap = await db.ref('pyqBank/' + key).once('value');
+    const val = snap.val();
+    const pages = (val && val.pages) || [];
     _pyqPageCache.set(key, pages);
     return pages;
   } catch (err) {
