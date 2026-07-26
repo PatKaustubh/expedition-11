@@ -979,8 +979,8 @@ body { padding-top: 30px; }
         <h3 id="pyqViewerTitle" class="pyq-modal-title">📚 PYQ Viewer</h3>
         <button class="popup-close" onclick="closePyqViewerModal()">✕ Close</button>
       </div>
-      <div id="pyqQuizPalette" style="display:none; flex-wrap:wrap; gap:6px; padding:10px 4px; border-bottom:1px solid var(--glass-border,rgba(255,255,255,0.12)); margin-bottom:10px;"></div>
       <div id="pyqViewerBody" class="popup-list"></div>
+      <div id="pyqQuizPalette" style="display:none; flex-wrap:wrap; gap:6px; padding:10px 4px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12)); margin-top:10px;"></div>
     </div>
   </div>
   </div>
@@ -2223,7 +2223,15 @@ const Factory = {
 
     let qs = [];
     let usedBases = new Set();
-    let ptr = (levelIndexInTier * qCount) % shuffled.length;
+    // Spread the 5 levels within a tier evenly across the whole pool, rather
+    // than starting each level at levelIndex*qCount — that formula wraps
+    // (mod shuffled.length) whenever a pool has fewer than 5*qCount
+    // questions, which made e.g. level 3 start at the exact same offset as
+    // level 0 and hand out an identical (or heavily overlapping) question
+    // set. Chunking by pool-size/5 instead keeps each level's starting
+    // point distinct even for smaller banks.
+    const chunkSize = Math.max(1, Math.floor(shuffled.length / 5));
+    let ptr = (levelIndexInTier * chunkSize) % shuffled.length;
     let scanned = 0;
 
     while (qs.length < qCount && scanned < shuffled.length) {
