@@ -1219,6 +1219,7 @@ function getQuestionsForLevel(subject, chapter, level) {
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
 <script src="pyqbank.js"></script>
 <script src="firebase-config.js"></script>
 <script>
@@ -1246,6 +1247,29 @@ let firestoreReady = false;
   }
   try {
     firebase.initializeApp(firebaseConfig);
+
+    // App Check: if Firestore has App Check enforcement turned ON in the
+    // Firebase Console (App Check > APIs > Cloud Firestore), every request
+    // needs a valid token from this or it gets rejected with "Missing or
+    // insufficient permissions" — even though the Firestore rules themselves
+    // say `allow read: if true`. Register a reCAPTCHA v3 site key under
+    // Firebase Console > App Check > Apps > (this web app) > reCAPTCHA v3,
+    // and paste it in below. If enforcement is OFF (Unenforced/Monitor
+    // mode), this block is harmless to leave in — it just won't be required.
+    const RECAPTCHA_V3_SITE_KEY = 'PASTE_YOUR_RECAPTCHA_V3_SITE_KEY_HERE';
+    if (RECAPTCHA_V3_SITE_KEY && RECAPTCHA_V3_SITE_KEY !== 'PASTE_YOUR_RECAPTCHA_V3_SITE_KEY_HERE' && firebase.appCheck) {
+      try {
+        firebase.appCheck().activate(
+          new firebase.appCheck.ReCaptchaV3Provider(RECAPTCHA_V3_SITE_KEY),
+          true // auto-refresh tokens
+        );
+      } catch (e) {
+        console.warn('[Explorer] App Check activation failed — Firestore reads may be blocked if enforcement is on:', e);
+      }
+    } else if (!RECAPTCHA_V3_SITE_KEY || RECAPTCHA_V3_SITE_KEY === 'PASTE_YOUR_RECAPTCHA_V3_SITE_KEY_HERE') {
+      console.warn('[Explorer] No reCAPTCHA v3 site key set — if Firestore App Check enforcement is ON, reads will be rejected. See RECAPTCHA_V3_SITE_KEY comment above.');
+    }
+
     db = firebase.database();
     dbReady = true;
     // Live connection indicator via Firebase's own .info/connected node.
