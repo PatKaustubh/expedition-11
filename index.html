@@ -1218,6 +1218,7 @@ function getQuestionsForLevel(subject, chapter, level) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="pyqbank.js"></script>
 <script src="firebase-config.js"></script>
 <script>
@@ -1231,6 +1232,8 @@ function getQuestionsForLevel(subject, chapter, level) {
 
 let dbReady = false;
 let db = null;
+let firestoreDb = null;
+let firestoreReady = false;
 (function initFirebase() {
   const problem = (window.__validateFirebaseConfig || (()=>null))(
     typeof firebaseConfig !== 'undefined' ? firebaseConfig : null
@@ -1256,6 +1259,18 @@ let db = null;
     window.__lastFirebaseError = e && e.message || String(e);
     console.warn('[Explorer] Firebase init failed:', e);
     setTimeout(() => { try { setBackendStatus('local', window.__lastFirebaseError); } catch(_) {} }, 0);
+  }
+  // Firestore is a separate product from Realtime Database within the same
+  // Firebase project — it holds the original, complete "questionBank"
+  // collection (docs like "pnc_basic", "atom_advanced", "period_basic").
+  // Initialized independently so that if this fails, RTDB (which still has
+  // some newer chapters like Binomial Theorem) keeps working regardless.
+  try {
+    firestoreDb = firebase.firestore();
+    firestoreReady = true;
+  } catch (e) {
+    console.warn('[Explorer] Firestore init failed (question bank will rely on Realtime Database only):', e);
+    firestoreReady = false;
   }
 })();
 
@@ -2130,13 +2145,19 @@ function confirmResetProgress() {
 
 function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
-/* ================= FIRESTORE-BACKED QUESTION BANK (App Check protected) ================= */
-// Question content lives in Realtime Database, one top-level node per chapter
-// (named exactly like the chapter's display name, e.g. "Binomial Theorem"),
-// each with "basic"/"intermediate"/"advanced" children holding the question
-// arrays. BANK_CHAPTER_KEY maps this app's internal chapter id to that RTDB
-// node name (needed because a couple of ids use a shorthand like "&" in their
-// display name that doesn't match the uploaded node, e.g. pnc).
+/* ================= QUESTION BANK: FIRESTORE (original/complete) + REALTIME DATABASE (newer additions) =================
+   The real, complete curated question bank (29 topic x tier banks — sets,
+   relations, pmi, pnc, atom, period, etc.) lives in Cloud Firestore, in a
+   collection called "questionBank", with one document per topic+tier named
+   exactly "<chapId>_<tier>" (e.g. "pnc_basic", "atom_advanced",
+   "period_intermediate" — confirmed directly from the Firestore console).
+   A handful of newer chapters (Binomial Theorem, Conic Sections, etc.) were
+   instead uploaded straight into Realtime Database as their own top-level
+   node using the chapter's full display name (see BANK_CHAPTER_KEY below).
+   So: try Firestore first (it's the original, larger source of truth), and
+   fall back to Realtime Database only if Firestore has nothing for that
+   topic+tier — that way nothing that already worked from either source
+   breaks, and newly-added RTDB chapters keep working too. */
 const BANK_CHAPTER_KEY = {
   sets: 'Sets',
   relations: 'Relations and Functions',
@@ -2154,10 +2175,6 @@ const BANK_CHAPTER_KEY = {
   reasoning: 'Mathematical Reasoning',
   stats: 'Statistics',
   probability: 'Probability',
-  // Physics/chemistry chapters that were previously Firestore-backed — kept
-  // here so they keep working if/when their banks show up in RTDB under
-  // these same names; bankGenerate() falls back to the procedural generator
-  // gracefully if a node doesn't exist yet.
   kin_2d: 'Motion in a Plane',
   atom: 'Structure of Atom',
   kin_1d: 'Motion in a Straight Line',
@@ -2166,28 +2183,56 @@ const BANK_CHAPTER_KEY = {
 };
 const FIRESTORE_TOPICS = new Set(Object.keys(BANK_CHAPTER_KEY));
 
+// A Firestore doc or an RTDB node might store the question list as a plain
+// array, as { questions: [...] }, or (common with some import tools) as a
+// map with numeric-string keys ("0","1",...) instead of a true array —
+// normalize all of those shapes to a plain array.
+function _normalizeQuestionData(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'object') {
+    if (Array.isArray(val.questions)) return val.questions;
+    return Object.values(val);
+  }
+  return [];
+}
+
+async function _fetchFromFirestore(chapId, tier) {
+  if (!firestoreReady || !firestoreDb) return [];
+  try {
+    const docSnap = await firestoreDb.collection('questionBank').doc(`${chapId}_${tier}`).get();
+    if (!docSnap.exists) return [];
+    return _normalizeQuestionData(docSnap.data());
+  } catch (error) {
+    console.warn(`[QuestionBank] Firestore fetch failed for questionBank/${chapId}_${tier}:`, error);
+    return [];
+  }
+}
+
+async function _fetchFromRTDB(chapId, tier) {
+  const nodeName = BANK_CHAPTER_KEY[chapId];
+  if (!nodeName || !dbReady) return [];
+  try {
+    const snap = await db.ref(`${nodeName}/${tier}`).once('value');
+    return _normalizeQuestionData(snap.val());
+  } catch (error) {
+    console.warn(`[QuestionBank] Realtime Database fetch failed for ${nodeName}/${tier}:`, error);
+    return [];
+  }
+}
+
 const _questionCache = new Map(); // "<chapId>_<tier>" -> questions array
 
 async function _fetchTier(topic, tier) {
   const cacheId = `${topic}_${tier}`;
   if (_questionCache.has(cacheId)) return _questionCache.get(cacheId);
 
-  const nodeName = BANK_CHAPTER_KEY[topic];
-  if (!nodeName || !dbReady) return [];
-
-  try {
-    const snap = await db.ref(`${nodeName}/${tier}`).once('value');
-    const val = snap.val();
-    // Uploaded as a JSON array, but Firebase can store it as an object with
-    // numeric-string keys ("0","1",...) instead of a true array depending on
-    // how it was imported — normalize both shapes to a plain array.
-    const questions = Array.isArray(val) ? val : (val && typeof val === 'object' ? Object.values(val) : []);
-    _questionCache.set(cacheId, questions);
-    return questions;
-  } catch (error) {
-    console.warn(`Realtime Database fetch failed for ${nodeName}/${tier}:`, error);
-    return []; // caller falls back gracefully instead of hanging
+  let questions = await _fetchFromFirestore(topic, tier);
+  if (questions.length === 0) {
+    questions = await _fetchFromRTDB(topic, tier);
   }
+  _questionCache.set(cacheId, questions);
+  return questions;
 }
 
 const Factory = {
