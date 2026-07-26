@@ -2131,57 +2131,61 @@ function confirmResetProgress() {
 function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 /* ================= FIRESTORE-BACKED QUESTION BANK (App Check protected) ================= */
-// Question content now lives in Firestore (collection "questionBank", docs like
-// "pnc_basic", "atom_advanced") instead of being embedded in this file.
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDUr5QPsUNk9VaixxwqsDESwXcvzqLxYSE",
-  authDomain: "expedition-11-3c997.firebaseapp.com",
-  databaseURL: "https://expedition-11-3c997-default-rtdb.firebaseio.com",
-  projectId: "expedition-11-3c997",
-  storageBucket: "expedition-11-3c997.firebasestorage.app",
-  messagingSenderId: "935443179328",
-  appId: "1:935443179328:web:792506ecaa0d2728383ca5",
-  measurementId: "G-Y83G37CK8N",
+// Question content lives in Realtime Database, one top-level node per chapter
+// (named exactly like the chapter's display name, e.g. "Binomial Theorem"),
+// each with "basic"/"intermediate"/"advanced" children holding the question
+// arrays. BANK_CHAPTER_KEY maps this app's internal chapter id to that RTDB
+// node name (needed because a couple of ids use a shorthand like "&" in their
+// display name that doesn't match the uploaded node, e.g. pnc).
+const BANK_CHAPTER_KEY = {
+  sets: 'Sets',
+  relations: 'Relations and Functions',
+  trig: 'Trigonometric Functions',
+  pmi: 'Principle of Mathematical Induction',
+  complex: 'Complex Numbers & Quadratic Eq',
+  ineq: 'Linear Inequalities',
+  pnc: 'Permutations and Combinations', // display name uses "&"; RTDB node uses "and"
+  binomial: 'Binomial Theorem',
+  seq: 'Sequences and Series',
+  lines: 'Straight Lines',
+  conics: 'Conic Sections',
+  '3dgeo': 'Intro to 3D Geometry',
+  calculus: 'Limits and Derivatives',
+  reasoning: 'Mathematical Reasoning',
+  stats: 'Statistics',
+  probability: 'Probability',
+  // Physics/chemistry chapters that were previously Firestore-backed — kept
+  // here so they keep working if/when their banks show up in RTDB under
+  // these same names; bankGenerate() falls back to the procedural generator
+  // gracefully if a node doesn't exist yet.
+  kin_2d: 'Motion in a Plane',
+  atom: 'Structure of Atom',
+  kin_1d: 'Motion in a Straight Line',
+  laws: 'Laws of Motion',
+  period: 'Classification of Elements',
 };
+const FIRESTORE_TOPICS = new Set(Object.keys(BANK_CHAPTER_KEY));
 
-const RECAPTCHA_V3_SITE_KEY = "6LdBS1stAAAAAL7QLbJXXMrI2BT9743bStPWtec1";
-
-const FIRESTORE_TOPICS = new Set(["pnc","ineq","kin_2d","atom","sets","relations","trig","kin_1d","laws","period","pmi","complex"]);
-
-let _fbApp = null, _fbDb = null, _fbFns = null, _fbReadyPromise = null;
-const _questionCache = new Map(); // docId ("<topic>_<tier>") -> questions array
-
-function _initFirebase() {
-  if (_fbReadyPromise) return _fbReadyPromise;
-  _fbReadyPromise = (async () => {
-    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-    const { initializeAppCheck, ReCaptchaV3Provider } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js");
-    const { getFirestore, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-
-    _fbApp = initializeApp(FIREBASE_CONFIG);
-    initializeAppCheck(_fbApp, {
-      provider: new ReCaptchaV3Provider(RECAPTCHA_V3_SITE_KEY),
-      isTokenAutoRefreshEnabled: true,
-    });
-    _fbDb = getFirestore(_fbApp);
-    _fbFns = { doc, getDoc };
-  })();
-  return _fbReadyPromise;
-}
+const _questionCache = new Map(); // "<chapId>_<tier>" -> questions array
 
 async function _fetchTier(topic, tier) {
-  const docId = `${topic}_${tier}`;
-  if (_questionCache.has(docId)) return _questionCache.get(docId);
+  const cacheId = `${topic}_${tier}`;
+  if (_questionCache.has(cacheId)) return _questionCache.get(cacheId);
+
+  const nodeName = BANK_CHAPTER_KEY[topic];
+  if (!nodeName || !dbReady) return [];
 
   try {
-    await _initFirebase();
-    const snap = await _fbFns.getDoc(_fbFns.doc(_fbDb, 'questionBank', docId));
-    const questions = snap.exists() ? (snap.data().questions || []) : [];
-    _questionCache.set(docId, questions);
+    const snap = await db.ref(`${nodeName}/${tier}`).once('value');
+    const val = snap.val();
+    // Uploaded as a JSON array, but Firebase can store it as an object with
+    // numeric-string keys ("0","1",...) instead of a true array depending on
+    // how it was imported — normalize both shapes to a plain array.
+    const questions = Array.isArray(val) ? val : (val && typeof val === 'object' ? Object.values(val) : []);
+    _questionCache.set(cacheId, questions);
     return questions;
   } catch (error) {
-    console.warn(`Firestore fetch failed for ${docId}:`, error);
+    console.warn(`Realtime Database fetch failed for ${nodeName}/${tier}:`, error);
     return []; // caller falls back gracefully instead of hanging
   }
 }
@@ -2797,8 +2801,22 @@ async function openDailyChallenge() {
 function closeDailyChallenge() { document.getElementById('dailyChallengeModal').classList.remove('show'); }
 
 function typesetMath(el) {
-  if (window.MathJax && el) {
+  if (!el) return;
+  if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
     MathJax.typesetPromise([el]).catch((err) => console.log('MathJax error:', err));
+  } else if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+    // The MathJax <script> tag loads with `async`, so it's entirely possible
+    // for game/question rendering to fire before MathJax has finished
+    // initializing — window.MathJax exists (it's the config object set up
+    // before the script loads) but .typesetPromise isn't attached yet,
+    // which crashed every caller that assumed `if (window.MathJax)` meant
+    // "ready to typeset". Wait for MathJax's own startup promise instead of
+    // failing silently/throwing.
+    MathJax.startup.promise.then(() => {
+      if (typeof MathJax.typesetPromise === 'function') {
+        MathJax.typesetPromise([el]).catch((err) => console.log('MathJax error:', err));
+      }
+    }).catch((err) => console.log('MathJax startup error:', err));
   }
 }
 
@@ -4885,9 +4903,7 @@ function renderQuestion() {
   }
 
   // Trigger MathJax re-render for fetched database questions containing LaTeX
-  if (window.MathJax) {
-    MathJax.typesetPromise([document.getElementById('qCard')]).catch((err) => console.log('MathJax error:', err));
-  }
+  typesetMath(document.getElementById('qCard'));
 }
 
 function handleAnswer(selIdx, btnNode) {
@@ -4968,9 +4984,7 @@ function handleAnswer(selIdx, btnNode) {
       setTimeout(() => showFailOverlay(), 1000);
     }
     
-    if (window.MathJax) {
-      MathJax.typesetPromise([fb]).catch((err) => console.log('MathJax error:', err));
-    }
+    typesetMath(fb);
   }
   doSave();
 }
@@ -5128,9 +5142,7 @@ function submitJeeExam() {
   if(state.curLvl < TOTAL_LEVELS) nextBtn.style.display = 'block';
   else nextBtn.style.display = 'none';
   
-  if (window.MathJax) {
-    MathJax.typesetPromise([term]).catch((err) => console.log('MathJax error:', err));
-  }
+  typesetMath(term);
   
   compOv.style.display = 'flex';
   playScoreAnimation(accuracyPct);
