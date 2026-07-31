@@ -1583,11 +1583,22 @@ async function flushOfflineQueue() {
   const q = _loadQueue();
   if (!q.length) return;
   await ensureAnonymousAuth();
+  const currentUid = getPlayerUid();
+  const currentKey = safeKeyPart(currentUid);
   const remaining = [];
   for (const op of q) {
     try {
       if (op.type === 'score') {
-        if (!state.isRemoved) await db.ref('leaderboard/' + op.key).set(op.payload);
+        if (!state.isRemoved) {
+          // Queue entries created before Anonymous Auth was wired in (or
+          // from a different device-local id than the one Firebase Auth
+          // now assigns) carry a stale key that will never pass the
+          // "auth.uid === $uid" rule. Re-key to the CURRENT auth uid rather
+          // than trusting whatever was queued, so these can't get stuck
+          // retrying the same rejected write forever.
+          const payload = { ...op.payload, uid: currentUid };
+          await db.ref('leaderboard/' + currentKey).set(payload);
+        }
       }
       else if (op.type === 'report') await db.ref('reports/' + op.key).set(op.payload);
     } catch(_) { remaining.push(op); }
