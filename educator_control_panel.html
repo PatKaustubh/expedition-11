@@ -100,10 +100,11 @@ body { padding-top: 30px; }
   <div class="passcode-screen" id="passcodeGateScreen">
     <div class="passcode-card" id="gateCard">
       <h3>Teacher Portal Authorization</h3>
-      <p>Please enter the administrative security passcode to resolve reported question nodes.</p>
-      <input type="password" id="gateField" class="passcode-input" placeholder="Teacher Passcode...">
-      <div id="gateError" style="color:var(--coral); font-family:'JetBrains Mono',monospace; font-size:0.8rem; margin-bottom:15px; display:none;">Invalid Code. Access Denied.</div>
-      <button class="btn primary" style="align-self:center;" onclick="verifyGatePasscode()">Verify Access &rarr;</button>
+      <p>Sign in with your educator account to resolve reported question nodes.</p>
+      <input type="email" id="gateEmailField" class="passcode-input" style="text-align:left; font-size:1rem; margin-bottom:12px;" placeholder="Teacher email...">
+      <input type="password" id="gateField" class="passcode-input" style="text-align:left; font-size:1rem;" placeholder="Password...">
+      <div id="gateError" style="color:var(--coral); font-family:'JetBrains Mono',monospace; font-size:0.8rem; margin-bottom:15px; display:none;">Invalid email/password, or this account isn't authorized as an admin.</div>
+      <button class="btn primary" style="align-self:center;" onclick="verifyGatePasscode()" id="gateSubmitBtn">Sign In &rarr;</button>
     </div>
   </div>
 
@@ -210,6 +211,7 @@ body { padding-top: 30px; }
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
@@ -572,34 +574,74 @@ window.Admin_DB = {
 let activeTab = 'Pending';
 let activeReports = [];
 
-// Stored as a SHA-256 hash so the actual passcode isn't visible in the page source
-const GATE_HASH = '0f6b31b40e622d92344d3c3c5112b32816ac9a0fcc8993a8277ffeb95db297c8';
-
-async function sha256(text) {
-  const data = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
+// Access is now gated by real Firebase Authentication, not a client-side
+// passcode. Anyone can *load* this page and see the sign-in form (that's
+// unavoidable for a static site), but only accounts an admin has explicitly
+// granted the `admin: true` custom claim to (via a one-off script run with
+// a service account — see scripts/set-admin-claim.js) can actually sign in
+// successfully AND pass the security rules for admin-only writes
+// (removedCandidates, pyqBank). Firebase security rules are the real
+// boundary here, not this client-side check — this just gives a friendly
+// error instead of a silent permission_denied from every button.
 async function verifyGatePasscode() {
-  const code = document.getElementById('gateField').value.trim();
+  const email = document.getElementById('gateEmailField').value.trim();
+  const password = document.getElementById('gateField').value;
   const error = document.getElementById('gateError');
   const card = document.getElementById('gateCard');
+  const btn = document.getElementById('gateSubmitBtn');
 
-  const inputHash = await sha256(code);
+  if (!email || !password) {
+    error.textContent = 'Enter both email and password.';
+    error.style.display = 'block';
+    return;
+  }
 
-  if (inputHash === GATE_HASH) {
-    document.getElementById('passcodeGateScreen').style.display = 'none';
-    document.getElementById('adminAppDashboard').style.display = 'block';
-    startAdminEngine();
-  } else {
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+  error.style.display = 'none';
+
+  try {
+    const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
+    const tokenResult = await cred.user.getIdTokenResult();
+    if (tokenResult.claims && tokenResult.claims.admin === true) {
+      document.getElementById('passcodeGateScreen').style.display = 'none';
+      document.getElementById('adminAppDashboard').style.display = 'block';
+      startAdminEngine();
+    } else {
+      await firebase.auth().signOut();
+      error.textContent = "Signed in, but this account isn't authorized as an admin. Ask whoever manages the Firebase project to grant it.";
+      error.style.display = 'block';
+      card.classList.remove('shaking'); void card.offsetWidth; card.classList.add('shaking');
+    }
+  } catch (e) {
+    error.textContent = 'Sign-in failed: ' + (e.message || 'unknown error');
     error.style.display = 'block';
     card.classList.remove('shaking'); void card.offsetWidth; card.classList.add('shaking');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
   }
 }
 
+// If the browser already has a signed-in admin session (e.g. page refresh),
+// skip straight to the dashboard instead of asking them to log in again.
+firebase.auth().onAuthStateChanged(async (user) => {
+  if (!user) return;
+  try {
+    const tokenResult = await user.getIdTokenResult();
+    if (tokenResult.claims && tokenResult.claims.admin === true) {
+      document.getElementById('passcodeGateScreen').style.display = 'none';
+      document.getElementById('adminAppDashboard').style.display = 'block';
+      startAdminEngine();
+    }
+  } catch (_) {}
+});
+
 // Support hitting 'Enter' to log in
 document.getElementById('gateField').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') verifyGatePasscode();
+});
+document.getElementById('gateEmailField').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') verifyGatePasscode();
 });
 

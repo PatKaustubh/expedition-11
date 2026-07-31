@@ -1217,6 +1217,7 @@ function getQuestionsForLevel(subject, chapter, level) {
 }
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
@@ -1272,6 +1273,27 @@ let firestoreReady = false;
 
     db = firebase.database();
     dbReady = true;
+    // Anonymous Auth: every write this app makes (leaderboard, reports,
+    // removal-discussion replies) is gated in the security rules on
+    // `auth != null` (and, for the leaderboard, `auth.uid === $uid`). This
+    // app never asks students to log in, so we sign everyone in silently
+    // and invisibly as an anonymous Firebase user — that's enough to satisfy
+    // "auth != null" without any UI, while still giving every student a
+    // stable, server-verified uid nobody else can forge or overwrite.
+    try {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          window.__authUid = user.uid;
+          if (window.__resolveAuthReady) { window.__resolveAuthReady(user.uid); window.__resolveAuthReady = null; }
+        }
+      });
+      firebase.auth().signInAnonymously().catch((e) => {
+        console.warn('[Explorer] Anonymous sign-in failed — writes will be rejected by security rules until this succeeds:', e);
+        if (window.__resolveAuthReady) { window.__resolveAuthReady(null); window.__resolveAuthReady = null; }
+      });
+    } catch (e) {
+      console.warn('[Explorer] Firebase Auth unavailable:', e);
+    }
     // Live connection indicator via Firebase's own .info/connected node.
     try {
       db.ref('.info/connected').on('value', (snap) => {
@@ -1299,12 +1321,35 @@ let firestoreReady = false;
 })();
 
 function getPlayerUid() {
+  // Prefer the server-verified Firebase Auth uid once anonymous sign-in has
+  // completed — this is what the security rules actually check against.
+  if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+    return firebase.auth().currentUser.uid;
+  }
+  // Fallback for the brief window before auth resolves (or if it's offline/
+  // failed entirely): a stable per-device id so local queueing/UI has
+  // something to key off of. Once auth resolves, writes switch to the real
+  // uid above automatically.
   let uid = localStorage.getItem('explorer_player_uid');
   if (!uid) {
     uid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('player_' + Date.now() + '_' + Math.random().toString(36).slice(2));
     localStorage.setItem('explorer_player_uid', uid);
   }
   return uid;
+}
+// Resolves once Firebase Anonymous Auth has produced a signed-in user, so
+// writes that need auth.uid to match ($uid rules) don't race the sign-in
+// call that kicks off in initFirebase(). Safe to call many times.
+window.__authReadyPromise = null;
+function ensureAnonymousAuth() {
+  if (!dbReady) return Promise.resolve(null); // Firebase never initialized (offline/misconfigured)
+  if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+    return Promise.resolve(firebase.auth().currentUser.uid);
+  }
+  if (!window.__authReadyPromise) {
+    window.__authReadyPromise = new Promise((resolve) => { window.__resolveAuthReady = resolve; });
+  }
+  return window.__authReadyPromise;
 }
 // Firebase Realtime Database keys can't contain . # $ [ ] /
 function safeKeyPart(s) {
@@ -1352,6 +1397,7 @@ window.DB_Engine = {
     // leaderboard entirely — otherwise the very next XP gain silently
     // re-creates the entry the educator just removed.
     if (state.isRemoved) return;
+    await ensureAnonymousAuth();
     const uid = getPlayerUid();
     const key = safeKeyPart(uid);
     const payload = {
@@ -1409,6 +1455,7 @@ window.DB_Engine = {
     const payload = { ...reportObj, id };
     if (dbReady) {
       try {
+        await ensureAnonymousAuth();
         await db.ref('reports/' + id).set(payload);
         setBackendStatus('live');
         flushOfflineQueue();
@@ -1484,8 +1531,9 @@ window.DB_Engine = {
   },
 
   async sendDiscussionMessage(text) {
-    const uid = getPlayerUid();
     if (!dbReady || !text || !text.trim()) return { ok: false };
+    await ensureAnonymousAuth();
+    const uid = getPlayerUid();
     try {
       const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
       await db.ref('removalDiscussion/' + safeKeyPart(uid) + '/messages/' + id).set({
@@ -1534,6 +1582,7 @@ async function flushOfflineQueue() {
   if (!dbReady || !db) return;
   const q = _loadQueue();
   if (!q.length) return;
+  await ensureAnonymousAuth();
   const remaining = [];
   for (const op of q) {
     try {
