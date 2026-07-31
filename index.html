@@ -1154,7 +1154,7 @@ body { padding-top: 30px; }
   </div>
 </div>
 
-<!-- REMOVAL NOTICE + DISCUSSION PANE (student <-> teacher chat) — commented out for now
+<!-- REMOVAL NOTICE + DISCUSSION PANE (student <-> teacher chat) -->
 <div class="modal-backdrop" id="removedModal">
   <div class="modal-box" style="max-width: 460px; text-align: left;">
     <h3 style="text-align:center;">You've been removed from the leaderboard</h3>
@@ -1170,8 +1170,6 @@ body { padding-top: 30px; }
   </div>
 </div>
 <button id="reopenRemovedTab" onclick="openRemovedModal()" style="display:none; position:fixed; bottom: 16px; left: 16px; z-index: 3000; background: var(--coral); color:#fff; border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35);">⚠️ Removed from leaderboard — view details</button>
--->
-<!-- END student <-> teacher chat comment-out -->
 
 <!-- QUICK NOTES — freeform scratchpad, autosaved to this browser (localStorage) -->
 <div class="modal-backdrop" id="quickNotesModal" onclick="if(event.target===this) closeQuickNotes()">
@@ -4464,7 +4462,6 @@ function startApp() {
       liveLeaderboard = leaders;
       if(document.getElementById('screen-subjects').classList.contains('active')) renderLeaderboard();
     });
-    /* Student <-> teacher removal-discussion chat disabled for now (UI is commented out above).
     window.DB_Engine.listenRemovalStatus((info) => {
       const wasRemoved = state.isRemoved;
       state.isRemoved = !!info;
@@ -4479,12 +4476,10 @@ function startApp() {
       }
     });
     window.DB_Engine.listenDiscussion((messages) => renderRemovalDiscussion(messages));
-    */
     // PYQ bank sync disabled — section is locked/under development for now.
   }
 }
 
-/* Student <-> teacher removal-discussion chat helpers disabled for now (UI commented out above).
 function renderRemovalReason(info) {
   const box = document.getElementById('removedReasonBox');
   if (box) box.textContent = (info && info.reason) ? info.reason : 'No reason was provided.';
@@ -4505,7 +4500,6 @@ function renderRemovalDiscussion(messages) {
   `).join('');
   list.scrollTop = list.scrollHeight;
 }
-*/
 
 function escapeHtml(s) {
   const d = document.createElement('div');
@@ -4875,7 +4869,6 @@ function formatPyqSolution(raw) {
   return escaped;
 }
 
-/* Student <-> teacher removal-discussion chat controls disabled for now (UI commented out above).
 function openRemovedModal() { document.getElementById('removedModal').classList.add('show'); }
 function closeRemovedModal() { document.getElementById('removedModal').classList.remove('show'); }
 
@@ -4886,7 +4879,6 @@ function sendRemovalDiscussionMsg() {
   if (window.DB_Engine) window.DB_Engine.sendDiscussionMessage(text);
   input.value = '';
 }
-*/
 
 // Sets the body's theme class while preserving any "mode" classes that
 // should persist across navigation regardless of subject/theme — most
