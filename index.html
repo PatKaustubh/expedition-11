@@ -2922,14 +2922,55 @@ const Factory = {
     }
   },
 
+  // Some rows in this dataset have explanation text where a font-encoding
+  // mismatch happened somewhere upstream (likely when the original PDF/page
+  // was scraped): math symbols like Σ (summation), x̄ (x-bar), and σ (sigma)
+  // come through as unrelated characters — "£", "±", "²" — used as if they
+  // were ordinary variables (e.g. "£_(i=1)^(10)" instead of "Σ", or "±=1"
+  // instead of "x̄=1"). There's no reliable way to map these back to the
+  // right symbol after the fact, so rather than guess (and risk silently
+  // showing WRONG math), we detect this pattern and suppress the
+  // explanation entirely in favor of the normal "not available" fallback.
+  looksLikeCorruptedMathText(text) {
+    if (!text) return false;
+    // £ used as a function/summation with a subscript is never legitimate —
+    // it's specifically what a mis-decoded Σ looks like here. ±= and ²=
+    // are similarly never real usages (± and ² don't stand alone before an
+    // equals sign in genuine notation), and are the telltale sign of a
+    // mis-decoded x̄ or σ being used as a plain variable.
+    return /£_[\(\{]/.test(text) || /(^|\s)±\s*=/.test(text) || /(^|\s)²\s*=/.test(text);
+  },
+
+  // Cleans up junk artifacts that leak through from the original scraped
+  // solution pages baked into this dataset: a clickable "<Exam name> ...
+  // Question ### ... Explanation" citation header/thumbnail line, and
+  // "[image — view in-app]" placeholders left behind where a diagram used
+  // to be (this dataset variant strips the actual images). Leaves the real
+  // worked-solution text untouched — this only removes lines that are
+  // clearly source-attribution or missing-image noise, never numbers or
+  // working steps, to avoid any risk of silently mangling the math.
+  cleanScrapedExplanation(text) {
+    if (!text) return text;
+    return text
+      .split('\n')
+      .filter(line => {
+        const t = line.trim();
+        if (!t) return true; // keep blank lines for spacing
+        if (/\bQuestion\s*\d+\b.*\bExplanation\b/i.test(t)) return false; // citation header
+        if (/^\[?\s*image\s*(—|-)?\s*view in-app\s*\]?$/i.test(t)) return false; // image placeholder
+        return true;
+      })
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  },
+
   // Normalizes one dataset row into the { q, opts, ans, exp } shape the rest of the
   // app already understands. Handles the "question is a rendered image, answer is a
   // <answer>X</answer>-tagged explanation" shape used by these JEE datasets, while
   // still supporting plain-text question/options fields if a dataset provides them.
   normalizeHFRow(row) {
     if (!row) return null;
-
-    // grafite-jee-mains-qna-no-img shape: options/correct_option are
     // JSON-encoded strings (e.g. options='[{"identifier":"A","content":"..."}]',
     // correct_option='["D"]'), question/explanation are HTML+$$-delimited
     // LaTeX text (no question image at all — has_image is always false for
@@ -2959,6 +3000,10 @@ const Factory = {
 
       const qHtml = `<div>${row.question || ''}</div>`;
       let explanation = String(row.explanation || row.solution || '').trim();
+      explanation = this.cleanScrapedExplanation(explanation);
+      if (this.looksLikeCorruptedMathText(explanation)) {
+        explanation = 'No detailed explanation was provided for this question.';
+      }
       if (!explanation) explanation = 'No detailed explanation was provided for this question.';
 
       return {
