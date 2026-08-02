@@ -2795,14 +2795,33 @@ const Factory = {
       if (!usedBases.has(key)) {
         usedBases.add(key);
         const correctText = src.opts[src.ans];
-        const shuffledOpts = this.shuffleArray(src.opts.slice());
+        // De-duplicate option text before shuffling: some questions in the
+        // bank (hand-entered or generated) can end up with the same option
+        // string listed twice — e.g. two "8 m/s" choices — which lets a
+        // student "guess" by picking either duplicate. Collapse exact
+        // duplicates down to one entry each, always keeping the correct
+        // answer's text, before we pick which options to show.
+        const uniqueOpts = [];
+        const seenOptText = new Set();
+        for (const opt of src.opts) {
+          const norm = String(opt).trim();
+          if (!seenOptText.has(norm)) { seenOptText.add(norm); uniqueOpts.push(opt); }
+        }
+        if (!uniqueOpts.includes(correctText)) uniqueOpts.push(correctText);
+        const shuffledOpts = this.shuffleArray(uniqueOpts);
         const ansIdx = shuffledOpts.indexOf(correctText);
         qs.push({ q: src.q, opts: shuffledOpts, ans: ansIdx === -1 ? 0 : ansIdx, exp: src.exp });
       }
       ptr = (ptr + 1) % shuffled.length;
       scanned++;
     }
-    return qs;
+    // Which questions appear in this level (and their subset from the tier
+    // pool) stays stable per session via _shuffledPools above, so different
+    // levels within a tier don't hand out overlapping questions. But the
+    // ORDER those questions are presented in should feel fresh every time
+    // the level is opened — re-shuffle the final list on every call rather
+    // than reusing the same fixed order for the whole session.
+    return this.shuffleArray(qs);
   },
 
   // Which Hugging Face dataset backs each JEE mock level.
@@ -2845,12 +2864,36 @@ const Factory = {
 
     // Fetch a window of rows, retrying once from offset 0 with a small
     // window if the first attempt 422s for any reason we didn't anticipate.
-    const fetchWindow = async (offset, length) => {
+    // The datasets-server API caps `length` at 100 rows per request — asking
+    // for more (windowSize can be up to ~600 for a 75-question JEE mock) was
+    // the cause of the 422s here. Fetch in <=100-row chunks instead and
+    // stitch the results together.
+    const HF_MAX_LENGTH = 100;
+    const fetchChunk = async (offset, length) => {
       const url = `https://datasets-server.huggingface.co/rows?dataset=${encodeURIComponent(dataset)}&config=default&split=train&offset=${offset}&length=${length}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HF datasets-server responded ${res.status}`);
       const data = await res.json();
       return (data.rows || []).map(r => r.row);
+    };
+    const fetchWindow = async (startOffset, totalLength) => {
+      let rows = [];
+      let offset = startOffset;
+      let remaining = totalLength;
+      while (remaining > 0) {
+        const chunkLen = Math.min(HF_MAX_LENGTH, remaining);
+        try {
+          const chunk = await fetchChunk(offset, chunkLen);
+          rows = rows.concat(chunk);
+          if (chunk.length === 0) break; // ran off the end of the split
+        } catch (chunkErr) {
+          // One bad chunk shouldn't sink the whole fetch — skip it and
+          // keep going with the rest of the window.
+        }
+        offset += chunkLen;
+        remaining -= chunkLen;
+      }
+      return rows;
     };
 
     try {
@@ -3052,7 +3095,18 @@ const Factory = {
 
         if (qRaw && !usedQ.has(qRaw.q)) {
           let targetAns = String(qRaw.ans);
-          let optsArray = [targetAns, ...qRaw.opts.map(String)];
+          // Build the option list from the correct answer + generated
+          // distractors, but drop any distractor that's an exact text
+          // match for another option already in the list (most commonly,
+          // a distractor formula that happens to numerically equal the
+          // correct answer for these particular random values — e.g. two
+          // "8 m/s" options). Padding options below fill any gap left.
+          let optsArray = [];
+          let seenOptText = new Set();
+          for (const raw of [targetAns, ...qRaw.opts.map(String)]) {
+            const norm = raw.trim();
+            if (!seenOptText.has(norm)) { seenOptText.add(norm); optsArray.push(raw); }
+          }
           let paddings = ["None of these", "Cannot be determined", "Data insufficient", "Zero"];
           let pIdx = 0;
           while(optsArray.length < 4) { optsArray.push(paddings[pIdx++]); }
@@ -4455,6 +4509,16 @@ function startApp() {
   document.getElementById('introModal').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   AudioSys.init(); initBg(); drawBg(); loadSave(); goToSubjects(); 
+  // Browsers can re-suspend the AudioContext after periods of inactivity,
+  // and any sound triggered by a plain JS timer (like the Focus Timer's
+  // "time's up" chime) isn't itself a user gesture, so it can silently fail
+  // to play with a console warning. Piggyback on every normal tap/click/key
+  // press anywhere in the app to keep the context nudged back to 'running',
+  // so timer-fired sounds are far more likely to have a live context by the
+  // time they need it.
+  ['pointerdown', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, () => AudioSys.ensureRunning(), { passive: true });
+  });
   initReportsListener();
   
   if (window.DB_Engine) {
