@@ -987,11 +987,11 @@ function renderLeaderboard() {
   const sorted = [...currentLeaderboard].sort((a,b) => (b.xp||0) - (a.xp||0));
 
   // Inactive candidates: anyone whose last XP sync (the `timestamp` field
-  // already written on every syncPlayerScore call) is 7+ days old. This is
+  // already written on every syncPlayerScore call) is 3+ days old. This is
   // purely a display split, not a deletion — nothing is removed from
   // Firebase, so the moment a student plays again their timestamp updates
   // and they fall back into the "active" bucket on the next render.
-  const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
+  const INACTIVE_MS = 3 * 24 * 60 * 60 * 1000;
   const nowTs = Date.now();
   const activeEntries = sorted.filter(r => r.timestamp && (nowTs - r.timestamp) < INACTIVE_MS);
   const inactiveEntries = sorted.filter(r => !r.timestamp || (nowTs - r.timestamp) >= INACTIVE_MS);
@@ -1029,7 +1029,7 @@ function renderLeaderboard() {
 
   const rows = activeEntries.map(rowHtml).join('') || `
     <div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">
-      <p style="font-size:0.9rem; opacity:0.7;">No active candidates in the last 7 days.</p>
+      <p style="font-size:0.9rem; opacity:0.7;">No active candidates in the last 3 days.</p>
     </div>`;
 
   let inactiveSection = '';
@@ -1041,7 +1041,7 @@ function renderLeaderboard() {
           <span id="inactiveLbToggleLabel">${inactiveLbExpanded ? 'Hide' : 'Show'} inactive candidates (${inactiveEntries.length})</span>
         </button>
         <div id="inactiveLbList" style="display:${inactiveLbExpanded ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:12px;">
-          <div style="font-size:0.78rem; color:var(--parchment-dim);">No activity in the last 7 days. They'll automatically move back to the active list above the moment they play again — nothing here has been deleted.</div>
+          <div style="font-size:0.78rem; color:var(--parchment-dim);">No activity in the last 3 days. They'll automatically move back to the active list above the moment they play again — nothing here has been deleted.</div>
           ${inactiveEntries.map(r => `
             <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; opacity:0.7;">
               <div>

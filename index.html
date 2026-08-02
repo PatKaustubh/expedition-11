@@ -2421,7 +2421,7 @@ function openReportSuccessModal(mode) {
 function closeReportSuccessModal() { document.getElementById('reportSuccessModal').classList.remove('show'); }
 
 /* ================= LIVE GLOBALLY SYNCED SCOREBOARD ================= */
-const LB_INACTIVE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const LB_INACTIVE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 let leaderboardInactiveExpanded = false;
 
 function renderLeaderboard() {
@@ -2431,7 +2431,7 @@ function renderLeaderboard() {
 
   const useWeekly = leaderboardMode === 'weekly';
   const now = Date.now();
-  // Anyone whose last synced score is 7+ days old moves to a separate
+  // Anyone whose last synced score is 3+ days old moves to a separate
   // "inactive" bucket so the live board reflects who's actually studying
   // right now. Nothing is deleted — the instant they play again their
   // timestamp updates and they reappear on the active board automatically.
