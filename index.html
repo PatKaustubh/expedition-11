@@ -840,6 +840,12 @@ body { padding-top: 30px; }
         <button class="lb-tab" id="lbTabWeek" onclick="setLeaderboardMode('weekly')">📅 This Week</button>
       </div>
       <div id="leaderboardPopupList" class="popup-list"></div>
+      <div id="leaderboardInactiveWrap" style="display:none; margin-top:10px;">
+        <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem; width:100%;" onclick="toggleInactiveLeaderboard()">
+          <span id="leaderboardInactiveToggleLabel">Show inactive players</span>
+        </button>
+        <div id="leaderboardPopupInactiveList" class="popup-list" style="display:none; margin-top:8px; opacity:0.65;"></div>
+      </div>
     </div>
   </div>
 
@@ -1432,10 +1438,11 @@ window.DB_Engine = {
         xp: d.xp || 0,
         weeklyXp: (d.weeklyXpWeekStart === curWeek) ? (d.weeklyXp || 0) : 0,
         badges: d.badges || [],
-        isUser: d.username === state.explorerName
+        isUser: d.username === state.explorerName,
+        timestamp: d.timestamp || 0
       }));
       if (!leaders.some(l => l.isUser)) {
-        leaders.push({ username: state.explorerName + " (You)", xp: state.xp, weeklyXp: state.weeklyXp || 0, badges: [], isUser: true });
+        leaders.push({ username: state.explorerName + " (You)", xp: state.xp, weeklyXp: state.weeklyXp || 0, badges: [], isUser: true, timestamp: Date.now() });
       }
       leaders.sort((a, b) => b.xp - a.xp);
       callback(leaders);
@@ -1721,6 +1728,7 @@ let state = {
   levelStartTime: null,
   levelCorrectCount: 0,
   levelXpEarned: 0,
+  levelXpCommitted: false, // true once a level's XP has been locked in via levelComplete()
   reviveCount: 0,
   combo: 0,
   isRemoved: false,
@@ -1744,7 +1752,7 @@ function addWeeklyXp(delta) {
     state.weeklyXpWeekStart = wk;
     state.weeklyXp = 0;
   }
-  state.weeklyXp += delta;
+  state.weeklyXp = Math.max(0, state.weeklyXp + delta);
 }
 
 function loadSave() {
@@ -2413,13 +2421,30 @@ function openReportSuccessModal(mode) {
 function closeReportSuccessModal() { document.getElementById('reportSuccessModal').classList.remove('show'); }
 
 /* ================= LIVE GLOBALLY SYNCED SCOREBOARD ================= */
+const LB_INACTIVE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+let leaderboardInactiveExpanded = false;
+
 function renderLeaderboard() {
   const listEl = document.getElementById('leaderboardList');
   const popupEl = document.getElementById('leaderboardPopupList');
   if(!listEl) return;
 
   const useWeekly = leaderboardMode === 'weekly';
-  const sorted = liveLeaderboard.slice().sort((a, b) => (useWeekly ? (b.weeklyXp || 0) - (a.weeklyXp || 0) : b.xp - a.xp));
+  const now = Date.now();
+  // Anyone whose last synced score is 7+ days old moves to a separate
+  // "inactive" bucket so the live board reflects who's actually studying
+  // right now. Nothing is deleted — the instant they play again their
+  // timestamp updates and they reappear on the active board automatically.
+  const isActive = (p) => p.isUser || !p.timestamp || (now - p.timestamp) < LB_INACTIVE_MS;
+  const allSorted = liveLeaderboard.slice().sort((a, b) => (useWeekly ? (b.weeklyXp || 0) - (a.weeklyXp || 0) : b.xp - a.xp));
+  const sorted = allSorted.filter(isActive);
+  const inactive = allSorted.filter(p => !isActive(p));
+
+  const rowHtml = (p, idx, dim) => {
+    const scoreText = useWeekly ? `${p.weeklyXp || 0} XP` : `${p.xp} XP`;
+    const inactiveNote = dim && p.timestamp ? ` <span style="opacity:0.6; font-size:0.7rem;">(inactive ${Math.floor((now - p.timestamp) / 86400000)}d)</span>` : '';
+    return `<div class="widget-row ${p.isUser ? 'user-row' : ''}" style="${dim ? 'opacity:0.65;' : ''}"><div class="rank-user"><span class="rank-num">#${idx + 1}</span><span>${p.username}</span>${badgeIconsHtml(p.badges)}${inactiveNote}</div><span class="score">${scoreText}</span></div>`;
+  };
 
   const buildRows = (target) => {
     target.innerHTML = "";
@@ -2427,24 +2452,37 @@ function renderLeaderboard() {
       target.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--parchment-dim,#c5bba8); font-size:0.85rem;">No XP earned yet this week — be the first!</div>`;
       return;
     }
-    sorted.forEach((p, idx) => {
-      let row = document.createElement('div');
-      row.className = `widget-row ${p.isUser ? 'user-row' : ''}`;
-      const scoreText = useWeekly ? `${p.weeklyXp || 0} XP` : `${p.xp} XP`;
-      row.innerHTML = `<div class="rank-user"><span class="rank-num">#${idx + 1}</span><span>${p.username}</span>${badgeIconsHtml(p.badges)}</div><span class="score">${scoreText}</span>`;
-      target.appendChild(row);
-    });
+    target.innerHTML = sorted.map((p, idx) => rowHtml(p, idx, false)).join('');
   };
 
   buildRows(listEl);
   if (popupEl) buildRows(popupEl);
 
-  const n = liveLeaderboard.length;
+  const inactiveWrap = document.getElementById('leaderboardInactiveWrap');
+  const inactiveList = document.getElementById('leaderboardPopupInactiveList');
+  const inactiveLabel = document.getElementById('leaderboardInactiveToggleLabel');
+  if (inactiveWrap && inactiveList) {
+    if (inactive.length) {
+      inactiveWrap.style.display = 'block';
+      if (inactiveLabel) inactiveLabel.textContent = `${leaderboardInactiveExpanded ? 'Hide' : 'Show'} inactive players (${inactive.length})`;
+      inactiveList.style.display = leaderboardInactiveExpanded ? 'block' : 'none';
+      inactiveList.innerHTML = inactive.map((p, idx) => rowHtml(p, idx, true)).join('');
+    } else {
+      inactiveWrap.style.display = 'none';
+    }
+  }
+
+  const n = sorted.length;
   const countText = `👥 ${n} player${n === 1 ? '' : 's'} online`;
   const countEl = document.getElementById('playerCountBadge');
   if (countEl) countEl.textContent = countText;
   const countPopupEl = document.getElementById('playerCountBadgePopup');
   if (countPopupEl) countPopupEl.textContent = countText;
+}
+
+function toggleInactiveLeaderboard() {
+  leaderboardInactiveExpanded = !leaderboardInactiveExpanded;
+  renderLeaderboard();
 }
 
 // Switches the full-leaderboard popup between all-time totals and XP earned
@@ -3285,6 +3323,7 @@ window.addEventListener('popstate', function (e) {
   const gameEl = document.getElementById('screen-game');
   const leavingGame = gameEl && gameEl.classList.contains('active') && target !== 'screen-game';
   if (leavingGame) {
+    revertUncommittedLevelXp();
     clearInterval(timerInt);
     AudioSys.startPeacefulAmbient();
   }
@@ -3303,7 +3342,9 @@ const BADGES = {
   unstoppable:  { icon: '⚡', label: 'Unstoppable',     desc: 'Hit a 10-answer correct streak.' },
   perfectionist:{ icon: '⭐', label: 'Perfectionist',   desc: 'Earn 3 stars on a level.' },
   polymath:     { icon: '🧭', label: 'Polymath',        desc: 'Start every subject.' },
-  daily_devotee:{ icon: '📅', label: 'Daily Devotee',   desc: '3-day daily challenge streak.' }
+  daily_devotee:{ icon: '📅', label: 'Daily Devotee',   desc: '3-day daily challenge streak.' },
+  chapter_master:{ icon: '🎓', label: 'Chapter Master', desc: 'Earn 3 stars on every level in a chapter.' },
+  frost_guard:  { icon: '🧊', label: 'Frost Guard',     desc: 'Earn a streak freeze by hitting a 7-day streak.' }
 };
 
 function computeBadges() {
@@ -3321,6 +3362,17 @@ function computeBadges() {
   }
   const dailyStreak = getDailyChallengeState().streak || 0;
   if (dailyStreak >= 3) earned.add('daily_devotee');
+  // Chapter Master: every level in some chapter has all 3 stars.
+  DATA.forEach(sub => sub.chapters.forEach(ch => {
+    const p = state.progress[ch.id];
+    if (!p || !p.stars) return;
+    let allThree = true;
+    for (let lv = 1; lv <= TOTAL_LEVELS; lv++) {
+      if ((p.stars[lv] || 0) < 3) { allThree = false; break; }
+    }
+    if (allThree) earned.add('chapter_master');
+  }));
+  if (getStreakFreezeCount() > 0 || (getStreakFreezeState().everEarned)) earned.add('frost_guard');
   return Array.from(earned);
 }
 
@@ -3586,6 +3638,9 @@ function setMistakeBank(bank) {
   renderMistakePanel();
 }
 // Called from handleAnswer(): stash the missed question so it can be revised later.
+// Uses a lightweight spaced-repetition schedule: every miss resets the question
+// to "due now"; correct revision answers push it further out (1d -> 3d -> 7d)
+// before it's finally cleared out of the bank.
 function recordMistake(qData) {
   if (!state.curSubj || !state.curChap) return;
   const key = mistakeKey(state.curSubj.id, state.curChap.id, qData.q);
@@ -3593,7 +3648,8 @@ function recordMistake(qData) {
   bank[key] = {
     q: qData.q, opts: qData.opts, ans: qData.ans,
     subject: state.curSubj.name, chapter: state.curChap.name,
-    misses: (bank[key]?.misses || 0) + 1, lastMissedAt: Date.now()
+    misses: (bank[key]?.misses || 0) + 1, lastMissedAt: Date.now(),
+    correctStreak: 0, nextReviewAt: Date.now()
   };
   setMistakeBank(bank);
 }
@@ -3605,11 +3661,18 @@ function clearMistakeIfPresent(subjId, chapId, qText) {
   if (bank[key]) { delete bank[key]; setMistakeBank(bank); }
 }
 
+const SR_INTERVALS_DAYS = [1, 3, 7]; // days until next review, indexed by correctStreak
+
 function renderMistakePanel() {
   const el = document.getElementById('mistakePanelStatus');
   if (!el) return;
-  const count = Object.keys(getMistakeBank()).length;
-  el.textContent = count ? `${count} question${count === 1 ? '' : 's'} to revise` : 'No mistakes logged yet — nice!';
+  const bank = getMistakeBank();
+  const items = Object.values(bank);
+  const now = Date.now();
+  const due = items.filter(v => (v.nextReviewAt || 0) <= now).length;
+  if (!items.length) { el.textContent = 'No mistakes logged yet — nice!'; return; }
+  if (due > 0) el.textContent = `${due} due now · ${items.length} total to revise`;
+  else el.textContent = `${items.length} scheduled for later — you're caught up!`;
 }
 
 let mistakeRun = null;
@@ -3626,7 +3689,13 @@ function openMistakeBank() {
     document.getElementById('mistakeBankModal').classList.add('show');
     return;
   }
-  items.sort((a, b) => (b.misses || 0) - (a.misses || 0));
+  const now = Date.now();
+  // Due-for-review items first (spaced repetition), then by miss count.
+  items.sort((a, b) => {
+    const aDue = (a.nextReviewAt || 0) <= now, bDue = (b.nextReviewAt || 0) <= now;
+    if (aDue !== bDue) return aDue ? -1 : 1;
+    return (b.misses || 0) - (a.misses || 0);
+  });
   mistakeRun = { items, idx: 0, answered: false, cleared: 0 };
   renderMistakeQuestion();
   document.getElementById('mistakeBankModal').classList.add('show');
@@ -3642,7 +3711,7 @@ function renderMistakeQuestion() {
       <h3 style="margin:0;">🎯 Mistake Bank</h3>
       <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">${mistakeRun.idx + 1}/${mistakeRun.items.length}</span>
     </div>
-    <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${item.subject} · ${item.chapter} · missed ${item.misses}×</div>
+    <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${item.subject} · ${item.chapter} · missed ${item.misses}× ${(item.nextReviewAt||0) <= Date.now() ? '· <span style="color:var(--coral);">due now</span>' : `· scheduled for ${new Date(item.nextReviewAt).toLocaleDateString()}`}</div>
     <div style="margin-bottom:14px; font-size:1.05rem;">${item.q}</div>
     <div id="mistakeOptGrid" style="display:flex; flex-direction:column; gap:8px;"></div>
     <div id="mistakeFeedback" style="margin-top:12px; font-size:0.9rem; display:none;"></div>
@@ -3674,12 +3743,25 @@ function handleMistakeAnswer(selIdx) {
   const fb = document.getElementById('mistakeFeedback');
   fb.style.display = 'block';
   if (isCorrect) {
-    fb.innerHTML = '✓ Correct! Cleared from your mistake bank.';
     const bank = getMistakeBank();
-    delete bank[item.key];
+    const rec = bank[item.key];
+    const streak = (rec?.correctStreak || 0) + 1;
+    if (streak >= SR_INTERVALS_DAYS.length) {
+      // Mastered after enough correct revisions in a row — clear it out.
+      delete bank[item.key];
+      fb.innerHTML = '✓ Correct! Mastered — cleared from your mistake bank.';
+      mistakeRun.cleared++;
+    } else {
+      const days = SR_INTERVALS_DAYS[streak - 1];
+      bank[item.key] = { ...rec, correctStreak: streak, nextReviewAt: Date.now() + days * 86400000 };
+      fb.innerHTML = `✓ Correct! You'll see this again in ${days} day${days === 1 ? '' : 's'} to lock it in.`;
+    }
     setMistakeBank(bank);
-    mistakeRun.cleared++;
   } else {
+    const bank = getMistakeBank();
+    const rec = bank[item.key];
+    if (rec) bank[item.key] = { ...rec, correctStreak: 0, nextReviewAt: Date.now() };
+    setMistakeBank(bank);
     fb.innerHTML = `✗ Still not quite. The correct answer is <b>${item.opts[item.ans]}</b> — it'll stay in your bank.`;
   }
   typesetMath(fb);
@@ -3728,15 +3810,49 @@ function getActivityLog() {
   try { return JSON.parse(localStorage.getItem(ACTIVITY_STORAGE_KEY) || '{}'); }
   catch (e) { return {}; }
 }
+/* ---- Streak freeze: 1 token earned per completed 7-day streak, lets a
+   single missed day pass without breaking the streak. ---- */
+const STREAK_FREEZE_KEY = 'streak_freeze_v1'; // { count, everEarned, usedDates: [], lastAwardedAtStreak }
+
+function getStreakFreezeState() {
+  try {
+    return Object.assign({ count: 0, everEarned: false, usedDates: [], lastAwardedAtStreak: 0 },
+      JSON.parse(localStorage.getItem(STREAK_FREEZE_KEY) || '{}'));
+  } catch (e) { return { count: 0, everEarned: false, usedDates: [], lastAwardedAtStreak: 0 }; }
+}
+function setStreakFreezeState(s) {
+  try { localStorage.setItem(STREAK_FREEZE_KEY, JSON.stringify(s)); } catch (e) {}
+}
+function getStreakFreezeCount() { return getStreakFreezeState().count; }
+
 function computeActivityStreak() {
   const log = getActivityLog();
+  const freeze = getStreakFreezeState();
   let streak = 0;
+  let usedFreezeThisPass = false;
   let d = new Date();
   // Today doesn't have to have activity yet to keep yesterday's streak alive.
   if (!log[todayStr()]) d.setDate(d.getDate() - 1);
   while (true) {
     const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    if (log[key] > 0) { streak++; d.setDate(d.getDate() - 1); } else break;
+    if (log[key] > 0) {
+      streak++; d.setDate(d.getDate() - 1);
+    } else if (freeze.usedDates.includes(key)) {
+      // Gap already covered by a freeze previously spent — keep counting through it.
+      streak++; d.setDate(d.getDate() - 1);
+    } else if (!usedFreezeThisPass && freeze.count > 0 && streak > 0) {
+      // Spend one freeze to bridge this single missed day (only once per calc pass).
+      freeze.usedDates.push(key);
+      freeze.count--;
+      usedFreezeThisPass = true;
+      setStreakFreezeState(freeze);
+      streak++; d.setDate(d.getDate() - 1);
+    } else break;
+  }
+  // Award a new freeze the first time a 7-day streak is reached (repeatable every +7).
+  if (streak >= 7 && Math.floor(streak / 7) > Math.floor((freeze.lastAwardedAtStreak || 0) / 7)) {
+    freeze.count++; freeze.everEarned = true; freeze.lastAwardedAtStreak = streak;
+    setStreakFreezeState(freeze);
   }
   return streak;
 }
@@ -3744,14 +3860,18 @@ function renderActivityPanel() {
   const el = document.getElementById('activityPanelStatus');
   if (!el) return;
   const streak = computeActivityStreak();
-  el.textContent = streak ? `🔥 ${streak}-day practice streak` : 'Practice today to start a streak';
+  const freezes = getStreakFreezeCount();
+  const freezeTxt = freezes ? ` · 🧊×${freezes}` : '';
+  el.textContent = streak ? `🔥 ${streak}-day practice streak${freezeTxt}` : 'Practice today to start a streak';
 }
 function openActivityPopup() {
   const log = getActivityLog();
   const streak = computeActivityStreak();
-  document.getElementById('activitySummaryLine').textContent = streak
+  const freezes = getStreakFreezeCount();
+  const freezeNote = freezes ? ` You have ${freezes} streak freeze${freezes === 1 ? '' : 's'} 🧊 banked to auto-cover a missed day.` : ' Keep a 7-day streak going to earn a streak freeze 🧊 that covers one missed day.';
+  document.getElementById('activitySummaryLine').textContent = (streak
     ? `🔥 ${streak}-day streak — keep it going!`
-    : 'No active streak yet — any XP earned today starts one.';
+    : 'No active streak yet — any XP earned today starts one.') + freezeNote;
   const grid = document.getElementById('activityHeatmap');
   grid.innerHTML = '';
   const days = 84; // 12 weeks
@@ -5113,6 +5233,7 @@ async function startGame() {
   state.levelStartTime = Date.now();
   state.levelCorrectCount = 0;
   state.levelXpEarned = 0;
+  state.levelXpCommitted = false;
   state.reviveCount = 0;
   state.combo = 0;
   state.lifelinesLeft = 1;
@@ -6389,6 +6510,7 @@ function computeLevelStars() {
 
 function levelComplete() {
   AudioSys.win();
+  state.levelXpCommitted = true; // this attempt's XP is now locked in — retry/abort after this must not revert it
   let prog = state.progress[state.curChap.id];
   if(state.curLvl === prog.maxUnlocked && prog.maxUnlocked <= TOTAL_LEVELS) { prog.maxUnlocked++; }
   
@@ -6444,8 +6566,26 @@ function levelComplete() {
 }
 
 function startNextLevel() { state.curLvl++; startGame(); }
-function retryLevel() { startGame(); }
-function abortGame() { clearInterval(timerInt); exitExamLockdown(); AudioSys.startPeacefulAmbient(); loadLevels(); }
+
+// A level's XP is only "real" once the level is actually completed
+// (levelComplete() sets levelXpCommitted = true). If the student fails
+// and retries, or abandons a level mid-way, whatever XP was already added
+// to state.xp for that unfinished attempt gets reverted here first — so
+// re-answering the same first few questions on a fresh attempt can't
+// double-award XP for them.
+function revertUncommittedLevelXp() {
+  if (!state.levelXpCommitted && state.levelXpEarned > 0) {
+    state.xp = Math.max(0, state.xp - state.levelXpEarned);
+    addWeeklyXp(-state.levelXpEarned);
+    state.levelXpEarned = 0;
+    doSave();
+    if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+    updateStats();
+  }
+}
+
+function retryLevel() { revertUncommittedLevelXp(); startGame(); }
+function abortGame() { revertUncommittedLevelXp(); clearInterval(timerInt); exitExamLockdown(); AudioSys.startPeacefulAmbient(); loadLevels(); }
 
 window.registerExplorer = registerExplorer;
 window.startApp = startApp;

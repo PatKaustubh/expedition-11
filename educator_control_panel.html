@@ -132,10 +132,19 @@ body { padding-top: 30px; }
       <button class="tab-btn" id="tabLeaderboard" onclick="switchTab('Leaderboard')">Leaderboard</button>
       <button class="tab-btn" id="tabRemoved" onclick="switchTab('Removed')">Removed Candidates</button>
       <button class="tab-btn" id="tabPyq" onclick="switchTab('Pyq')">PYQ Bank</button>
+      <button class="tab-btn" id="tabInsights" onclick="switchTab('Insights')">Weak Topics</button>
+    </div>
+
+    <div id="reportsToolbar" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
+      <input id="reportSearchInput" type="text" placeholder="Search by student, subject, or chapter..." class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-size:0.85rem;" oninput="renderReports()">
+      <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportReportsCsv()">Export CSV</button>
     </div>
 
     <div class="report-list" id="reportCardsList">
       <!-- Dynamic logs rendered here -->
+    </div>
+    <div class="report-list" id="insightsPanel" style="display:none; flex-direction:column;">
+      <!-- Weak-topic aggregation rendered here -->
     </div>
     <div class="report-list" id="leaderboardList" style="display:none;">
       <!-- Leaderboard entries rendered here -->
@@ -662,16 +671,21 @@ function switchTab(tab) {
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'Leaderboard');
   document.getElementById('tabRemoved').classList.toggle('active', tab === 'Removed');
   document.getElementById('tabPyq').classList.toggle('active', tab === 'Pyq');
+  document.getElementById('tabInsights').classList.toggle('active', tab === 'Insights');
 
   const reportsList = document.getElementById('reportCardsList');
   const lbList = document.getElementById('leaderboardList');
   const removedList = document.getElementById('removedList');
   const pyqList = document.getElementById('pyqPanelWrap');
+  const insightsPanel = document.getElementById('insightsPanel');
+  const toolbar = document.getElementById('reportsToolbar');
 
   reportsList.style.display = 'none';
   lbList.style.display = 'none';
   removedList.style.display = 'none';
   pyqList.style.display = 'none';
+  insightsPanel.style.display = 'none';
+  toolbar.style.display = 'none';
 
   if (tab === 'Leaderboard') {
     lbList.style.display = 'flex';
@@ -682,7 +696,11 @@ function switchTab(tab) {
   } else if (tab === 'Pyq') {
     pyqList.style.display = 'flex';
     loadPyqAdmin();
+  } else if (tab === 'Insights') {
+    insightsPanel.style.display = 'flex';
+    renderInsightsPanel();
   } else {
+    toolbar.style.display = 'flex';
     reportsList.style.display = 'flex';
     renderReports();
   }
@@ -692,13 +710,24 @@ function renderReports() {
   const container = document.getElementById('reportCardsList');
   if (!container) return;
 
-  const filtered = activeReports.filter(r => r.status === activeTab);
-  
+  const searchEl = document.getElementById('reportSearchInput');
+  const q = (searchEl && searchEl.value || '').trim().toLowerCase();
+
+  let filtered = activeReports.filter(r => r.status === activeTab);
+  if (q) {
+    filtered = filtered.filter(r =>
+      (r.studentName || '').toLowerCase().includes(q) ||
+      (r.subject || '').toLowerCase().includes(q) ||
+      (r.chapter || '').toLowerCase().includes(q) ||
+      (r.questionText || '').toLowerCase().includes(q)
+    );
+  }
+
   if (filtered.length === 0) {
     container.innerHTML = `
       <div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
         <p style="font-size:1.2rem; margin-bottom:5px;">All clear!</p>
-        <p style="font-size:0.9rem; opacity:0.7;">No logged queries in the "${activeTab}" directory.</p>
+        <p style="font-size:0.9rem; opacity:0.7;">${q ? `No "${activeTab}" logs match "${q}".` : `No logged queries in the "${activeTab}" directory.`}</p>
       </div>
     `;
     return;
@@ -765,7 +794,106 @@ function renderReports() {
   });
 }
 
-/* ================= STREAMING_CHUNK: Resolving and sending reply responses ================= */
+/* ================= CSV EXPORT ================= */
+function csvEscape(val) {
+  const s = (val === undefined || val === null) ? '' : String(val);
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+function exportReportsCsv() {
+  const searchEl = document.getElementById('reportSearchInput');
+  const q = (searchEl && searchEl.value || '').trim().toLowerCase();
+  let rows = activeReports.filter(r => r.status === activeTab);
+  if (q) {
+    rows = rows.filter(r =>
+      (r.studentName || '').toLowerCase().includes(q) ||
+      (r.subject || '').toLowerCase().includes(q) ||
+      (r.chapter || '').toLowerCase().includes(q) ||
+      (r.questionText || '').toLowerCase().includes(q)
+    );
+  }
+  if (!rows.length) { alert('No reports to export for the current view.'); return; }
+  const headers = ['timestamp', 'status', 'studentName', 'subject', 'chapter', 'level', 'category', 'questionText', 'userSelectedText', 'correctAnswerText', 'comments', 'reply'];
+  const lines = [headers.join(',')];
+  rows.forEach(r => { lines.push(headers.map(h => csvEscape(r[h])).join(',')); });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `expedition11-reports-${activeTab.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ================= WEAK TOPICS INSIGHTS =================
+   Aggregates ALL flagged-question reports (Pending + Resolved) by
+   subject/chapter, so an educator can see at a glance which chapters
+   generate the most confusion across the whole class — a class-wide
+   proxy for "weak topics" built from data already synced to Firebase,
+   without needing per-student practice data to be uploaded anywhere. */
+function renderInsightsPanel() {
+  const el = document.getElementById('insightsPanel');
+  if (!el) return;
+  if (!activeReports.length) {
+    el.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
+      <p style="font-size:1.2rem; margin-bottom:5px;">No data yet</p>
+      <p style="font-size:0.9rem; opacity:0.7;">Weak-topic trends will appear here once students start filing reports.</p>
+    </div>`;
+    return;
+  }
+  const byChapter = {};
+  const byStudent = {};
+  activeReports.forEach(r => {
+    const key = `${r.subject || 'Unknown'} · ${r.chapter || 'Unknown'}`;
+    byChapter[key] = (byChapter[key] || 0) + 1;
+    const s = r.studentName || 'Unknown';
+    byStudent[s] = (byStudent[s] || 0) + 1;
+  });
+  const chapterRows = Object.entries(byChapter).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  const studentRows = Object.entries(byStudent).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const maxChapterCount = chapterRows.length ? chapterRows[0][1] : 1;
+
+  const pendingCount = activeReports.filter(r => r.status === 'Pending').length;
+  const resolvedCount = activeReports.filter(r => r.status === 'Resolved').length;
+
+  el.innerHTML = `
+    <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px;">
+      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
+        <div style="font-size:0.75rem; color:var(--parchment-dim);">Total reports</div>
+        <div style="font-size:1.6rem; font-weight:700;">${activeReports.length}</div>
+      </div>
+      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
+        <div style="font-size:0.75rem; color:var(--parchment-dim);">Pending</div>
+        <div style="font-size:1.6rem; font-weight:700; color:var(--coral);">${pendingCount}</div>
+      </div>
+      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
+        <div style="font-size:0.75rem; color:var(--parchment-dim);">Resolved</div>
+        <div style="font-size:1.6rem; font-weight:700; color:var(--sea);">${resolvedCount}</div>
+      </div>
+    </div>
+
+    <h3 style="margin:0 0 10px;">Most-flagged chapters</h3>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:24px;">
+      ${chapterRows.map(([label, count]) => `
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="flex:0 0 220px; font-size:0.85rem;">${label}</div>
+          <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:16px;">
+            <div style="width:${Math.max(4, (count / maxChapterCount) * 100)}%; background:var(--brass, #c99c51); height:100%;"></div>
+          </div>
+          <div style="flex:0 0 30px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.8rem;">${count}</div>
+        </div>`).join('')}
+    </div>
+
+    <h3 style="margin:0 0 10px;">Most-active reporters</h3>
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      ${studentRows.map(([name, count]) => `
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:6px 0; border-bottom:1px solid var(--glass-border, rgba(255,255,255,0.08));">
+          <span>${name}</span><span style="font-family:'JetBrains Mono',monospace;">${count}</span>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+
 function submitReply(id) {
   const textbox = document.getElementById(`replyText-${id}`);
   if (!textbox) return;
@@ -858,6 +986,16 @@ function renderLeaderboard() {
 
   const sorted = [...currentLeaderboard].sort((a,b) => (b.xp||0) - (a.xp||0));
 
+  // Inactive candidates: anyone whose last XP sync (the `timestamp` field
+  // already written on every syncPlayerScore call) is 7+ days old. This is
+  // purely a display split, not a deletion — nothing is removed from
+  // Firebase, so the moment a student plays again their timestamp updates
+  // and they fall back into the "active" bucket on the next render.
+  const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
+  const nowTs = Date.now();
+  const activeEntries = sorted.filter(r => r.timestamp && (nowTs - r.timestamp) < INACTIVE_MS);
+  const inactiveEntries = sorted.filter(r => !r.timestamp || (nowTs - r.timestamp) >= INACTIVE_MS);
+
   // Detect obvious test/placeholder entries so the quick-purge button can
   // show exactly what it'll remove before anything happens.
   const isTestLike = (r) => {
@@ -879,7 +1017,7 @@ function renderLeaderboard() {
       </div>`;
   }
 
-  const rows = sorted.map(r => `
+  const rowHtml = (r) => `
     <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
       <div>
         <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
@@ -887,9 +1025,45 @@ function renderLeaderboard() {
       </div>
       <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
     </div>
-  `).join('');
+  `;
 
-  container.innerHTML = quickPurgeBar + rows;
+  const rows = activeEntries.map(rowHtml).join('') || `
+    <div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">
+      <p style="font-size:0.9rem; opacity:0.7;">No active candidates in the last 7 days.</p>
+    </div>`;
+
+  let inactiveSection = '';
+  if (inactiveEntries.length) {
+    const daysAgo = (ts) => ts ? Math.floor((nowTs - ts) / 86400000) : null;
+    inactiveSection = `
+      <div style="margin-top:22px;">
+        <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="toggleInactiveLb()">
+          <span id="inactiveLbToggleLabel">${inactiveLbExpanded ? 'Hide' : 'Show'} inactive candidates (${inactiveEntries.length})</span>
+        </button>
+        <div id="inactiveLbList" style="display:${inactiveLbExpanded ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:12px;">
+          <div style="font-size:0.78rem; color:var(--parchment-dim);">No activity in the last 7 days. They'll automatically move back to the active list above the moment they play again — nothing here has been deleted.</div>
+          ${inactiveEntries.map(r => `
+            <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; opacity:0.7;">
+              <div>
+                <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">
+                  uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp;
+                  ${r.timestamp ? `inactive ${daysAgo(r.timestamp)}d (last seen ${new Date(r.timestamp).toLocaleDateString()})` : 'no activity recorded yet'}
+                </div>
+              </div>
+              <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = quickPurgeBar + rows + inactiveSection;
+}
+
+let inactiveLbExpanded = false;
+function toggleInactiveLb() {
+  inactiveLbExpanded = !inactiveLbExpanded;
+  renderLeaderboard();
 }
 
 let pendingLbLabels = {};
