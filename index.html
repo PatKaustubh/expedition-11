@@ -60,6 +60,27 @@ body.focus-active { padding-top: 68px; }
 .pdf-exp-card { width: 640px; box-sizing: border-box; padding: 18px 22px; background: #ffffff; color: #1a2233; font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.75; }
 .pdf-exp-card .pdf-exp-label { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; color: #43837a; margin-bottom: 8px; }
 .pdf-exp-card .pdf-exp-final { margin-top: 10px; font-weight: 700; color: #1e826e; }
+
+/* SHARE/CHALLENGE CARD — rasterized off-screen (same html2canvas approach as
+   the PDF explanation card above) into a portrait image sized for WhatsApp
+   status / Instagram stories, so a student's result becomes something worth
+   posting rather than just a stat on their own screen. */
+#shareCardRenderHolder { position: fixed; top: 0; left: 0; z-index: -1; pointer-events: none; }
+.share-card { width: 720px; height: 900px; box-sizing: border-box; padding: 56px 44px; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+.share-card::before { content: ''; position: absolute; inset: 0; border: 3px solid var(--brass); border-radius: 28px; pointer-events: none; }
+.share-card .sc-brand { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--brass-light); text-align: center; letter-spacing: 0.5px; }
+.share-card .sc-icon { font-size: 5rem; text-align: center; margin: 18px 0; }
+.share-card .sc-chapter { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--parchment); text-align: center; margin: 0 0 6px; line-height: 1.25; }
+.share-card .sc-level { font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: var(--parchment-dim); text-align: center; letter-spacing: 1px; text-transform: uppercase; }
+.share-card .sc-stars { text-align: center; font-size: 2.6rem; margin: 22px 0; letter-spacing: 8px; }
+.share-card .sc-stars .on { color: var(--brass-light); }
+.share-card .sc-stars .off { color: rgba(255,255,255,0.15); }
+.share-card .sc-stats-row { display: flex; justify-content: center; gap: 40px; margin: 10px 0 30px; }
+.share-card .sc-stat { text-align: center; }
+.share-card .sc-stat .n { font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; font-weight: 700; color: var(--brass-light); display: block; }
+.share-card .sc-stat .l { font-size: 0.75rem; color: var(--parchment-dim); text-transform: uppercase; letter-spacing: 1px; }
+.share-card .sc-cta { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--coral); border-top: 1px solid var(--line); padding-top: 24px; }
+.share-card .sc-footer { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--parchment-dim); margin-top: 8px; }
 body.theme-mixed { --navy: #241129; --navy-deep: #120714; --brass: #ff9a3c; --brass-light: #ffc98a; --sea: #ff6f61; --coral: #f7418a; --line: rgba(255, 154, 60, 0.35); }
 
 .app { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; position: relative; z-index: 10; }
@@ -822,6 +843,7 @@ body { padding-top: 30px; }
 </script>
 
 <div id="pdfExpRenderHolder"></div>
+<div id="shareCardRenderHolder"></div>
 
 <div class="focus-mode-banner" id="focusModeBanner">🔒 FOCUS MODE ACTIVE — <span class="fmb-time" id="focusModeBannerTime">25:00</span> remaining. Stay in it.</div>
 
@@ -882,6 +904,21 @@ body { padding-top: 30px; }
 
   <div class="dashboard-row">
     <div class="screen" id="screen-subjects">
+      <!-- CHALLENGE-ACCEPTED BANNER — shown when arriving via a friend's
+           "Challenge a Friend" share link (?challenge=...&score=...&from=...).
+           Fully client-side: the whole challenge is encoded in the URL, no
+           backend lookup needed. -->
+      <div id="challengeBanner" style="display:none; background:linear-gradient(135deg, rgba(255,93,143,0.18), rgba(255,93,143,0.08)); border:1px solid rgba(255,93,143,0.4); border-radius:12px; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.3rem;">🔥</span>
+          <span id="challengeBannerText" style="font-size:0.9rem;"></span>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0;">
+          <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem;" onclick="dismissChallengeBanner()">Dismiss</button>
+          <button class="btn primary" style="padding:6px 14px; font-size:0.75rem;" id="challengeBannerAcceptBtn">Accept Challenge</button>
+        </div>
+      </div>
+
       <div id="announcementBanner" style="display:none; background:linear-gradient(135deg, rgba(201,156,81,0.18), rgba(201,156,81,0.08)); border:1px solid rgba(201,156,81,0.4); border-radius:12px; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; gap:14px;">
         <div style="display:flex; align-items:center; gap:10px;">
           <span style="font-size:1.3rem;">📢</span>
@@ -1023,6 +1060,12 @@ body { padding-top: 30px; }
           <div class="widget-hdr"><span class="panel-icon" style="background:rgba(255,93,143,0.18); color:#ff8fb0;">🧭</span><h3>Focus Suggestion</h3></div>
           <div id="weakChapterStatus" class="panel-body-text">Practice a couple more levels to unlock a suggestion</div>
           <div class="panel-hint" id="weakChapterHint">Jump to your weakest chapter</div>
+        </div>
+
+        <div class="side-panel invite-panel" onclick="shareInviteLink()">
+          <div class="widget-hdr"><span class="panel-icon" style="background:rgba(255,180,84,0.18); color:#ffb454;">🎉</span><h3>Invite Friends</h3></div>
+          <div class="panel-body-text">They get a bonus to start, you get bragging rights</div>
+          <div class="panel-hint">Share your invite link</div>
         </div>
 
         <div class="side-panel backup-panel" onclick="openBackupPopup()">
@@ -1334,6 +1377,7 @@ body { padding-top: 30px; }
           <button class="btn ghost" onclick="downloadJeeCertificate()">🏆 Download Certificate</button>
         </div>
         <div class="complete-actions-row">
+          <button class="btn ghost" onclick="shareLevelResult()">📤 Challenge a Friend</button>
           <button class="btn ghost" onclick="abortGame()">Menu</button>
           <button class="btn primary" id="nextLvlBtn" onclick="startNextLevel()">Next Level &rarr;</button>
         </div>
@@ -4329,6 +4373,98 @@ function dismissFreshSessionBanner() {
   if (el) el.style.display = 'none';
 }
 
+// CHALLENGE-A-FRIEND: parses ?challenge=<chapterId>&subj=<subjectId>&score=
+// <n>&from=<name> from the URL (set by shareLevelResult()'s link) and, if
+// present, shows a banner letting the recipient jump straight into that
+// chapter with the friend's score as a target to beat.
+window._incomingChallenge = null;
+function parseIncomingChallenge() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const chapId = params.get('challenge');
+    const subjId = params.get('subj');
+    const score = params.get('score');
+    const from = params.get('from');
+    if (!chapId || !subjId) return;
+    const subj = DATA.find(s => s.id === subjId);
+    const chap = subj && subj.chapters.find(c => c.id === chapId);
+    if (!subj || !chap) return; // unrecognized ids — ignore rather than break
+    window._incomingChallenge = { subj, chap, score: Number(score) || 0, from: from || 'A friend' };
+  } catch (e) { /* malformed URL params — ignore, app works normally */ }
+}
+function renderChallengeBanner() {
+  const el = document.getElementById('challengeBanner');
+  const textEl = document.getElementById('challengeBannerText');
+  const acceptBtn = document.getElementById('challengeBannerAcceptBtn');
+  if (!el || !textEl || !acceptBtn) return;
+  const c = window._incomingChallenge;
+  const dismissed = localStorage.getItem('challenge_dismissed') === '1';
+  if (!c || dismissed) { el.style.display = 'none'; return; }
+  textEl.innerHTML = `<b>${c.from}</b> challenged you — beat their <b>${c.score}%</b> on <b>${c.chap.name}</b> (${c.subj.name})!`;
+  acceptBtn.onclick = () => {
+    setBodyThemeClass(c.subj.theme);
+    state.curSubj = c.subj;
+    state.curChap = c.chap;
+    dismissChallengeBanner();
+    loadLevels();
+  };
+  el.style.display = 'flex';
+}
+function dismissChallengeBanner() {
+  localStorage.setItem('challenge_dismissed', '1');
+  const el = document.getElementById('challengeBanner');
+  if (el) el.style.display = 'none';
+}
+
+// GENERAL INVITE LINK + welcome bonus for whoever opens it. Separate from
+// the challenge link above — this is the plain "come join me" referral,
+// usable from anywhere (not tied to a specific level result).
+function buildReferralLink() {
+  const url = new URL(location.href);
+  url.search = '';
+  url.searchParams.set('ref', state.explorerName || 'A friend');
+  return url.toString();
+}
+async function shareInviteLink() {
+  const link = buildReferralLink();
+  const text = `Join me on Expedition 11 — Class 11 Math, Physics & Chemistry, level by level: ${link}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Expedition 11', text }); return; } catch (e) { /* cancelled */ }
+  }
+  copyChallengeTextToClipboard(text);
+}
+const REFERRAL_BONUS_XP = 50;
+function applyReferralWelcomeBonusIfEligible() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (!ref) return;
+    // Only ever once, and only for a session with no prior save — otherwise
+    // reopening/sharing the same link could be used to farm XP repeatedly.
+    if (localStorage.getItem('referral_bonus_claimed')) return;
+    localStorage.setItem('referral_bonus_claimed', '1'); // set immediately, before any early return below
+    if (localStorage.getItem('math_expedition_v9')) return; // not actually a fresh session
+    state.xp += REFERRAL_BONUS_XP;
+    doSave();
+    window._referralWelcomeFrom = ref;
+  } catch (e) { /* malformed URL — no bonus, no crash */ }
+}
+function renderReferralWelcomeToast() {
+  const from = window._referralWelcomeFrom;
+  if (!from) return;
+  window._referralWelcomeFrom = null;
+  // Reuses the same install-nudge visual slot for a one-off toast rather
+  // than adding a whole new UI component for a single-fire message.
+  const el = document.getElementById('installNudge');
+  if (!el) return;
+  document.getElementById('installNudgeSub').textContent = `🎉 Welcome! ${from} invited you — +${REFERRAL_BONUS_XP} bonus XP added to get you started.`;
+  document.getElementById('installNudgeSteps').innerHTML = '';
+  const actionBtn = document.getElementById('installNudgeAction');
+  actionBtn.textContent = 'Let\'s go';
+  actionBtn.onclick = () => el.classList.remove('show');
+  el.classList.add('show');
+}
+
 function renderActivityPanel() {
   const el = document.getElementById('activityPanelStatus');
   if (!el) return;
@@ -5164,7 +5300,11 @@ function spawnConfetti() {
 function startApp() {
   document.getElementById('introModal').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
-  AudioSys.init(); initBg(); drawBg(); loadSave(); goToSubjects(); 
+  AudioSys.init(); initBg(); drawBg();
+  parseIncomingChallenge();
+  loadSave();
+  applyReferralWelcomeBonusIfEligible();
+  goToSubjects(); 
   // Safety net: abortGame()/levelComplete() already save on their own, but if
   // someone just closes the tab, kills the app, or backgrounds it mid-level
   // (very common on mobile — switching apps, a phone call, locking the
@@ -5637,7 +5777,7 @@ function goToSubjects(navOpts) {
     card.onclick = () => { setBodyThemeClass(sub.theme); state.curSubj = sub; loadChapters(); };
     grid.appendChild(card);
   });
-  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); toggleAdvancedPanels(); renderStreakRiskBanner(); renderBackupReminderBanner(); renderFreshSessionBanner(); showScreen('screen-subjects', navOpts);
+  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); toggleAdvancedPanels(); renderStreakRiskBanner(); renderBackupReminderBanner(); renderFreshSessionBanner(); renderChallengeBanner(); renderReferralWelcomeToast(); showScreen('screen-subjects', navOpts);
 }
 
 function loadChapters(navOpts) {
@@ -7027,6 +7167,14 @@ function levelComplete() {
   let timeStr = `${Math.floor(elapsedSec / 60)}:${(elapsedSec % 60).toString().padStart(2, '0')}`;
   let qTotal = state.currentQuestions.length;
   let accuracy = qTotal > 0 ? Math.round((state.levelCorrectCount / qTotal) * 100) : 0;
+
+  // Snapshot for the share/challenge card — captured here rather than read
+  // live later, since state.curSubj/curChap could theoretically change
+  // before the student taps "Challenge a Friend" on the overlay.
+  state.lastResult = {
+    subjId: state.curSubj.id, subjName: state.curSubj.name, subjIcon: state.curSubj.icon, theme: state.curSubj.theme,
+    chapId: state.curChap.id, chapName: state.curChap.name, level: state.curLvl, accuracy, stars: earnedStars, xp: state.levelXpEarned
+  };
   
   let compOv = document.getElementById('completeOv');
   let title = document.getElementById('compTitle');
@@ -7071,7 +7219,108 @@ function levelComplete() {
   if (window.maybeShowInstallNudge) window.maybeShowInstallNudge();
 }
 
+/* ================= SHARE / CHALLENGE-A-FRIEND =================
+   Turns a level result into a postable image (WhatsApp status, Instagram
+   story, etc.) with a deep link back into this exact chapter and the
+   student's score as a benchmark — the "beat my score" loop. No backend
+   writes involved: the challenge is fully encoded in the URL itself, so
+   it works even if Firebase is offline/misconfigured for this deployment. */
+function buildChallengeLink(result) {
+  const url = new URL(location.href);
+  url.search = '';
+  url.searchParams.set('challenge', result.chapId);
+  url.searchParams.set('subj', result.subjId);
+  url.searchParams.set('score', result.accuracy);
+  url.searchParams.set('from', state.explorerName || 'A friend');
+  return url.toString();
+}
+
+async function shareLevelResult() {
+  const result = state.lastResult;
+  if (!result) return;
+  const holder = document.getElementById('shareCardRenderHolder');
+  if (!holder || !window.html2canvas) {
+    // Fallback with no rendering available: just share/copy the link + text.
+    return shareChallengeText(result);
+  }
+  setBodyThemeClass(result.theme); // card CSS vars follow the subject theme via :root vars
+  const link = buildChallengeLink(result);
+  holder.innerHTML = `
+    <div class="share-card">
+      <div class="sc-brand">🧭 EXPEDITION 11</div>
+      <div class="sc-icon">${result.subjIcon || '📘'}</div>
+      <div class="sc-chapter">${result.chapName}</div>
+      <div class="sc-level">Level ${result.level} · ${result.subjName}</div>
+      <div class="sc-stars">${[1,2,3].map(i => `<span class="${i <= result.stars ? 'on' : 'off'}">★</span>`).join('')}</div>
+      <div class="sc-stats-row">
+        <div class="sc-stat"><span class="n">${result.accuracy}%</span><span class="l">Accuracy</span></div>
+        <div class="sc-stat"><span class="n">+${result.xp}</span><span class="l">XP Earned</span></div>
+      </div>
+      <div class="sc-cta">Think you can beat ${result.accuracy}%?</div>
+      <div class="sc-footer">Play Expedition 11 — link in bio / tap below</div>
+    </div>`;
+  const card = holder.querySelector('.share-card');
+  let canvas = null;
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await Promise.race([document.fonts.ready, new Promise(res => setTimeout(res, 1500))]);
+    }
+    await new Promise(res => setTimeout(res, 60));
+    canvas = await Promise.race([
+      html2canvas(card, { scale: 2, useCORS: true, logging: false }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timed out')), 6000))
+    ]);
+  } catch (err) {
+    console.warn('Share card render failed, falling back to text share:', err.message);
+  } finally {
+    holder.innerHTML = '';
+  }
+
+  if (!canvas) return shareChallengeText(result);
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return shareChallengeText(result);
+    const shareText = `I scored ${result.accuracy}% on ${result.chapName} (${result.subjName}) in Expedition 11 — think you can beat me?\n${link}`;
+    const file = new File([blob], 'expedition11-result.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Expedition 11', text: shareText });
+        return;
+      } catch (e) { /* user cancelled the share sheet — fall through to download */ }
+    }
+    // No native share (desktop, or share was cancelled): just download the image
+    // and copy the challenge text so it's one paste away from WhatsApp/Discord/etc.
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'expedition11-result.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    copyChallengeTextToClipboard(shareText);
+  }, 'image/png');
+}
+
+function shareChallengeText(result) {
+  const link = buildChallengeLink(result);
+  const shareText = `I scored ${result.accuracy}% on ${result.chapName} (${result.subjName}) in Expedition 11 — think you can beat me?\n${link}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Expedition 11', text: shareText }).catch(() => {});
+  } else {
+    copyChallengeTextToClipboard(shareText);
+  }
+}
+
+function copyChallengeTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Challenge link copied! Paste it anywhere to invite a friend.');
+    }).catch(() => { prompt('Copy this to share:', text); });
+  } else {
+    prompt('Copy this to share:', text);
+  }
+}
+
 function startNextLevel() { state.curLvl++; startGame(); }
+
 
 // A level's XP is only "real" once the level is actually completed
 // (levelComplete() sets levelXpCommitted = true). If the student fails
