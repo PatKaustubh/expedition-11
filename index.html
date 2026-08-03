@@ -659,8 +659,167 @@ body { padding-top: 30px; }
   .subject-card, .level-card, .chapter-card { padding: 14px !important; }
 }
 </style>
+<!-- ============================================================
+     PWA: manifest + service worker + custom install prompt
+     ============================================================ -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0c1220">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Expedition 11">
+
+<style>
+/* INSTALL NUDGE — shown once per level-clear (until installed/dismissed),
+   never on first load, so it never competes with the dashboard on day one. */
+.install-nudge { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 140%); z-index: 6000; width: min(420px, calc(100vw - 32px)); background: var(--glass, rgba(12,18,32,0.92)); border: 1px solid var(--brass, #c99c51); border-radius: 16px; padding: 16px 18px; display: flex; gap: 12px; align-items: flex-start; backdrop-filter: blur(14px); box-shadow: 0 12px 40px rgba(0,0,0,0.45); transition: transform 0.45s cubic-bezier(.2,.9,.25,1); }
+.install-nudge.show { transform: translate(-50%, 0); }
+.install-nudge .in-icon { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.install-nudge .in-body { flex: 1; min-width: 0; }
+.install-nudge .in-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--brass-light, #e8c382); margin: 0 0 4px; }
+.install-nudge .in-sub { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--parchment-dim, #a6b3c9); margin: 0 0 10px; line-height: 1.4; }
+.install-nudge .in-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.install-nudge button { font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600; border-radius: 10px; padding: 7px 12px; cursor: pointer; border: 1px solid transparent; }
+.install-nudge .in-primary { background: var(--brass, #c99c51); color: #14100a; }
+.install-nudge .in-secondary { background: transparent; border-color: var(--glass-border, rgba(255,255,255,0.2)); color: var(--parchment-dim, #a6b3c9); }
+.install-nudge .in-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--parchment-dim, #a6b3c9); font-size: 1rem; padding: 2px 6px; }
+.install-nudge .in-steps { margin: 6px 0 10px; padding-left: 18px; font-size: 0.78rem; color: var(--parchment-dim, #a6b3c9); line-height: 1.5; }
+@media (max-width: 480px) { .install-nudge { bottom: 12px; } }
+</style>
+
+
 </head>
 <body>
+<div class="install-nudge" id="installNudge" role="dialog" aria-label="Install Expedition 11">
+  <button class="in-close" id="installNudgeClose" aria-label="Dismiss">✕</button>
+  <div class="in-icon">🧭</div>
+  <div class="in-body">
+    <p class="in-title">Keep your streak going</p>
+    <p class="in-sub" id="installNudgeSub">Add Expedition 11 to your home screen so it's one tap away tomorrow — no need to remember the link.</p>
+    <div id="installNudgeSteps"></div>
+    <div class="in-actions">
+      <button class="in-primary" id="installNudgeAction">Add to Home Screen</button>
+      <button class="in-secondary" id="installNudgeLater">Maybe later</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STORAGE_KEY = 'pwa_install_nudge_state_v1'; // { dismissedUntil: ts, installed: bool }
+  var deferredPrompt = null;
+  var nudgeEl, subEl, stepsEl, actionBtn, laterBtn, closeBtn;
+
+  function getState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function setState(s) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
+  }
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  function registerSW() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function (err) {
+          console.warn('[PWA] service worker registration failed:', err);
+        });
+      });
+    }
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+
+  window.addEventListener('appinstalled', function () {
+    var s = getState(); s.installed = true; setState(s);
+    hideNudge();
+  });
+
+  function shouldOfferNudge() {
+    if (isStandalone()) return false;
+    var s = getState();
+    if (s.installed) return false;
+    if (s.dismissedUntil && Date.now() < s.dismissedUntil) return false;
+    // On non-iOS, only worth showing once we actually have a captured
+    // native prompt to trigger (otherwise there's nothing the button can do).
+    if (!isIOS() && !deferredPrompt) return false;
+    return true;
+  }
+
+  function showNudge() {
+    if (!nudgeEl || !shouldOfferNudge()) return;
+    if (isIOS()) {
+      subEl.textContent = "Add Expedition 11 to your home screen so it's one tap away tomorrow.";
+      stepsEl.innerHTML = '<ol class="in-steps">'
+        + '<li>Tap the Share icon in Safari\'s toolbar</li>'
+        + '<li>Choose "Add to Home Screen"</li>'
+        + '<li>Tap "Add" — done!</li>'
+        + '</ol>';
+      actionBtn.textContent = 'Got it';
+      actionBtn.onclick = function () { dismiss(90); };
+    } else {
+      subEl.textContent = "Add Expedition 11 to your home screen so it's one tap away tomorrow — no need to remember the link.";
+      stepsEl.innerHTML = '';
+      actionBtn.textContent = 'Add to Home Screen';
+      actionBtn.onclick = function () {
+        if (!deferredPrompt) { dismiss(1); return; }
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(function () {
+          deferredPrompt = null;
+          hideNudge();
+        });
+      };
+    }
+    nudgeEl.classList.add('show');
+  }
+
+  function hideNudge() {
+    if (nudgeEl) nudgeEl.classList.remove('show');
+  }
+
+  function dismiss(days) {
+    var s = getState();
+    s.dismissedUntil = Date.now() + days * 24 * 60 * 60 * 1000;
+    setState(s);
+    hideNudge();
+  }
+
+  function init() {
+    nudgeEl = document.getElementById('installNudge');
+    subEl = document.getElementById('installNudgeSub');
+    stepsEl = document.getElementById('installNudgeSteps');
+    actionBtn = document.getElementById('installNudgeAction');
+    laterBtn = document.getElementById('installNudgeLater');
+    closeBtn = document.getElementById('installNudgeClose');
+    laterBtn.onclick = function () { dismiss(3); };
+    closeBtn.onclick = function () { dismiss(3); };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  registerSW();
+
+  // Public hook: the app calls this right after a level-complete "aha"
+  // moment, rather than nagging on first load. Small delay so it doesn't
+  // collide with the completion overlay's own animation.
+  window.maybeShowInstallNudge = function () {
+    setTimeout(showNudge, 1800);
+  };
+})();
+</script>
 
 <div id="pdfExpRenderHolder"></div>
 
@@ -6743,6 +6902,10 @@ function levelComplete() {
   
   compOv.style.display = 'flex';
   playScoreAnimation(accuracy);
+
+  // First taste of a real "aha" moment — good time to nudge toward
+  // installing, rather than on first load before there's any payoff yet.
+  if (window.maybeShowInstallNudge) window.maybeShowInstallNudge();
 }
 
 function startNextLevel() { state.curLvl++; startGame(); }
