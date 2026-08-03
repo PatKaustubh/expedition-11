@@ -62,32 +62,6 @@ body.focus-active { padding-top: 68px; }
 .pdf-exp-card .pdf-exp-final { margin-top: 10px; font-weight: 700; color: #1e826e; }
 body.theme-mixed { --navy: #241129; --navy-deep: #120714; --brass: #ff9a3c; --brass-light: #ffc98a; --sea: #ff6f61; --coral: #f7418a; --line: rgba(255, 154, 60, 0.35); }
 
-/* DISPLAY MODE — accessibility toggle independent of subject theme. Only
-   overrides the neutral/background variables so subject accent colors
-   (brass/sea/coral) still come through, except in high-contrast where
-   everything is forced to a small, maximally-legible palette. */
-body.mode-light { --navy: #f3f0e8; --navy-deep: #e7e2d4; --parchment: #1b1f2a; --parchment-dim: #545d76; --ink: #ffffff; --glass: rgba(255,255,255,0.78); --glass-border: rgba(20,20,30,0.14); }
-body.mode-light .brand-text p, body.mode-light .stat .lbl { color: var(--parchment-dim); }
-body.mode-contrast { --navy: #000000; --navy-deep: #000000; --parchment: #ffffff; --parchment-dim: #ffffff; --brass: #ffe600; --brass-light: #ffff66; --sea: #00e5ff; --coral: #ff4d4d; --line: rgba(255,230,0,0.7); --violet: #ffe600; --glass: rgba(0,0,0,0.95); --glass-border: rgba(255,230,0,0.6); }
-body.mode-contrast * { text-shadow: none !important; }
-body.mode-light, body.mode-contrast { background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); }
-.display-mode-btn { font-size: 0.8rem; padding: 8px 14px; }
-
-.chap-difficulty-preview { margin-top: 8px; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; color: var(--parchment-dim); letter-spacing: 0.2px; }
-
-/* IDLE-ASSIST BANNER — appears if a student's been stuck on the same
-   question for a while, offering graduated help instead of leaving them stuck. */
-.idle-assist-banner { margin: 4px 0 18px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,180,84,0.4); background: rgba(255,180,84,0.08); animation: fadeIn 0.4s ease; }
-.idle-assist-hdr { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--brass-light); margin-bottom: 10px; }
-.idle-assist-row { display: flex; gap: 10px; flex-wrap: wrap; }
-.idle-assist-btn { flex: 1 1 180px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); color: var(--parchment); font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s; text-align: left; }
-.idle-assist-btn:hover:not(:disabled) { border-color: var(--brass); background: rgba(255,255,255,0.08); }
-.idle-assist-btn:disabled { opacity: 0.4; cursor: default; }
-.idle-assist-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; padding: 3px 7px; border-radius: 6px; white-space: nowrap; }
-.idle-assist-tag.free { background: rgba(84,214,138,0.18); color: #54d68a; }
-.idle-assist-tag.cost { background: rgba(255,206,107,0.18); color: #ffce6b; }
-.idle-hint-text { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.88rem; line-height: 1.6; color: var(--brass-light); }
-
 .app { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; position: relative; z-index: 10; }
 
 /* DEV-BUILD SCROLLING DISCLAIMER */
@@ -743,13 +717,19 @@ body { padding-top: 30px; }
       <div id="badgesRow" class="badges-row" onclick="openBadgesPopup()" title="View badges"></div>
       <div id="examCountdownChip" class="exam-countdown-chip" onclick="openExamCountdownSettings()" title="Click to set/edit your exam date"></div>
       <div class="hud-chip" id="topbarFocusChip" onclick="openFocusTimer()" style="display:none; cursor:pointer;" title="Focus timer running — click to open">⏱️ <span id="topbarFocusTime">25:00</span></div>
-      <button class="back-btn display-mode-btn" id="displayModeBtn" onclick="cycleDisplayMode()" title="Cycle dark / light / high-contrast display">🌙 Dark</button>
       <button class="back-btn" style="font-size:0.8rem;padding:8px 14px;" onclick="openResetModal()" title="Reset all progress">↺ Reset</button>
     </div>
   </div>
 
   <div class="dashboard-row">
     <div class="screen" id="screen-subjects">
+      <div id="announcementBanner" style="display:none; background:linear-gradient(135deg, rgba(201,156,81,0.18), rgba(201,156,81,0.08)); border:1px solid rgba(201,156,81,0.4); border-radius:12px; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.3rem;">📢</span>
+          <span id="announcementBannerText" style="font-size:0.9rem;"></span>
+        </div>
+        <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem; flex-shrink:0;" onclick="dismissAnnouncementBanner()">Dismiss</button>
+      </div>
       <div class="title-wrap">
         <h2>Choose Your Discipline</h2>
         <p>Pick a subject to begin your expedition.</p>
@@ -798,16 +778,6 @@ body { padding-top: 30px; }
         <div class="resume-hero-arrow" id="resumePanelHint">→</div>
       </div>
 
-      <div class="resume-hero weak-chapter-hero" id="weakChapterCard" onclick="goToWeakChapter()" style="display:none; border-color: rgba(255,93,143,0.4);">
-        <div class="resume-hero-icon">🎯</div>
-        <div class="resume-hero-body">
-          <h3>Practice This Next</h3>
-          <div id="weakChapterName">—</div>
-          <div id="weakChapterMeta" style="font-size:0.75rem; color:var(--parchment-dim); margin-top:2px;"></div>
-        </div>
-        <div class="resume-hero-arrow">→</div>
-      </div>
-
       <div class="side-panels-grid">
         <div class="side-panel resolutions-panel" onclick="openResolutionsPopup()">
           <div class="widget-hdr"><span class="panel-icon" style="background:rgba(231,111,81,0.18); color:#ff9d80;">🔧</span><h3>Resolutions</h3></div>
@@ -848,6 +818,18 @@ body { padding-top: 30px; }
           <div class="panel-hint">Set weekly XP goal</div>
         </div>
 
+        <div class="side-panel weak-panel" onclick="goToWeakChapter()">
+          <div class="widget-hdr"><span class="panel-icon" style="background:rgba(255,93,143,0.18); color:#ff8fb0;">🧭</span><h3>Focus Suggestion</h3></div>
+          <div id="weakChapterStatus" class="panel-body-text">Practice a couple more levels to unlock a suggestion</div>
+          <div class="panel-hint" id="weakChapterHint">Jump to your weakest chapter</div>
+        </div>
+
+        <div class="side-panel backup-panel" onclick="openBackupPopup()">
+          <div class="widget-hdr"><span class="panel-icon" style="background:rgba(108,140,255,0.18); color:#9ab0ff;">💾</span><h3>Backup & Restore</h3></div>
+          <div class="panel-body-text">Save your progress to a file, or restore it on a new device</div>
+          <div class="panel-hint">Open backup options</div>
+        </div>
+
         <div class="side-panel notes-panel" onclick="openQuickNotes()" style="grid-column: 1 / -1;">
           <div class="widget-hdr"><span class="panel-icon" style="background:rgba(79,209,197,0.18); color:#9df1e6;">📝</span><h3>Quick Notes</h3></div>
           <div id="notesPanelPreview" class="panel-body-text" style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Jot down anything to remember</div>
@@ -883,6 +865,24 @@ body { padding-top: 30px; }
         </button>
         <div id="leaderboardPopupInactiveList" class="popup-list" style="display:none; margin-top:8px; opacity:0.65;"></div>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="backupPopup" onclick="if(event.target===this) closeBackupPopup()">
+    <div class="modal-box" style="max-width:480px; text-align:left;">
+      <div class="widget-hdr">
+        <h3>💾 Backup & Restore</h3>
+        <button class="popup-close" onclick="closeBackupPopup()">✕ Close</button>
+      </div>
+      <p style="font-size:0.85rem; color:var(--parchment-dim); margin-top:0;">Your progress lives only in this browser. Download a backup before clearing your browser data or switching devices, and restore it any time from the file.</p>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <button class="btn primary" onclick="exportProgressBackup()">⬇ Download my progress (.json)</button>
+        <label class="btn ghost" style="text-align:center; cursor:pointer;">
+          ⬆ Restore from a backup file
+          <input type="file" accept="application/json" onchange="importProgressBackup(this.files[0])" style="display:none;">
+        </label>
+      </div>
+      <div id="backupStatusMsg" style="margin-top:12px; font-size:0.8rem; display:none;"></div>
     </div>
   </div>
 
@@ -1076,15 +1076,6 @@ body { padding-top: 30px; }
       
       <div class="qtag" id="qTag">Level X · Question Y</div>
       <div class="qtext" id="qText">Question Text Goes Here</div>
-      <div class="idle-assist-banner" id="idleAssistBanner" style="display:none;">
-        <div class="idle-assist-hdr">⏳ Stuck? Here's some help —</div>
-        <div class="idle-assist-row">
-          <button class="idle-assist-btn" id="idleEliminateBtn" onclick="idleEliminateOne()">✂️ Remove one wrong answer <span class="idle-assist-tag free">Free</span></button>
-          <button class="idle-assist-btn" id="idleHintBtn" onclick="idleRevealHint()">💡 Reveal first-step hint <span class="idle-assist-tag cost" id="idleHintCostTag"></span></button>
-          <button class="idle-assist-btn" id="idleSkipBtn" onclick="idleSkipQuestion()">⏭ Skip — no heart lost <span class="idle-assist-tag free">To Mistake Bank</span></button>
-        </div>
-        <div class="idle-hint-text" id="idleHintText" style="display:none;"></div>
-      </div>
       <div class="opt-grid" id="optGrid"></div>
       <div class="feedback" id="qFeedback"></div>
       <div class="btn-row" id="qNextRow" style="display:none;">
@@ -1468,6 +1459,14 @@ window.DB_Engine = {
     }
   },
 
+  listenAnnouncement(callback) {
+    if (!dbReady) return () => {};
+    const ref = db.ref('announcement');
+    const handler = (snap) => callback(snap.val());
+    ref.on('value', handler);
+    return () => ref.off('value', handler);
+  },
+
   listenLeaderboard(callback) {
     if (!dbReady) {
       setBackendStatus('local', 'Firebase did not initialize (check config values)');
@@ -1607,28 +1606,6 @@ window.DB_Engine = {
     const errHandler = (e) => { console.error('[Explorer] PYQ bank listener failed (check Firebase Rules for "pyqBank"):', e); callback([]); };
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
-  },
-
-  // ── PYQ bank analytics — aggregated wrong/skipped counts per question,
-  // so the educator panel can surface "which imported PYQ questions trip
-  // students up most". Best-effort only: if offline, we just skip (this is
-  // aggregate analytics, not something a student needs confirmed to them).
-  async logPyqOutcome(subjId, year, qKey, questionText, outcome) {
-    if (!dbReady) return;
-    try {
-      await ensureAnonymousAuth();
-      const ref = db.ref(`pyqAnalytics/${subjId}_${year}/${qKey}`);
-      await ref.transaction(cur => {
-        cur = cur || { shown: 0, wrong: 0, correct: 0, skipped: 0, subject: subjId, year, questionText: (questionText || '').slice(0, 200) };
-        cur.shown = (cur.shown || 0) + 1;
-        if (outcome === 'correct') cur.correct = (cur.correct || 0) + 1;
-        else if (outcome === 'wrong') cur.wrong = (cur.wrong || 0) + 1;
-        else cur.skipped = (cur.skipped || 0) + 1;
-        cur.questionText = (questionText || '').slice(0, 200);
-        cur.subject = subjId; cur.year = year;
-        return cur;
-      });
-    } catch (e) { console.warn('[PYQ Analytics] log failed', e); }
   }
 };
 
@@ -1803,10 +1780,6 @@ let state = {
   removalInfo: null,
   lifelinesLeft: 1,
   eliminatedOpts: [],
-  idleAssistTimer: null,
-  idleAssistShown: false,
-  idleEliminateUsed: false,
-  idleHintUsed: false,
   ocrCache: {},
   weeklyXp: 0,
   weeklyXpWeekStart: null
@@ -1856,6 +1829,127 @@ function doSave() {
     xp: state.xp, progress: state.progress, streak: state.streak, explorerName: state.explorerName,
     weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart
   }));
+}
+
+/* ================= BACKUP & RESTORE =================
+   Bundles every localStorage key this app writes into one downloadable
+   JSON file, and can restore all of them back — a safety net against
+   browser data getting cleared, and a way to carry progress to a new
+   device/browser since everything today lives only in localStorage. */
+const BACKUP_KEYS = [
+  'math_expedition_v9', 'mistake_bank_v1', 'activity_log_v1', 'streak_freeze_v1',
+  'daily_challenge_state_v1', 'exam_countdown_date_v1', 'weekly_xp_goal_v1',
+  'expedition11_quickNotes', 'pyqSavedQuestions', 'resolution_resolved_since'
+];
+
+function exportProgressBackup() {
+  const bundle = { exportedAt: new Date().toISOString(), explorerName: state.explorerName, data: {} };
+  BACKUP_KEYS.forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v !== null) bundle.data[k] = v;
+  });
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `expedition11-backup-${(state.explorerName || 'student').replace(/[^a-z0-9]/gi,'_')}-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showBackupStatus('✓ Backup downloaded.', false);
+}
+
+function importProgressBackup(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const bundle = JSON.parse(reader.result);
+      if (!bundle || !bundle.data) throw new Error('Not a valid Expedition 11 backup file.');
+      Object.entries(bundle.data).forEach(([k, v]) => {
+        if (BACKUP_KEYS.includes(k)) localStorage.setItem(k, v);
+      });
+      showBackupStatus('✓ Restored! Reloading...', false);
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      showBackupStatus('✗ Could not read that file — make sure it\'s an Expedition 11 backup .json.', true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showBackupStatus(msg, isError) {
+  const el = document.getElementById('backupStatusMsg');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color = isError ? 'var(--coral)' : 'var(--sea)';
+  el.textContent = msg;
+}
+
+/* ================= EDUCATOR ANNOUNCEMENT BANNER =================
+   Shows a dismissible banner fed from a single Firebase 'announcement'
+   node the educator panel writes to. Dismissal is per-announcement (keyed
+   by its id) so a NEW announcement always reappears even if a previous
+   one was dismissed. */
+function renderAnnouncementBanner(ann) {
+  const el = document.getElementById('announcementBanner');
+  if (!el) return;
+  if (!ann || !ann.message) { el.style.display = 'none'; return; }
+  const dismissedId = localStorage.getItem('dismissed_announcement_id');
+  if (dismissedId === ann.id) { el.style.display = 'none'; return; }
+  document.getElementById('announcementBannerText').textContent = ann.message;
+  el.dataset.annId = ann.id;
+  el.style.display = 'flex';
+}
+function dismissAnnouncementBanner() {
+  const el = document.getElementById('announcementBanner');
+  if (el && el.dataset.annId) localStorage.setItem('dismissed_announcement_id', el.dataset.annId);
+  if (el) el.style.display = 'none';
+}
+
+function openBackupPopup() {
+  document.getElementById('backupStatusMsg').style.display = 'none';
+  document.getElementById('backupPopup').classList.add('show');
+}
+function closeBackupPopup() { document.getElementById('backupPopup').classList.remove('show'); }
+
+/* ================= WEAK CHAPTER SUGGESTION =================
+   Looks across every chapter the student has actually started and
+   surfaces the one with the lowest average stars-per-level as a
+   one-tap "practice this next" suggestion on the dashboard. */
+function computeWeakChapter() {
+  let worst = null;
+  DATA.forEach(sub => sub.chapters.forEach(ch => {
+    const p = state.progress[ch.id];
+    if (!p || p.maxUnlocked <= 1 || !p.stars) return; // hasn't really started this chapter yet
+    const attempted = Object.keys(p.stars).length;
+    if (attempted === 0) return;
+    const avgStars = Object.values(p.stars).reduce((a, b) => a + b, 0) / attempted;
+    if (!worst || avgStars < worst.avgStars) worst = { subject: sub, chapter: ch, avgStars, attempted };
+  }));
+  return worst;
+}
+
+function renderWeakChapterPanel() {
+  const statusEl = document.getElementById('weakChapterStatus');
+  const hintEl = document.getElementById('weakChapterHint');
+  if (!statusEl) return;
+  const weak = computeWeakChapter();
+  if (!weak) {
+    statusEl.textContent = 'Practice a couple more levels to unlock a suggestion';
+    hintEl.textContent = 'Jump to your weakest chapter';
+    return;
+  }
+  statusEl.innerHTML = `<b>${weak.chapter.name}</b> <span style="opacity:0.7;">(${weak.subject.name})</span> — avg ${weak.avgStars.toFixed(1)}★ across ${weak.attempted} level${weak.attempted === 1 ? '' : 's'}`;
+  hintEl.textContent = 'Tap to practice this chapter';
+}
+
+function goToWeakChapter() {
+  const weak = computeWeakChapter();
+  if (!weak) return;
+  setBodyThemeClass(weak.subject.theme);
+  state.curSubj = weak.subject;
+  state.curChap = weak.chapter;
+  loadLevels();
 }
 
 /* ================= USERNAME PROFANITY FILTER =================
@@ -3519,30 +3613,10 @@ function setDailyChallengeState(s) {
 // internally, so — unlike the chapter selection — the exact question text
 // isn't guaranteed identical across different students/devices, just the
 // once-a-day gating and streak/bonus-XP mechanics are.
-// Ties the daily challenge's difficulty/spread to the exam countdown chip:
-// far from the exam (or no date set) it stays gentle and per-subject; as the
-// date closes in, it gradually shifts toward harder levels and, in the final
-// stretch, pulls in the full syllabus (including the Mixed subject's own
-// chapters) to mimic exam-like mixed-topic pressure.
-function getExamDaysLeft() {
-  const dateStr = localStorage.getItem(EXAM_DATE_STORAGE_KEY);
-  if (!dateStr) return null;
-  const target = new Date(dateStr + 'T00:00:00');
-  const now = new Date();
-  return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
-}
-function getDailyChallengeTier() {
-  const daysLeft = getExamDaysLeft();
-  if (daysLeft === null || daysLeft > 60) return { tier: 'basic', minLevel: 1, maxLevel: 5, includeMixed: false };
-  if (daysLeft > 30) return { tier: 'building', minLevel: 4, maxLevel: 9, includeMixed: false };
-  return { tier: 'full-syllabus', minLevel: 8, maxLevel: TOTAL_LEVELS, includeMixed: true };
-}
-
 async function buildDailyQuestionSet() {
-  const { minLevel, maxLevel, includeMixed } = getDailyChallengeTier();
   const allChapters = [];
   DATA.forEach(sub => {
-    if (sub.id === 'mixed' && !includeMixed) return;
+    if (sub.id === 'mixed') return;
     sub.chapters.forEach(ch => allChapters.push({ subj: sub, ch }));
   });
   if (!allChapters.length) return [];
@@ -3550,7 +3624,7 @@ async function buildDailyQuestionSet() {
   const picks = seededShuffle(allChapters, rand).slice(0, DAILY_QUESTION_COUNT);
   const questions = [];
   for (const p of picks) {
-    const level = minLevel + Math.floor(rand() * (maxLevel - minLevel + 1));
+    const level = 1 + Math.floor(rand() * 5); // keep it to the "basic" tier
     try {
       const qs = await Factory.generate(p.subj.id, p.ch.id, level, 1);
       if (qs && qs[0]) questions.push({ ...qs[0], __subject: p.subj.name, __chapter: p.ch.name });
@@ -3571,11 +3645,7 @@ function renderDailyPanel() {
   statusEl.innerHTML = doneToday
     ? `✅ Completed today${streak ? ` · 🔥 ${streak}-day streak` : ''}`
     : `${DAILY_QUESTION_COUNT} questions · +${DAILY_XP_PER_CORRECT} XP each${streak ? ` · 🔥 ${streak}-day streak on the line` : ''}`;
-  if (hintEl) {
-    const tier = getDailyChallengeTier().tier;
-    const tierHint = tier === 'full-syllabus' ? ' · 🔥 full-syllabus mode (exam close)' : (tier === 'building' ? ' · leveling up as exam nears' : '');
-    hintEl.textContent = (doneToday ? 'Come back tomorrow for a new set' : "Click to attempt today's challenge") + tierHint;
-  }
+  if (hintEl) hintEl.textContent = doneToday ? 'Come back tomorrow for a new set' : "Click to attempt today's challenge";
 }
 
 async function openDailyChallenge() {
@@ -3992,33 +4062,6 @@ function openActivityPopup() {
   document.getElementById('activityPopup').classList.add('show');
 }
 function closeActivityPopup() { document.getElementById('activityPopup').classList.remove('show'); }
-
-/* ================= DISPLAY MODE (dark / light / high-contrast) =================
-   Independent of the Math/Physics/Chemistry subject themes — this just
-   swaps the neutral background/text variables for accessibility. Applies
-   even on the intro screen (before an Explorer name is chosen), since
-   that's exactly when someone might need it. */
-const DISPLAY_MODE_KEY = 'display_mode_v1';
-const DISPLAY_MODES = [
-  { id: 'dark', label: '🌙 Dark', cls: null },
-  { id: 'light', label: '☀️ Light', cls: 'mode-light' },
-  { id: 'contrast', label: '◐ Contrast', cls: 'mode-contrast' }
-];
-function applyDisplayMode(id) {
-  document.body.classList.remove('mode-light', 'mode-contrast');
-  const m = DISPLAY_MODES.find(dm => dm.id === id) || DISPLAY_MODES[0];
-  if (m.cls) document.body.classList.add(m.cls);
-  const btn = document.getElementById('displayModeBtn');
-  if (btn) btn.textContent = m.label;
-  localStorage.setItem(DISPLAY_MODE_KEY, m.id);
-}
-function cycleDisplayMode() {
-  const cur = localStorage.getItem(DISPLAY_MODE_KEY) || 'dark';
-  const idx = DISPLAY_MODES.findIndex(dm => dm.id === cur);
-  const next = DISPLAY_MODES[(idx + 1) % DISPLAY_MODES.length];
-  applyDisplayMode(next.id);
-}
-window.cycleDisplayMode = cycleDisplayMode;
 
 /* ================= EXAM COUNTDOWN ================= */
 const EXAM_DATE_STORAGE_KEY = 'exam_countdown_date_v1';
@@ -4469,7 +4512,6 @@ function openPyqViewerLoading(title) {
 function closePyqViewerModal() {
   document.getElementById('pyqViewerModal').classList.remove('show', 'pyq-fullscreen');
   document.getElementById('pyqQuizPalette').style.display = 'none';
-  flushPyqAnalytics();
   pyqQuiz = null;
 }
 
@@ -4516,26 +4558,6 @@ function getPyqSavedSet() {
 function pyqQuestionSaveKey(q) {
   // Stable-ish identity for a question across sessions: subject+year+first 60 chars of its text.
   return `${q.subjectName || q.subject || ''}|${q.year || ''}|${String(q.q || '').replace(/<[^>]+>/g, '').slice(0, 60)}`;
-}
-// Firebase keys can't contain '.', '#', '$', '/', '[', ']' — hash the same
-// stable identity used for save-for-later into a short alphanumeric key so
-// wrong/skip counts for the "same" question accumulate across students/sessions.
-function pyqAnalyticsKey(q) {
-  const s = pyqQuestionSaveKey(q);
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
-  return 'q' + Math.abs(h);
-}
-// Called when a PYQ quiz session ends (finished or closed early) — logs
-// correct/wrong/skipped for every question seen this session in one pass.
-function flushPyqAnalytics() {
-  if (!pyqQuiz || !window.DB_Engine) return;
-  const subjId = pyqQuiz.questions[0] ? (pyqQuiz.questions[0].subject || pyqQuiz.questions[0].subjectName || 'unknown') : 'unknown';
-  pyqQuiz.questions.forEach((q, i) => {
-    const rec = pyqQuiz.answers[i];
-    const outcome = rec ? (rec.correct ? 'correct' : 'wrong') : 'skipped';
-    window.DB_Engine.logPyqOutcome(q.subject || q.subjectName || subjId, q.year || '', pyqAnalyticsKey(q), q.q, outcome);
-  });
 }
 function togglePyqSave(idx) {
   const q = pyqQuiz.questions[idx];
@@ -4688,7 +4710,6 @@ function advancePyqQuiz() {
         <button class="btn primary" onclick="closePyqViewerModal()">Close</button>
       </div>`;
     document.getElementById('pyqQuizPalette').style.display = 'none';
-    flushPyqAnalytics();
     pyqQuiz = null;
   }
 }
@@ -4836,6 +4857,7 @@ function startApp() {
       liveLeaderboard = leaders;
       if(document.getElementById('screen-subjects').classList.contains('active')) renderLeaderboard();
     });
+    window.DB_Engine.listenAnnouncement((ann) => { renderAnnouncementBanner(ann); });
     window.DB_Engine.listenRemovalStatus((info) => {
       const wasRemoved = state.isRemoved;
       state.isRemoved = !!info;
@@ -5280,66 +5302,8 @@ function goToSubjects() {
     card.onclick = () => { setBodyThemeClass(sub.theme); state.curSubj = sub; loadChapters(); };
     grid.appendChild(card);
   });
-  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterCard(); showScreen('screen-subjects');
+  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); showScreen('screen-subjects');
 }
-
-/* ================= CHAPTER DIFFICULTY PREVIEW / WEAK CHAPTER SUGGESTION =================
-   Both features read from the same source: prog.runs, a short history of
-   past attempts (accuracy, level, timestamp) recorded in levelComplete(). */
-function getChapterRunStats(chId) {
-  const prog = state.progress[chId];
-  if (!prog || !prog.runs || !prog.runs.length) return null;
-  const runs = prog.runs;
-  const avgAccuracy = Math.round(runs.reduce((a, r) => a + r.accuracy, 0) / runs.length);
-  const recent = runs.slice(-5);
-  const recentAvgAccuracy = Math.round(recent.reduce((a, r) => a + r.accuracy, 0) / recent.length);
-  return { attempts: runs.length, avgAccuracy, recentAvgAccuracy, lastAccuracy: runs[runs.length - 1].accuracy };
-}
-
-// Finds the chapter the student is weakest in recently, so the dashboard can
-// surface a one-tap "practice this next" card. Requires at least one attempt
-// logged (otherwise there's nothing to judge weakness from) and considers
-// only chapters that have actually been started, using the last-5-runs
-// average so a single bad day doesn't dominate longer-term improvement.
-function getWeakestChapter() {
-  let weakest = null;
-  DATA.forEach(sub => {
-    if (sub.id === 'mixed') return;
-    sub.chapters.forEach(ch => {
-      const stats = getChapterRunStats(ch.id);
-      if (!stats) return;
-      if (!weakest || stats.recentAvgAccuracy < weakest.stats.recentAvgAccuracy) {
-        weakest = { subj: sub, ch, stats };
-      }
-    });
-  });
-  return weakest;
-}
-
-function renderWeakChapterCard() {
-  const card = document.getElementById('weakChapterCard');
-  if (!card) return;
-  const weakest = getWeakestChapter();
-  // Need at least a little signal, and no point suggesting "practice" on
-  // something already fully mastered — only show while there's real room to improve.
-  if (!weakest || weakest.stats.recentAvgAccuracy >= 85) { card.style.display = 'none'; return; }
-  card.style.display = 'flex';
-  document.getElementById('weakChapterName').textContent = weakest.ch.name;
-  document.getElementById('weakChapterMeta').textContent =
-    `${weakest.subj.name} · ${weakest.stats.recentAvgAccuracy}% recent accuracy over ${weakest.stats.attempts} attempt${weakest.stats.attempts === 1 ? '' : 's'}`;
-}
-
-function goToWeakChapter() {
-  const weakest = getWeakestChapter();
-  if (!weakest) return;
-  setBodyThemeClass(weakest.subj.theme);
-  state.curSubj = weakest.subj;
-  state.curChap = weakest.ch;
-  const prog = state.progress[weakest.ch.id];
-  state.curLvl = Math.min(prog.maxUnlocked || 1, TOTAL_LEVELS);
-  startGame();
-}
-window.goToWeakChapter = goToWeakChapter;
 
 function loadChapters() {
   AudioSys.startPeacefulAmbient();
@@ -5355,10 +5319,6 @@ function loadChapters() {
     const cleared = Math.max(0, (prog.maxUnlocked || 1) - 1); // levels finished
     const pct = Math.round((cleared / TOTAL_LEVELS) * 100);
     const starTotal = Object.values(stars).reduce((a,b)=>a+(b||0),0);
-    const diffStats = getChapterRunStats(ch.id);
-    const diffLine = diffStats
-      ? `<div class="chap-difficulty-preview">📊 Avg ${diffStats.avgAccuracy}% accuracy over ${diffStats.attempts} run${diffStats.attempts === 1 ? '' : 's'}</div>`
-      : `<div class="chap-difficulty-preview" style="opacity:0.6;">📊 Not attempted yet</div>`;
     let card = document.createElement('div');
     card.className = 'card-item';
     card.onclick = () => { state.curChap = ch; loadLevels(); };
@@ -5370,7 +5330,6 @@ function loadChapters() {
         <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
         <div class="meta"><span>${cleared}/${TOTAL_LEVELS} cleared</span><span class="pct">${pct}%</span></div>
         <div class="meta"><span>${starTotal}/${TOTAL_LEVELS*3} ★</span><span>${cleared === TOTAL_LEVELS ? 'Mastered' : (cleared === 0 ? 'Not started' : 'In progress')}</span></div>
-        ${diffLine}
       </div>`;
     grid.appendChild(card);
   });
@@ -5410,10 +5369,6 @@ function loadLevels() {
       dots += `<div class="dot ${done ? 'done' : ''} ${cur ? 'current' : ''}" title="Level ${i}">${i}</div>`;
       if (i < TOTAL_LEVELS) dots += `<div class="connector ${i < maxUnl-1 ? 'done' : ''}"></div>`;
     }
-    const diffStats = getChapterRunStats(state.curChap.id);
-    const diffLine = diffStats
-      ? `<div class="chap-difficulty-preview">📊 Your average across past runs: <b>${diffStats.avgAccuracy}% accuracy</b> (${diffStats.attempts} attempt${diffStats.attempts === 1 ? '' : 's'}, last: ${diffStats.lastAccuracy}%)</div>`
-      : '';
     panel.innerHTML = `
       <div class="row">
         <div class="title">Progression</div>
@@ -5421,7 +5376,6 @@ function loadLevels() {
       </div>
       <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
       <div class="level-dots">${dots}</div>
-      ${diffLine}
     `;
   }
 
@@ -5664,122 +5618,6 @@ function useLifeline() {
   updateLifelineHud();
 }
 
-/* ================= IDLE ASSIST =================
-   If a student sits on the same question for a while without answering,
-   surface graduated help instead of just leaving the 50/50 button sitting
-   there unused. Only applies to regular chapter practice, not the timed
-   JEE Mixed exam mode (which has its own separate lifeline UI hidden entirely). */
-const IDLE_ASSIST_MS = 90 * 1000; // 90s stuck on the same question
-const IDLE_HINT_XP_COST = 15;
-
-function clearIdleAssistTimer() {
-  if (state.idleAssistTimer) { clearTimeout(state.idleAssistTimer); state.idleAssistTimer = null; }
-}
-function startIdleAssistTimer() {
-  clearIdleAssistTimer();
-  state.idleAssistTimer = setTimeout(() => {
-    if (!state.answered) showIdleAssistBanner();
-  }, IDLE_ASSIST_MS);
-}
-function hideIdleAssistBanner() {
-  const banner = document.getElementById('idleAssistBanner');
-  if (banner) banner.style.display = 'none';
-}
-function showIdleAssistBanner() {
-  if (state.answered) return;
-  state.idleAssistShown = true;
-  renderIdleAssistBanner();
-  const banner = document.getElementById('idleAssistBanner');
-  if (banner) banner.style.display = 'block';
-}
-function renderIdleAssistBanner() {
-  const qData = state.currentQuestions[state.qIdx];
-  const wrongLeft = qData.opts.map((_, i) => i).filter(i => i !== qData.ans && !state.eliminatedOpts.includes(i)).length;
-
-  const elimBtn = document.getElementById('idleEliminateBtn');
-  if (elimBtn) elimBtn.disabled = state.idleEliminateUsed || wrongLeft <= 1;
-
-  const hintBtn = document.getElementById('idleHintBtn');
-  const hintCostTag = document.getElementById('idleHintCostTag');
-  if (hintBtn) hintBtn.disabled = state.idleHintUsed || state.xp < IDLE_HINT_XP_COST;
-  if (hintCostTag) hintCostTag.textContent = state.idleHintUsed ? 'Used' : (state.xp < IDLE_HINT_XP_COST ? `Need ${IDLE_HINT_XP_COST} XP` : `-${IDLE_HINT_XP_COST} XP`);
-}
-
-// Lighter than the 50/50 lifeline: removes ONE wrong option, free, no
-// per-level cap of its own — but only usable once this specific question
-// has triggered the idle-assist banner, and never leaves fewer than 2
-// options total (always keeps the correct answer plus at least one distractor).
-function idleEliminateOne() {
-  if (state.answered || state.idleEliminateUsed) return;
-  const qData = state.currentQuestions[state.qIdx];
-  const wrongIdxs = qData.opts.map((_, i) => i).filter(i => i !== qData.ans && !state.eliminatedOpts.includes(i));
-  if (wrongIdxs.length <= 1) return;
-  const pick = wrongIdxs[Math.floor(Math.random() * wrongIdxs.length)];
-  state.eliminatedOpts = [...state.eliminatedOpts, pick];
-  state.idleEliminateUsed = true;
-  const grid = document.getElementById('optGrid');
-  const btn = grid.children[pick];
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.25'; btn.style.pointerEvents = 'none'; btn.onclick = null; }
-  updateLifelineHud();
-  renderIdleAssistBanner();
-}
-
-// Pulls the opening move out of the question's explanation as a hint,
-// without giving away the final answer. Costs XP — spent hints are still
-// XP the student earned, just redirected toward getting unstuck.
-function firstStepHint(exp) {
-  if (!exp) return "Re-read the question carefully and pin down exactly what's being asked before picking a formula.";
-  const plain = String(exp).replace(/\$/g, '');
-  const m = plain.match(/^(.*?[.!?])(\s|$)/);
-  let first = m ? m[1] : plain.slice(0, 140);
-  if (first.length > 160) first = first.slice(0, 160) + '…';
-  return first;
-}
-function idleRevealHint() {
-  if (state.answered || state.idleHintUsed) return;
-  if (state.xp < IDLE_HINT_XP_COST) { renderIdleAssistBanner(); return; }
-  state.xp -= IDLE_HINT_XP_COST;
-  state.idleHintUsed = true;
-  doSave();
-  updateStats();
-  if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
-  const qData = state.currentQuestions[state.qIdx];
-  const hintEl = document.getElementById('idleHintText');
-  if (hintEl) {
-    hintEl.style.display = 'block';
-    hintEl.innerHTML = `💡 ${firstStepHint(qData.exp)}`;
-    typesetMath(hintEl);
-  }
-  renderIdleAssistBanner();
-}
-
-// No-penalty skip: banks the question into the Mistake Bank for spaced
-// revision later, doesn't cost a heart, and moves on via the normal
-// "Continue" flow — for when a student's truly stuck and grinding on it
-// further isn't productive.
-function idleSkipQuestion() {
-  if (state.answered) return;
-  const qData = state.currentQuestions[state.qIdx];
-  state.answered = true;
-  clearIdleAssistTimer();
-  recordMistake(qData);
-  const grid = document.getElementById('optGrid');
-  grid.querySelectorAll('.opt').forEach((b, i) => {
-    b.disabled = true;
-    if (i === qData.ans) b.classList.add('correct');
-  });
-  hideIdleAssistBanner();
-  const fb = document.getElementById('qFeedback');
-  fb.innerHTML = `⏭ Skipped — no heart lost. Added to your Mistake Bank for later review. Correct answer was <b>${qData.opts[qData.ans]}</b>`;
-  fb.className = 'feedback show';
-  typesetMath(fb);
-  document.getElementById('qNextRow').style.display = 'flex';
-  doSave();
-}
-window.idleEliminateOne = idleEliminateOne;
-window.idleRevealHint = idleRevealHint;
-window.idleSkipQuestion = idleSkipQuestion;
-
 function updateGameHud() {
   let isJee = state.curSubj.id === 'mixed';
   let qCount = state.currentQuestions.length;
@@ -5938,18 +5776,11 @@ async function tryOcrEnhanceQuestion(qData, qIdxAtCallTime) {
 function renderQuestion() {
   state.answered = false;
   state.eliminatedOpts = [];
-  state.idleAssistShown = false;
-  state.idleEliminateUsed = false;
-  state.idleHintUsed = false;
-  hideIdleAssistBanner();
-  const hintEl = document.getElementById('idleHintText');
-  if (hintEl) { hintEl.style.display = 'none'; hintEl.innerHTML = ''; }
   let isJee = state.curSubj.id === 'mixed';
   let qCount = state.currentQuestions.length;
   
   updateGameHud();
   updateLifelineHud();
-  if (isJee) clearIdleAssistTimer(); else startIdleAssistTimer();
   
   let qData = state.currentQuestions[state.qIdx];
   document.getElementById('qTag').textContent = `${state.curChap.name} · Level ${state.curLvl} · Q${state.qIdx+1}`;
@@ -6038,8 +5869,6 @@ function handleAnswer(selIdx, btnNode) {
   // and mistakes draw from the level's shared heart pool instead of a per-question retry.
   state.answered = true;
   state.qSelected[state.qIdx] = selIdx;
-  clearIdleAssistTimer();
-  hideIdleAssistBanner();
   updateLifelineHud();
   grid.querySelectorAll('.opt').forEach((b, i) => {
     b.disabled = true;
@@ -6847,7 +6676,6 @@ function computeLevelStars() {
 }
 
 function levelComplete() {
-  clearIdleAssistTimer();
   AudioSys.win();
   state.levelXpCommitted = true; // this attempt's XP is now locked in — retry/abort after this must not revert it
   let prog = state.progress[state.curChap.id];
@@ -6858,19 +6686,12 @@ function levelComplete() {
   let prevStars = prog.stars[state.curLvl] || 0;
   let isNewBest = earnedStars > prevStars;
   if (isNewBest) prog.stars[state.curLvl] = earnedStars;
-
+  doSave();
+  
   let elapsedSec = Math.max(0, Math.round((Date.now() - (state.levelStartTime || Date.now())) / 1000));
   let timeStr = `${Math.floor(elapsedSec / 60)}:${(elapsedSec % 60).toString().padStart(2, '0')}`;
   let qTotal = state.currentQuestions.length;
   let accuracy = qTotal > 0 ? Math.round((state.levelCorrectCount / qTotal) * 100) : 0;
-
-  // Per-attempt run history — powers the "chapter difficulty preview" (avg
-  // accuracy/attempts before you start a chapter) and the "weak chapter"
-  // auto-suggestion. Kept short (last 20 runs per chapter) so save size stays sane.
-  if (!prog.runs) prog.runs = [];
-  prog.runs.push({ level: state.curLvl, accuracy, correct: state.levelCorrectCount, total: qTotal, at: Date.now() });
-  if (prog.runs.length > 20) prog.runs = prog.runs.slice(-20);
-  doSave();
   
   let compOv = document.getElementById('completeOv');
   let title = document.getElementById('compTitle');
@@ -6930,8 +6751,8 @@ function revertUncommittedLevelXp() {
   }
 }
 
-function retryLevel() { clearIdleAssistTimer(); revertUncommittedLevelXp(); startGame(); }
-function abortGame() { clearIdleAssistTimer(); revertUncommittedLevelXp(); clearInterval(timerInt); exitExamLockdown(); AudioSys.startPeacefulAmbient(); loadLevels(); }
+function retryLevel() { revertUncommittedLevelXp(); startGame(); }
+function abortGame() { revertUncommittedLevelXp(); clearInterval(timerInt); exitExamLockdown(); AudioSys.startPeacefulAmbient(); loadLevels(); }
 
 window.registerExplorer = registerExplorer;
 window.startApp = startApp;
@@ -6970,7 +6791,6 @@ window.downloadJeeReport = downloadJeeReport;
 window.downloadJeeCertificate = downloadJeeCertificate;
 
 window.onload = function() {
-  applyDisplayMode(localStorage.getItem(DISPLAY_MODE_KEY) || 'dark');
   loadSave();
   if (state.explorerName && state.explorerName !== "Explorer") startApp();
 };

@@ -120,6 +120,7 @@ body { padding-top: 30px; }
         </div>
       </div>
       <div style="display:flex; gap:8px;">
+        <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openAnnouncementModal()">📢 Broadcast</button>
         <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearResolvedModal()">Purge Resolved</button>
         <button class="btn danger" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearModal()">Clear All Reports</button>
       </div>
@@ -153,20 +154,6 @@ body { padding-top: 30px; }
       <!-- Removed candidates + discussion threads rendered here -->
     </div>
     <div class="report-list" id="pyqPanelWrap" style="display:none; flex-direction:column;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3 style="margin:0;">📊 Question Analytics</h3>
-        <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem;" onclick="loadPyqAnalytics()">Refresh</button>
-      </div>
-      <div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.8rem; margin-bottom:14px;">
-        Which imported PYQ questions students get wrong or skip most often — a signal for which years/topics could use more/better sourcing. Built from live quiz sessions, so it fills in as students practice.
-      </div>
-      <div id="pyqAnalyticsWrap" style="margin-bottom:24px;">
-        <div style="text-align:center; padding:20px 0; color:var(--parchment-dim);">Loading analytics...</div>
-      </div>
-
-      <div style="border-top:1px solid var(--glass-border); margin:4px 0 20px; padding-top:20px;">
-        <h3 style="margin:0 0 10px;">📥 Manage Question Bank</h3>
-      </div>
       <div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.8rem; margin-bottom:14px;">
         Paste questions you have legitimate rights to use (official papers you've sourced, your own material, etc.) as a JSON array. Each item needs: <code>year</code>, <code>exam</code>, <code>subject</code> (math/physics/chemistry), <code>chapter</code>, <code>q</code>, <code>opts</code> (array of 4), <code>ans</code> (0-indexed correct option), optional <code>sol</code>.
       </div>
@@ -190,6 +177,22 @@ body { padding-top: 30px; }
       </div>
 
       <div id="pyqAdminList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM DIALOG OVERLAY: BROADCAST ANNOUNCEMENT -->
+<div class="modal-backdrop" id="announcementModal">
+  <div class="modal-box" style="max-width: 480px; text-align:left;">
+    <h3 style="text-align:center;">📢 Broadcast Announcement</h3>
+    <p style="text-align:center; font-size:0.85rem; color:var(--parchment-dim);">Shows as a dismissible banner to every student the next time they open the app. Only one announcement is live at a time — sending a new one replaces the last.</p>
+    <textarea id="announcementText" class="reply-textarea" style="min-height:90px; margin-bottom:10px;" placeholder="e.g. Tomorrow's mock exam has been moved to 4 PM..."></textarea>
+    <div id="announcementError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please write a message before sending.</div>
+    <div id="announcementCurrentStatus" style="font-size:0.75rem; color:var(--parchment-dim); margin-bottom:10px;"></div>
+    <div style="display:flex; justify-content:center; gap:12px; margin-top:6px;">
+      <button class="btn ghost" onclick="closeAnnouncementModal()">Cancel</button>
+      <button class="btn danger" onclick="clearAnnouncementNow()">Clear Live Banner</button>
+      <button class="btn primary" onclick="sendAnnouncementNow()">Send</button>
     </div>
   </div>
 </div>
@@ -336,6 +339,44 @@ window.copyExpeditionDiagnostics = async function () {
 };
 
 window.Admin_DB = {
+  // ── Broadcast announcement ────────────────────────────────────────────
+  // Single shared node — one live announcement at a time, shown as a
+  // dismissible banner in index.html. Educators overwrite it to send a
+  // new one, or clear it to remove the banner for everyone.
+  async sendAnnouncement(message, audience) {
+    if (!dbReady) return { ok: false, error: 'Not connected.' };
+    try {
+      await db.ref('announcement').set({
+        id: 'a_' + Date.now(), message, audience: audience || 'all', timestamp: Date.now()
+      });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  },
+  async clearAnnouncement() {
+    if (!dbReady) return { ok: false, error: 'Not connected.' };
+    try { await db.ref('announcement').remove(); return { ok: true }; }
+    catch (e) { return { ok: false, error: e.message }; }
+  },
+  async getAnnouncementOnce() {
+    if (!dbReady) return null;
+    try { const snap = await db.ref('announcement').once('value'); return snap.val(); }
+    catch (e) { return null; }
+  },
+
+  // Manual inactive override: an educator can force a candidate into the
+  // "inactive" bucket immediately (e.g. someone who officially dropped)
+  // without waiting on the 3-day timer, and restore them just as easily.
+  async setManualInactive(uid, val) {
+    if (!dbReady) return { ok: false, error: 'Not connected.' };
+    try {
+      if (val) await db.ref('leaderboard/' + uid).update({ manualInactive: true });
+      else await db.ref('leaderboard/' + uid).update({ manualInactive: null });
+      return { ok: true };
+    } catch (e) { return { ok: false, error: e.message }; }
+  },
+
   getReportsLocal() {
     try {
       const prev = localStorage.getItem('explorer_reported_issues');
@@ -588,28 +629,6 @@ window.Admin_DB = {
     } catch (e) {
       return { ok: false, error: e.message };
     }
-  },
-
-  // Flattens pyqAnalytics/{subject_year}/{qKey} -> {shown,wrong,correct,skipped,...}
-  // into a flat list of per-question rows for the "PYQ Bank Analytics" view.
-  async getPyqAnalyticsOnce() {
-    if (!dbReady) return { ok: false, error: 'Not connected.', list: [] };
-    try {
-      const snap = await db.ref('pyqAnalytics').once('value');
-      const val = snap.val() || {};
-      const rows = [];
-      Object.keys(val).forEach(bucketKey => {
-        const bucket = val[bucketKey] || {};
-        Object.keys(bucket).forEach(qKey => {
-          const rec = bucket[qKey] || {};
-          rows.push({ id: bucketKey + '/' + qKey, ...rec });
-        });
-      });
-      return { ok: true, list: rows };
-    } catch (e) {
-      console.error('[Admin] Failed to fetch PYQ analytics.', e);
-      return { ok: false, error: e.message, list: [] };
-    }
   }
 };
 </script>
@@ -732,7 +751,6 @@ function switchTab(tab) {
   } else if (tab === 'Pyq') {
     pyqList.style.display = 'flex';
     loadPyqAdmin();
-    loadPyqAnalytics();
   } else if (tab === 'Insights') {
     insightsPanel.style.display = 'flex';
     renderInsightsPanel();
@@ -931,6 +949,35 @@ function renderInsightsPanel() {
 }
 
 
+/* ================= BROADCAST ANNOUNCEMENT ================= */
+async function openAnnouncementModal() {
+  document.getElementById('announcementError').style.display = 'none';
+  document.getElementById('announcementText').value = '';
+  document.getElementById('announcementCurrentStatus').textContent = 'Checking for a currently live announcement...';
+  document.getElementById('announcementModal').classList.add('show');
+  const current = window.Admin_DB ? await window.Admin_DB.getAnnouncementOnce() : null;
+  document.getElementById('announcementCurrentStatus').textContent = current
+    ? `Currently live (sent ${new Date(current.timestamp).toLocaleString()}): "${current.message}"`
+    : 'No announcement is currently live.';
+}
+function closeAnnouncementModal() { document.getElementById('announcementModal').classList.remove('show'); }
+
+async function sendAnnouncementNow() {
+  const textbox = document.getElementById('announcementText');
+  const msg = textbox.value.trim();
+  if (!msg) { document.getElementById('announcementError').style.display = 'block'; return; }
+  document.getElementById('announcementError').style.display = 'none';
+  const result = window.Admin_DB ? await window.Admin_DB.sendAnnouncement(msg) : { ok: false, error: 'Not initialized.' };
+  if (result.ok) { closeAnnouncementModal(); }
+  else { document.getElementById('announcementCurrentStatus').textContent = 'Failed to send: ' + (result.error || 'unknown error'); }
+}
+
+async function clearAnnouncementNow() {
+  const result = window.Admin_DB ? await window.Admin_DB.clearAnnouncement() : { ok: false, error: 'Not initialized.' };
+  if (result.ok) { closeAnnouncementModal(); }
+  else { document.getElementById('announcementCurrentStatus').textContent = 'Failed to clear: ' + (result.error || 'unknown error'); }
+}
+
 function submitReply(id) {
   const textbox = document.getElementById(`replyText-${id}`);
   if (!textbox) return;
@@ -1024,14 +1071,17 @@ function renderLeaderboard() {
   const sorted = [...currentLeaderboard].sort((a,b) => (b.xp||0) - (a.xp||0));
 
   // Inactive candidates: anyone whose last XP sync (the `timestamp` field
-  // already written on every syncPlayerScore call) is 3+ days old. This is
-  // purely a display split, not a deletion — nothing is removed from
-  // Firebase, so the moment a student plays again their timestamp updates
-  // and they fall back into the "active" bucket on the next render.
+  // already written on every syncPlayerScore call) is 3+ days old, OR anyone
+  // an educator has manually forced inactive (e.g. a student who officially
+  // dropped out) via the `manualInactive` flag. This is purely a display
+  // split, not a deletion — nothing is removed from Firebase, so the moment
+  // a student plays again (or an educator restores them) they fall back
+  // into the "active" bucket on the next render.
   const INACTIVE_MS = 3 * 24 * 60 * 60 * 1000;
   const nowTs = Date.now();
-  const activeEntries = sorted.filter(r => r.timestamp && (nowTs - r.timestamp) < INACTIVE_MS);
-  const inactiveEntries = sorted.filter(r => !r.timestamp || (nowTs - r.timestamp) >= INACTIVE_MS);
+  const isNaturallyInactive = r => !r.timestamp || (nowTs - r.timestamp) >= INACTIVE_MS;
+  const activeEntries = sorted.filter(r => !r.manualInactive && !isNaturallyInactive(r));
+  const inactiveEntries = sorted.filter(r => r.manualInactive || isNaturallyInactive(r));
 
   // Detect obvious test/placeholder entries so the quick-purge button can
   // show exactly what it'll remove before anything happens.
@@ -1054,13 +1104,21 @@ function renderLeaderboard() {
       </div>`;
   }
 
+  const exportBar = `
+    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+      <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportLeaderboardCsv()">Export CSV</button>
+    </div>`;
+
   const rowHtml = (r) => `
     <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
       <div>
         <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
         <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div>
       </div>
-      <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', true)">Mark Inactive</button>
+        <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
+      </div>
     </div>
   `;
 
@@ -1078,29 +1136,53 @@ function renderLeaderboard() {
           <span id="inactiveLbToggleLabel">${inactiveLbExpanded ? 'Hide' : 'Show'} inactive candidates (${inactiveEntries.length})</span>
         </button>
         <div id="inactiveLbList" style="display:${inactiveLbExpanded ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:12px;">
-          <div style="font-size:0.78rem; color:var(--parchment-dim);">No activity in the last 3 days. They'll automatically move back to the active list above the moment they play again — nothing here has been deleted.</div>
+          <div style="font-size:0.78rem; color:var(--parchment-dim);">Naturally inactive (3+ days) or manually marked. They move back to "active" automatically the moment they play again, or you can restore them now.</div>
           ${inactiveEntries.map(r => `
             <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; opacity:0.7;">
               <div>
-                <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
+                <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}${r.manualInactive ? ' <span style="font-size:0.7rem; color:var(--coral);">(manually marked)</span>' : ''}</div>
                 <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">
                   uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp;
                   ${r.timestamp ? `inactive ${daysAgo(r.timestamp)}d (last seen ${new Date(r.timestamp).toLocaleDateString()})` : 'no activity recorded yet'}
                 </div>
               </div>
-              <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', false)">Restore</button>
+                <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
+              </div>
             </div>`).join('')}
         </div>
       </div>`;
   }
 
-  container.innerHTML = quickPurgeBar + rows + inactiveSection;
+  container.innerHTML = exportBar + quickPurgeBar + rows + inactiveSection;
 }
 
 let inactiveLbExpanded = false;
 function toggleInactiveLb() {
   inactiveLbExpanded = !inactiveLbExpanded;
   renderLeaderboard();
+}
+
+async function setLbManualInactive(uid, val) {
+  if (!window.Admin_DB) return;
+  await window.Admin_DB.setManualInactive(uid, val);
+  currentLeaderboard = await window.Admin_DB.getLeaderboardOnce();
+  renderLeaderboard();
+}
+
+function exportLeaderboardCsv() {
+  if (!currentLeaderboard.length) { alert('Leaderboard is empty.'); return; }
+  const headers = ['username', 'uid', 'xp', 'weeklyXp', 'timestamp', 'manualInactive'];
+  const lines = [headers.join(',')];
+  currentLeaderboard.forEach(r => { lines.push(headers.map(h => csvEscape(r[h])).join(',')); });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `expedition11-leaderboard-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 let pendingLbLabels = {};
@@ -1165,7 +1247,11 @@ function renderRemovedCandidates() {
   }
 
   const sorted = [...currentRemoved].sort((a, b) => (b.removedAt || 0) - (a.removedAt || 0));
-  container.innerHTML = sorted.map(r => `
+  const exportBar = `
+    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+      <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportRemovedCsv()">Export CSV</button>
+    </div>`;
+  container.innerHTML = exportBar + sorted.map(r => `
     <div class="report-card">
       <div class="report-meta">
         <span class="meta-badge">Removed</span>
@@ -1182,6 +1268,20 @@ function renderRemovedCandidates() {
   `).join('');
 
   if (openDiscussionUid) openDiscussionThread(openDiscussionUid);
+}
+
+function exportRemovedCsv() {
+  if (!currentRemoved.length) { alert('No removed candidates to export.'); return; }
+  const headers = ['username', 'uid', 'reason', 'removedAt'];
+  const lines = [headers.join(',')];
+  currentRemoved.forEach(r => { lines.push(headers.map(h => csvEscape(r[h])).join(',')); });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `expedition11-removed-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function toggleDiscussion(uid) {
@@ -1293,114 +1393,6 @@ async function deletePyqEntry(id) {
   const result = await window.Admin_DB.deletePyq(id);
   if (!result.ok) { alert('Failed to delete: ' + (result.error || 'unknown error')); return; }
   await loadPyqAdmin();
-}
-
-/* ================= PYQ BANK ANALYTICS =================
-   Reads pyqAnalytics/{subject_year}/{qKey} -> {shown,wrong,correct,skipped,
-   subject,year,questionText}, aggregated live by students as they take PYQ
-   quizzes (see DB_Engine.logPyqOutcome / flushPyqAnalytics in index.html).
-   Surfaces the questions that trip students up (wrong) or that they
-   consistently bail on (skipped) most often, to guide sourcing decisions. */
-let currentPyqAnalytics = [];
-async function loadPyqAnalytics() {
-  const wrap = document.getElementById('pyqAnalyticsWrap');
-  if (!wrap) return;
-  wrap.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--parchment-dim);">Loading analytics...</div>`;
-  if (!window.Admin_DB) { wrap.innerHTML = ''; return; }
-  const result = await window.Admin_DB.getPyqAnalyticsOnce();
-  if (!result.ok) {
-    wrap.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--coral);"><p>Couldn't load PYQ analytics: ${result.error}</p><p style="font-size:0.8rem; opacity:0.8; margin-top:6px;">Add a Firebase Rule for "pyqAnalytics" (same pattern as "pyqBank").</p></div>`;
-    return;
-  }
-  currentPyqAnalytics = result.list;
-  renderPyqAnalytics();
-}
-
-function renderPyqAnalytics() {
-  const wrap = document.getElementById('pyqAnalyticsWrap');
-  if (!wrap) return;
-  if (!currentPyqAnalytics.length) {
-    wrap.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--parchment-dim);">No PYQ practice data logged yet — this fills in as students take PYQ quizzes.</div>`;
-    return;
-  }
-  const rows = currentPyqAnalytics.map(r => {
-    const shown = r.shown || 0;
-    const wrong = r.wrong || 0;
-    const skipped = r.skipped || 0;
-    const correct = r.correct || 0;
-    const troubleRate = shown > 0 ? Math.round(((wrong + skipped) / shown) * 100) : 0;
-    return { ...r, shown, wrong, skipped, correct, troubleRate };
-  }).filter(r => r.shown > 0);
-
-  const topTrouble = [...rows].sort((a, b) => (b.wrong + b.skipped) - (a.wrong + a.skipped)).slice(0, 15);
-  const maxTrouble = topTrouble.length ? Math.max(1, topTrouble[0].wrong + topTrouble[0].skipped) : 1;
-
-  // Which years/subjects generate the most trouble overall, to guide sourcing.
-  const byBucket = {};
-  rows.forEach(r => {
-    const key = `${r.subject || 'Unknown'} · ${r.year || 'Unknown'}`;
-    if (!byBucket[key]) byBucket[key] = { wrong: 0, skipped: 0, shown: 0 };
-    byBucket[key].wrong += r.wrong;
-    byBucket[key].skipped += r.skipped;
-    byBucket[key].shown += r.shown;
-  });
-  const bucketRows = Object.entries(byBucket)
-    .map(([label, v]) => ({ label, ...v, troubleRate: v.shown > 0 ? Math.round(((v.wrong + v.skipped) / v.shown) * 100) : 0 }))
-    .sort((a, b) => (b.wrong + b.skipped) - (a.wrong + a.skipped))
-    .slice(0, 10);
-  const maxBucketTrouble = bucketRows.length ? Math.max(1, bucketRows[0].wrong + bucketRows[0].skipped) : 1;
-
-  const totalShown = rows.reduce((a, r) => a + r.shown, 0);
-  const totalWrong = rows.reduce((a, r) => a + r.wrong, 0);
-  const totalSkipped = rows.reduce((a, r) => a + r.skipped, 0);
-
-  wrap.innerHTML = `
-    <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px;">
-      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
-        <div style="font-size:0.75rem; color:var(--parchment-dim);">Questions tracked</div>
-        <div style="font-size:1.6rem; font-weight:700;">${rows.length}</div>
-      </div>
-      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
-        <div style="font-size:0.75rem; color:var(--parchment-dim);">Total attempts</div>
-        <div style="font-size:1.6rem; font-weight:700;">${totalShown}</div>
-      </div>
-      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
-        <div style="font-size:0.75rem; color:var(--parchment-dim);">Wrong</div>
-        <div style="font-size:1.6rem; font-weight:700; color:var(--coral);">${totalWrong}</div>
-      </div>
-      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
-        <div style="font-size:0.75rem; color:var(--parchment-dim);">Skipped</div>
-        <div style="font-size:1.6rem; font-weight:700; color:var(--brass-light);">${totalSkipped}</div>
-      </div>
-    </div>
-
-    <h3 style="margin:0 0 10px;">Most-flagged years/subjects</h3>
-    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:24px;">
-      ${bucketRows.map(b => `
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div style="flex:0 0 160px; font-size:0.85rem;">${b.label}</div>
-          <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:16px;">
-            <div style="width:${Math.max(4, ((b.wrong + b.skipped) / maxBucketTrouble) * 100)}%; background:var(--coral, #ff6b6b); height:100%;"></div>
-          </div>
-          <div style="flex:0 0 130px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">${b.wrong}✗ · ${b.skipped}⏭ · ${b.troubleRate}%</div>
-        </div>`).join('') || '<div style="color:var(--parchment-dim); font-size:0.85rem;">No data yet.</div>'}
-    </div>
-
-    <h3 style="margin:0 0 10px;">Top wrong/skipped questions</h3>
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      ${topTrouble.map(r => `
-        <div class="report-card" style="padding:12px 14px;">
-          <div class="report-meta">
-            <span class="meta-badge">${r.subject || 'Unknown'} · ${r.year || 'Unknown'}</span>
-            <span class="report-time">${r.shown} shown · ${r.correct} correct · ${r.wrong} wrong · ${r.skipped} skipped</span>
-          </div>
-          <div class="report-comment" style="margin-top:6px;">${(r.questionText || '(question text unavailable)').slice(0, 200)}${(r.questionText || '').length > 200 ? '…' : ''}</div>
-          <div style="margin-top:8px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:8px;">
-            <div style="width:${Math.max(4, ((r.wrong + r.skipped) / maxTrouble) * 100)}%; background:var(--coral, #ff6b6b); height:100%;"></div>
-          </div>
-        </div>`).join('') || '<div style="color:var(--parchment-dim); font-size:0.85rem;">No data yet.</div>'}
-    </div>
-  `;
 }
 
 // Shared shape-check for PYQ items, regardless of whether they came from the
