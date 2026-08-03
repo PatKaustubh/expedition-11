@@ -889,6 +889,48 @@ body { padding-top: 30px; }
         </div>
         <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem; flex-shrink:0;" onclick="dismissAnnouncementBanner()">Dismiss</button>
       </div>
+
+      <!-- STREAK-RISK BANNER — a real (daily) streak exists but today has no
+           activity logged yet. Warns before it's lost rather than only
+           showing the loss after the fact via the Activity panel. -->
+      <div id="streakRiskBanner" style="display:none; background:linear-gradient(135deg, rgba(255,180,84,0.18), rgba(255,138,91,0.08)); border:1px solid rgba(255,180,84,0.4); border-radius:12px; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.3rem;">🔥</span>
+          <span id="streakRiskBannerText" style="font-size:0.9rem;"></span>
+        </div>
+        <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem; flex-shrink:0;" onclick="dismissStreakRiskBanner()">Dismiss</button>
+      </div>
+
+      <!-- BACKUP REMINDER BANNER — shown after real progress exists and it's
+           been a while (or never) since a backup was downloaded. Progress
+           lives only in this browser, so this is the main defense against
+           silent, permanent data loss from a cache clear or device switch. -->
+      <div id="backupReminderBanner" style="display:none; background:linear-gradient(135deg, rgba(108,140,255,0.18), rgba(108,140,255,0.08)); border:1px solid rgba(108,140,255,0.4); border-radius:12px; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.3rem;">💾</span>
+          <span id="backupReminderBannerText" style="font-size:0.9rem;">Your progress only lives in this browser. Worth downloading a backup?</span>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0;">
+          <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem;" onclick="dismissBackupReminderBanner()">Later</button>
+          <button class="btn primary" style="padding:6px 14px; font-size:0.75rem;" onclick="exportProgressBackup(); dismissBackupReminderBanner();">Download backup</button>
+        </div>
+      </div>
+
+      <!-- FRESH-SESSION RESTORE PROMPT — shown once, the very first time the
+           app is opened with no local save at all. Anonymous auth is tied to
+           this browser, so someone returning on a new device/browser or after
+           clearing data looks identical to a brand-new user; this gives them
+           a way back to their old progress instead of silently starting at 0. -->
+      <div id="freshSessionBanner" style="display:none; background:linear-gradient(135deg, rgba(79,209,197,0.18), rgba(79,209,197,0.08)); border:1px solid rgba(79,209,197,0.4); border-radius:12px; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.3rem;">🧭</span>
+          <span style="font-size:0.9rem;">New here, or coming back with progress saved on another device/browser?</span>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0;">
+          <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem;" onclick="dismissFreshSessionBanner()">I'm new — start fresh</button>
+          <button class="btn primary" style="padding:6px 14px; font-size:0.75rem;" onclick="dismissFreshSessionBanner(); openBackupPopup();">Restore my progress</button>
+        </div>
+      </div>
       <div class="title-wrap">
         <h2>Choose Your Discipline</h2>
         <p>Pick a subject to begin your expedition.</p>
@@ -937,7 +979,7 @@ body { padding-top: 30px; }
         <div class="resume-hero-arrow" id="resumePanelHint">→</div>
       </div>
 
-      <div class="side-panels-grid">
+      <div class="side-panels-grid" id="advancedPanelsGrid">
         <div class="side-panel resolutions-panel" onclick="openResolutionsPopup()">
           <div class="widget-hdr"><span class="panel-icon" style="background:rgba(231,111,81,0.18); color:#ff9d80;">🔧</span><h3>Resolutions</h3></div>
           <div id="studentResolutionsList" class="panel-body-scroll"></div>
@@ -1000,6 +1042,17 @@ body { padding-top: 30px; }
           <div class="panel-body-text">Quick reference for Math, Physics & Chemistry</div>
           <div class="panel-hint">Open formula sheet</div>
         </div>
+      </div>
+
+      <!-- FIRST-SESSION PLACEHOLDER — shown instead of the 10-panel advanced
+           grid above for a brand-new user with zero cleared levels, so day-one
+           doesn't dump Daily Challenge/Mistake Bank/Focus Timer/etc. on someone
+           who hasn't even played a level yet. Swapped for the real grid the
+           moment they clear their first level (see toggleAdvancedPanels()). -->
+      <div class="side-panel first-session-hint" id="firstSessionHint" style="display:none; text-align:center; cursor:default;">
+        <div style="font-size:1.8rem; margin-bottom:8px;">🧭</div>
+        <h3 style="margin:0 0 6px;">More tools unlock as you go</h3>
+        <div class="panel-body-text" style="opacity:0.85;">Clear your first level to unlock Daily Challenge, Mistake Bank, Focus Timer, Weekly Goals, and more.</div>
       </div>
     </div>
   </div>
@@ -2023,6 +2076,7 @@ function exportProgressBackup() {
   a.download = `expedition11-backup-${(state.explorerName || 'student').replace(/[^a-z0-9]/gi,'_')}-${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  localStorage.setItem('last_backup_export_at', Date.now());
   showBackupStatus('✓ Backup downloaded.', false);
 }
 
@@ -3667,7 +3721,22 @@ window.addEventListener('popstate', function (e) {
   }
 
   _restoringHistory = true;
-  showScreen(target, { skipHistory: true });
+  // Route through the real loader for whichever screen we're restoring, so
+  // its content (chapter grid, level grid, titles, breadcrumbs) actually
+  // gets (re)populated — a bare showScreen() only toggles visibility and
+  // would leave the screen blank if its data was never rendered for the
+  // current subject/chapter (this is the same class of bug as the
+  // "Chapters" back-button issue, but reachable via the browser/hardware
+  // back button from anywhere in the app).
+  if (target === 'screen-subjects') {
+    goToSubjects({ skipHistory: true });
+  } else if (target === 'screen-chapters' && state.curSubj) {
+    loadChapters({ skipHistory: true });
+  } else if (target === 'screen-levels' && state.curChap) {
+    loadLevels({ skipHistory: true });
+  } else {
+    showScreen(target, { skipHistory: true });
+  }
   _restoringHistory = false;
 });
 
@@ -4194,6 +4263,72 @@ function computeActivityStreak() {
   }
   return streak;
 }
+// STREAK-RISK BANNER: warns before a real daily streak is lost, rather than
+// only reflecting the loss afterward in the Activity panel. Dismissal is
+// scoped to "today" (via todayStr()) so it naturally reappears once a real
+// new day with an at-risk streak comes around.
+function renderStreakRiskBanner() {
+  const el = document.getElementById('streakRiskBanner');
+  const textEl = document.getElementById('streakRiskBannerText');
+  if (!el || !textEl) return;
+  const streak = computeActivityStreak();
+  const loggedToday = !!getActivityLog()[todayStr()];
+  const dismissedFor = localStorage.getItem('streak_risk_dismissed_for');
+  if (streak >= 2 && !loggedToday && dismissedFor !== todayStr()) {
+    textEl.textContent = `Your ${streak}-day streak is still alive — clear one level today to keep it going.`;
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+function dismissStreakRiskBanner() {
+  localStorage.setItem('streak_risk_dismissed_for', todayStr());
+  const el = document.getElementById('streakRiskBanner');
+  if (el) el.style.display = 'none';
+}
+
+// BACKUP REMINDER BANNER: nudges toward downloading a backup once there's
+// real progress worth protecting, and periodically thereafter — since
+// progress lives only in this browser and Backup & Restore itself is
+// opt-in/easy to forget about.
+function renderBackupReminderBanner() {
+  const el = document.getElementById('backupReminderBanner');
+  if (!el) return;
+  if (!hasClearedAnyLevel()) { el.style.display = 'none'; return; }
+  const dismissedUntil = Number(localStorage.getItem('backup_reminder_dismissed_until') || 0);
+  if (Date.now() < dismissedUntil) { el.style.display = 'none'; return; }
+  const lastBackupAt = Number(localStorage.getItem('last_backup_export_at') || 0);
+  const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+  if (Date.now() - lastBackupAt >= THREE_DAYS) {
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+function dismissBackupReminderBanner() {
+  const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+  localStorage.setItem('backup_reminder_dismissed_until', Date.now() + THREE_DAYS);
+  const el = document.getElementById('backupReminderBanner');
+  if (el) el.style.display = 'none';
+}
+
+// FRESH-SESSION RESTORE PROMPT: shown once, only when there's no local save
+// at all yet, so a returning user on a new browser/device (which looks
+// identical to a genuinely new user under anonymous auth) has a way back to
+// their old progress instead of silently starting over at zero.
+function renderFreshSessionBanner() {
+  const el = document.getElementById('freshSessionBanner');
+  if (!el) return;
+  const hasSave = !!localStorage.getItem('math_expedition_v9');
+  const seenPrompt = !!localStorage.getItem('seen_fresh_session_prompt');
+  el.style.display = (!hasSave && !seenPrompt) ? 'flex' : 'none';
+}
+function dismissFreshSessionBanner() {
+  localStorage.setItem('seen_fresh_session_prompt', '1');
+  const el = document.getElementById('freshSessionBanner');
+  if (el) el.style.display = 'none';
+}
+
 function renderActivityPanel() {
   const el = document.getElementById('activityPanelStatus');
   if (!el) return;
@@ -4909,6 +5044,24 @@ function updateStats() {
   renderMistakePanel();
 }
 
+// A brand-new user hasn't earned any XP or unlocked past level 1 in any
+// chapter yet. Used to decide whether to show the full 10-panel advanced
+// dashboard or a simpler "more unlocks as you go" placeholder instead.
+function hasClearedAnyLevel() {
+  if (state.xp > 0) return true;
+  const prog = state.progress || {};
+  return Object.keys(prog).some(k => (prog[k].maxUnlocked || 1) > 1);
+}
+
+function toggleAdvancedPanels() {
+  const grid = document.getElementById('advancedPanelsGrid');
+  const hint = document.getElementById('firstSessionHint');
+  if (!grid || !hint) return;
+  const unlocked = hasClearedAnyLevel();
+  grid.style.display = unlocked ? '' : 'none';
+  hint.style.display = unlocked ? 'none' : '';
+}
+
 /* ===== GAME-FEEL HELPERS ===== */
 function triggerScreenFlash(type) {
   let el = document.getElementById('screenFlash');
@@ -5012,6 +5165,16 @@ function startApp() {
   document.getElementById('introModal').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   AudioSys.init(); initBg(); drawBg(); loadSave(); goToSubjects(); 
+  // Safety net: abortGame()/levelComplete() already save on their own, but if
+  // someone just closes the tab, kills the app, or backgrounds it mid-level
+  // (very common on mobile — switching apps, a phone call, locking the
+  // screen), nothing would otherwise flush that progress to localStorage.
+  // Committed XP/progress is already in `state` in memory at that point, so
+  // this just makes sure it's actually persisted.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { try { doSave(); } catch (e) {} }
+  });
+  window.addEventListener('pagehide', () => { try { doSave(); } catch (e) {} });
   // Browsers can re-suspend the AudioContext after periods of inactivity,
   // and any sound triggered by a plain JS timer (like the Focus Timer's
   // "time's up" chime) isn't itself a user gesture, so it can silently fail
@@ -5460,7 +5623,7 @@ function setBodyThemeClass(themeClass) {
   persist.forEach(c => document.body.classList.add(c));
 }
 
-function goToSubjects() {
+function goToSubjects(navOpts) {
   AudioSys.startPeacefulAmbient();
   document.getElementById('appTitleText').textContent = 'Expedition Hub';
   setBodyThemeClass('');
@@ -5474,10 +5637,10 @@ function goToSubjects() {
     card.onclick = () => { setBodyThemeClass(sub.theme); state.curSubj = sub; loadChapters(); };
     grid.appendChild(card);
   });
-  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); showScreen('screen-subjects');
+  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); toggleAdvancedPanels(); renderStreakRiskBanner(); renderBackupReminderBanner(); renderFreshSessionBanner(); showScreen('screen-subjects', navOpts);
 }
 
-function loadChapters() {
+function loadChapters(navOpts) {
   AudioSys.startPeacefulAmbient();
   document.getElementById('appTitleText').textContent = state.curSubj.name;
   document.getElementById('subjTitle').textContent = state.curSubj.name + " Chapters";
@@ -5508,10 +5671,10 @@ function loadChapters() {
   // Chapters breadcrumb
   const cbEl = document.getElementById('chaptersCrumbs');
   if (cbEl) cbEl.innerHTML = `<span>Hub</span><span class="sep">›</span><span class="now">${state.curSubj.name}</span>`;
-  showScreen('screen-chapters');
+  showScreen('screen-chapters', navOpts);
 }
 
-function loadLevels() {
+function loadLevels(navOpts) {
   AudioSys.startPeacefulAmbient();
   document.getElementById('chapTitle').textContent = state.curChap.name;
   const grid = document.getElementById('levelsGrid');
@@ -5561,7 +5724,7 @@ function loadLevels() {
     if(isUnl) { btn.onclick = () => { state.curLvl = i; startGame(); }; }
     grid.appendChild(btn);
   }
-  showScreen('screen-levels');
+  showScreen('screen-levels', navOpts);
 }
 
 /* ================= GAMEPLAY ================= */
