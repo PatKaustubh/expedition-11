@@ -1473,19 +1473,28 @@ window.DB_Engine = {
       callback([{ username: state.explorerName + " (You)", xp: state.xp, weeklyXp: state.weeklyXp || 0, isUser: true }]);
       return () => {};
     }
+    let manualInactiveMap = {};
+    const manualRef = db.ref('manualInactive');
+    const manualHandler = (snap) => { manualInactiveMap = snap.val() || {}; };
+    manualRef.on('value', manualHandler, () => { /* rules may not be added yet — just treat everyone as not manually flagged */ });
+
     const ref = db.ref('leaderboard');
     const handler = (snapshot) => {
       setBackendStatus('live');
       const val = snapshot.val() || {};
       const curWeek = getWeekKey();
-      let leaders = Object.values(val).filter(d => d && d.username).map(d => ({
-        username: d.username === state.explorerName ? d.username + " (You)" : d.username,
-        xp: d.xp || 0,
-        weeklyXp: (d.weeklyXpWeekStart === curWeek) ? (d.weeklyXp || 0) : 0,
-        badges: d.badges || [],
-        isUser: d.username === state.explorerName,
-        timestamp: d.timestamp || 0
-      }));
+      let leaders = Object.keys(val).filter(uid => val[uid] && val[uid].username).map(uid => {
+        const d = val[uid];
+        return {
+          username: d.username === state.explorerName ? d.username + " (You)" : d.username,
+          xp: d.xp || 0,
+          weeklyXp: (d.weeklyXpWeekStart === curWeek) ? (d.weeklyXp || 0) : 0,
+          badges: d.badges || [],
+          isUser: d.username === state.explorerName,
+          timestamp: d.timestamp || 0,
+          manualInactive: !!manualInactiveMap[uid]
+        };
+      });
       if (!leaders.some(l => l.isUser)) {
         leaders.push({ username: state.explorerName + " (You)", xp: state.xp, weeklyXp: state.weeklyXp || 0, badges: [], isUser: true, timestamp: Date.now() });
       }
@@ -1497,7 +1506,7 @@ window.DB_Engine = {
       callback([{ username: state.explorerName + " (You)", xp: state.xp, weeklyXp: state.weeklyXp || 0, isUser: true }]);
     };
     ref.on('value', handler, errHandler);
-    return () => ref.off('value', handler);
+    return () => { ref.off('value', handler); manualRef.off('value', manualHandler); }
   },
 
   async saveReport(reportObj) {
@@ -2601,7 +2610,7 @@ function renderLeaderboard() {
   // "inactive" bucket so the live board reflects who's actually studying
   // right now. Nothing is deleted — the instant they play again their
   // timestamp updates and they reappear on the active board automatically.
-  const isActive = (p) => p.isUser || !p.timestamp || (now - p.timestamp) < LB_INACTIVE_MS;
+  const isActive = (p) => p.isUser || (!p.manualInactive && (!p.timestamp || (now - p.timestamp) < LB_INACTIVE_MS));
   const allSorted = liveLeaderboard.slice().sort((a, b) => (useWeekly ? (b.weeklyXp || 0) - (a.weeklyXp || 0) : b.xp - a.xp));
   const sorted = allSorted.filter(isActive);
   const inactive = allSorted.filter(p => !isActive(p));

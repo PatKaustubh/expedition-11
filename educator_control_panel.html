@@ -368,13 +368,21 @@ window.Admin_DB = {
   // Manual inactive override: an educator can force a candidate into the
   // "inactive" bucket immediately (e.g. someone who officially dropped)
   // without waiting on the 3-day timer, and restore them just as easily.
+  // Stored in its own top-level node (same pattern as removedCandidates)
+  // rather than written onto leaderboard/{uid}, since the leaderboard
+  // node's write rules are schema-locked to score fields only.
   async setManualInactive(uid, val) {
     if (!dbReady) return { ok: false, error: 'Not connected.' };
     try {
-      if (val) await db.ref('leaderboard/' + uid).update({ manualInactive: true });
-      else await db.ref('leaderboard/' + uid).update({ manualInactive: null });
+      if (val) await db.ref('manualInactive/' + uid).set(true);
+      else await db.ref('manualInactive/' + uid).remove();
       return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; }
+  },
+  async getManualInactiveOnce() {
+    if (!dbReady) return {};
+    try { const snap = await db.ref('manualInactive').once('value'); return snap.val() || {}; }
+    catch (e) { return {}; }
   },
 
   getReportsLocal() {
@@ -491,7 +499,14 @@ window.Admin_DB = {
     try {
       const snap = await db.ref('leaderboard').once('value');
       const val = snap.val() || {};
-      return Object.keys(val).map(uid => ({ uid, ...val[uid] }));
+      let manual = {};
+      try {
+        const manualSnap = await db.ref('manualInactive').once('value');
+        manual = manualSnap.val() || {};
+      } catch (e) {
+        console.warn("[Admin] Couldn't read 'manualInactive' node (rules may not be added yet) — manual overrides will just show as unset.", e);
+      }
+      return Object.keys(val).map(uid => ({ uid, ...val[uid], manualInactive: !!manual[uid] }));
     } catch (e) {
       console.error("[Admin] Failed to fetch leaderboard.", e);
       return [];
@@ -1166,7 +1181,11 @@ function toggleInactiveLb() {
 
 async function setLbManualInactive(uid, val) {
   if (!window.Admin_DB) return;
-  await window.Admin_DB.setManualInactive(uid, val);
+  const result = await window.Admin_DB.setManualInactive(uid, val);
+  if (!result.ok) {
+    alert('Could not update: ' + (result.error || 'unknown error') + '\n\nThis usually means the "manualInactive" path needs read/write rules added in Firebase, same as "removedCandidates" already has.');
+    return;
+  }
   currentLeaderboard = await window.Admin_DB.getLeaderboardOnce();
   renderLeaderboard();
 }
