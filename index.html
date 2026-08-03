@@ -1028,7 +1028,7 @@ body { padding-top: 30px; }
   </div>
 
   <div class="modal-backdrop" id="backupPopup" onclick="if(event.target===this) closeBackupPopup()">
-    <div class="modal-box" style="max-width:480px; text-align:left;">
+    <div class="modal-box list-popup" style="max-width:480px; text-align:left;">
       <div class="widget-hdr">
         <h3>💾 Backup & Restore</h3>
         <button class="popup-close" onclick="closeBackupPopup()">✕ Close</button>
@@ -1078,7 +1078,7 @@ body { padding-top: 30px; }
   </div>
 
   <div class="modal-backdrop" id="activityPopup" onclick="if(event.target===this) closeActivityPopup()">
-    <div class="modal-box" style="max-width: 620px; text-align: left;">
+    <div class="modal-box list-popup" style="max-width: 620px; text-align: left;">
       <div class="widget-hdr">
         <h3>📊 Activity Streak</h3>
         <button class="popup-close" onclick="closeActivityPopup()">✕ Close</button>
@@ -1203,7 +1203,7 @@ body { padding-top: 30px; }
 
   <div class="screen" id="screen-levels">
     <div class="path-header">
-      <button class="back-btn" onclick="showScreen('screen-chapters')">&larr; Chapters</button>
+      <button class="back-btn" onclick="loadChapters()">&larr; Chapters</button>
       <div style="width:70px"></div>
     </div>
     <div class="crumbs" id="levelsCrumbs"></div>
@@ -1375,7 +1375,7 @@ body { padding-top: 30px; }
 
 <!-- QUICK NOTES — freeform scratchpad, autosaved to this browser (localStorage) -->
 <div class="modal-backdrop" id="quickNotesModal" onclick="if(event.target===this) closeQuickNotes()">
-  <div class="modal-box" style="max-width: 480px; text-align: left;">
+  <div class="modal-box list-popup" style="max-width: 480px; text-align: left;">
     <div class="widget-hdr">
       <h3 style="margin:0;">📝 Quick Notes</h3>
       <button class="popup-close" onclick="closeQuickNotes()">✕ Close</button>
