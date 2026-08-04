@@ -1380,7 +1380,13 @@ body { padding-top: 30px; }
         <button class="popup-close" onclick="closePyqViewerModal()">✕ Close</button>
       </div>
       <div id="pyqViewerBody" class="popup-list"></div>
-      <div id="pyqQuizPalette" style="display:none; flex-wrap:wrap; gap:6px; padding:10px 4px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12)); margin-top:10px;"></div>
+      <div id="pyqQuizPalette" style="display:none; flex-direction:column; gap:6px; padding:10px 4px 4px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12)); margin-top:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--text-dim,#9a94b5); padding:0 2px;">
+          <span>JUMP TO QUESTION</span>
+          <button onclick="togglePyqPaletteCollapsed()" id="pyqPaletteToggleBtn" style="background:none; border:none; color:inherit; font-family:inherit; font-size:inherit; cursor:pointer; text-decoration:underline;">Collapse</button>
+        </div>
+        <div id="pyqQuizPaletteGrid" style="display:flex; flex-wrap:wrap; gap:6px; max-height:150px; overflow-y:auto; padding:2px;"></div>
+      </div>
     </div>
   </div>
   </div>
@@ -5300,7 +5306,7 @@ function startPyqQuiz(title, questions) {
 function renderPyqPalette() {
   if (!pyqQuiz) return;
   const saved = getPyqSavedSet();
-  const wrap = document.getElementById('pyqQuizPalette');
+  const wrap = document.getElementById('pyqQuizPaletteGrid');
   wrap.innerHTML = pyqQuiz.questions.map((q, i) => {
     const rec = pyqQuiz.answers[i];
     const state = i === pyqQuiz.idx ? 'current' : rec ? (rec.correct ? 'correct' : 'wrong') : 'unanswered';
@@ -5310,8 +5316,18 @@ function renderPyqPalette() {
       wrong: 'background:rgba(255,107,107,0.18); color:#ff6b6b; border-color:rgba(255,107,107,0.5);',
       unanswered: 'background:transparent; color:var(--text-dim,#9a94b5); border-color:var(--glass-border,rgba(255,255,255,0.18));'
     };
-    return `<button onclick="jumpToPyqQuestion(${i})" style="position:relative; width:34px; height:34px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:700; cursor:pointer; border:1px solid; ${colors[state]}">${i + 1}${saved.has(pyqQuestionSaveKey(q)) ? '<span style="position:absolute; top:-5px; right:-5px; font-size:0.6rem;">🔖</span>' : ''}</button>`;
+    return `<button data-idx="${i}" onclick="jumpToPyqQuestion(${i})" style="position:relative; width:30px; height:30px; flex-shrink:0; border-radius:7px; font-family:'JetBrains Mono',monospace; font-size:0.7rem; font-weight:700; cursor:pointer; border:1px solid; ${colors[state]}">${i + 1}${saved.has(pyqQuestionSaveKey(q)) ? '<span style="position:absolute; top:-5px; right:-5px; font-size:0.6rem;">🔖</span>' : ''}</button>`;
   }).join('');
+  const currentBtn = wrap.querySelector(`[data-idx="${pyqQuiz.idx}"]`);
+  if (currentBtn) currentBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+function togglePyqPaletteCollapsed() {
+  const grid = document.getElementById('pyqQuizPaletteGrid');
+  const btn = document.getElementById('pyqPaletteToggleBtn');
+  const collapsed = grid.style.display === 'none';
+  grid.style.display = collapsed ? 'flex' : 'none';
+  btn.textContent = collapsed ? 'Collapse' : 'Expand';
 }
 
 function jumpToPyqQuestion(i) {
@@ -5365,11 +5381,12 @@ function renderPyqQuizQuestion() {
 
 function showPyqFeedback(q, isCorrect, selIdx) {
   const fb = document.getElementById('pyqQuizFeedback');
+  const explanation = q.sol || q.exp; // uploaded PYQ data uses "sol"; some older sources used "exp" — support both
   fb.className = 'feedback show ' + (isCorrect ? 'ok' : 'bad');
   fb.innerHTML = (isCorrect ? '✓ Correct!' : `✗ Incorrect — correct answer: <b>${escapeHtml(q.opts[q.ans])}</b>`) +
-    (q.exp ? `<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12));">
+    (explanation ? `<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12));">
         <div style="font-family:'JetBrains Mono',monospace; font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color: var(--brass-light,#e8c382); margin-bottom:8px;">📖 Explanation</div>
-        <div style="font-weight:400; text-align:left; font-size:0.9rem; line-height:1.8;">${formatPyqSolution(q.exp)}</div>
+        <div style="font-weight:400; text-align:left; font-size:0.9rem; line-height:1.8;">${formatPyqSolution(explanation)}</div>
       </div>` : '');
   typesetMath(fb);
 }
