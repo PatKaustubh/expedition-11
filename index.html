@@ -470,43 +470,71 @@ body { padding-top: 30px; }
 
 /* Compact 2-up grid for the smaller feature widgets so they stop reading as
    one long scrolling list. Leaderboard stays full-width above the grid. */
+.tools-section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--parchment-dim, #c5bba8);
+  opacity: 0.75;
+  margin: 4px 2px 2px;
+}
 .side-panels-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 10px;
 }
 .side-panels-grid .side-panel {
-  padding: 16px;
-  border-radius: 16px;
+  padding: 14px 10px;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
-  min-height: 118px;
+  align-items: center;
+  text-align: center;
+  justify-content: flex-start;
+  min-height: 92px;
+  gap: 2px;
 }
 .side-panels-grid .widget-hdr {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 9px;
-  margin-bottom: 2px;
+  gap: 6px;
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 .side-panels-grid .widget-hdr h3 {
-  font-size: 0.86rem;
-  line-height: 1.25;
+  font-size: 0.74rem;
+  line-height: 1.2;
   margin: 0;
+  font-weight: 600;
 }
 .panel-icon {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 .panel-body-text {
-  padding: 4px 0;
+  padding: 2px 0 0;
   font-size: 0.8rem;
   color: var(--parchment-dim, #c5bba8);
+}
+.side-panels-grid .panel-body-text {
+  font-size: 0.66rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.3;
 }
 .panel-body-scroll {
   max-height: 90px;
@@ -514,13 +542,54 @@ body { padding-top: 30px; }
   font-size: 0.8rem;
   color: var(--parchment-dim, #c5bba8);
 }
+.side-panels-grid .panel-body-scroll {
+  max-height: 34px;
+  overflow: hidden;
+  font-size: 0.66rem;
+  width: 100%;
+}
+/* The pulsing "click to..." captions were repeating on every one of the ten
+   tiles at once, which read as flickering noise rather than guidance — the
+   whole tile is already an obvious tap target, so the caption is dropped
+   here (kept everywhere else, e.g. the Leaderboard hero card, where a
+   single instance still reads as a helpful nudge). */
 .side-panels-grid .panel-hint {
-  margin-top: auto;
-  padding-top: 10px;
-  font-size: 0.64rem;
+  display: none;
+}
+.side-panels-grid .side-panel > div:not(.widget-hdr) {
+  width: 100%;
+}
+/* Full-width tiles (Quick Notes, Formula Sheet) read better as a compact
+   horizontal row — icon + title + preview all on one line — rather than a
+   square tile stretched wide with everything centered underneath. */
+.side-panels-grid .notes-panel,
+.side-panels-grid .formula-panel {
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+  min-height: 0;
+  padding: 12px 14px;
+  gap: 12px;
+}
+.side-panels-grid .notes-panel .widget-hdr,
+.side-panels-grid .formula-panel .widget-hdr {
+  flex-direction: row;
+  flex-shrink: 0;
+}
+.side-panels-grid .notes-panel .panel-body-text,
+.side-panels-grid .formula-panel .panel-body-text {
+  -webkit-line-clamp: 1;
+  text-align: left;
+  padding: 0;
+  font-size: 0.7rem;
+  opacity: 0.85;
+  width: auto;
+  flex: 1;
+  min-width: 0;
 }
 @media (max-width: 480px) {
-  .side-panels-grid { grid-template-columns: 1fr; }
+  .side-panels-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .side-panels-grid .side-panel { padding: 12px 8px; min-height: 84px; }
 }
 
 /* Continue Practice — pulled out of the grid as its own prominent CTA card,
@@ -687,6 +756,7 @@ body { padding-top: 30px; }
 <meta name="theme-color" content="#0c1220">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Expedition 11">
 
@@ -706,6 +776,8 @@ body { padding-top: 30px; }
 .install-nudge .in-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--parchment-dim, #a6b3c9); font-size: 1rem; padding: 2px 6px; }
 .install-nudge .in-steps { margin: 6px 0 10px; padding-left: 18px; font-size: 0.78rem; color: var(--parchment-dim, #a6b3c9); line-height: 1.5; }
 @media (max-width: 480px) { .install-nudge { bottom: 12px; } }
+.install-nudge .in-benefits { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.install-nudge .in-benefits li { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--parchment-dim, #a6b3c9); line-height: 1.35; }
 </style>
 
 
@@ -715,8 +787,13 @@ body { padding-top: 30px; }
   <button class="in-close" id="installNudgeClose" aria-label="Dismiss">✕</button>
   <div class="in-icon">🧭</div>
   <div class="in-body">
-    <p class="in-title">Keep your streak going</p>
-    <p class="in-sub" id="installNudgeSub">Add Expedition 11 to your home screen so it's one tap away tomorrow — no need to remember the link.</p>
+    <p class="in-title">Get the full app experience</p>
+    <ul class="in-benefits" id="installNudgeBenefits">
+      <li>⚡ Opens instantly — no browser, no address bar</li>
+      <li>📶 Keeps working even with patchy internet</li>
+      <li>🔥 One tap away, so your streak never slips</li>
+    </ul>
+    <p class="in-sub" id="installNudgeSub">Add Expedition 11 to your home screen — takes 5 seconds.</p>
     <div id="installNudgeSteps"></div>
     <div class="in-actions">
       <button class="in-primary" id="installNudgeAction">Add to Home Screen</button>
@@ -839,6 +916,25 @@ body { padding-top: 30px; }
   window.maybeShowInstallNudge = function () {
     setTimeout(showNudge, 1800);
   };
+
+  // Second trigger: a first-time visitor has no reason to install yet (no
+  // payoff experienced), but a *returning* visitor already got value out of
+  // the site once and is a much warmer install candidate — so nudge them
+  // shortly after the dashboard loads too, not only after a level finishes.
+  function maybeNudgeReturningVisitor() {
+    var s = getState();
+    var visits = (s.visitCount || 0) + 1;
+    s.visitCount = visits;
+    setState(s);
+    if (visits >= 2) {
+      setTimeout(showNudge, 3500);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeNudgeReturningVisitor);
+  } else {
+    maybeNudgeReturningVisitor();
+  }
 })();
 </script>
 
@@ -990,7 +1086,7 @@ body { padding-top: 30px; }
             <p>Pick a year for Math, Physics &amp; Chemistry and practice them together</p>
           </div>
         </div>
-        <div class="pyq-banner-cta">🔒 Coming soon</div>
+        <div class="pyq-banner-cta" id="pyqMixedBannerCta">🔒 Checking…</div>
       </div>
     </div>
 
@@ -1016,6 +1112,7 @@ body { padding-top: 30px; }
         <div class="resume-hero-arrow" id="resumePanelHint">→</div>
       </div>
 
+      <div class="tools-section-label">Quick Tools</div>
       <div class="side-panels-grid" id="advancedPanelsGrid">
         <div class="side-panel resolutions-panel" onclick="openResolutionsPopup()">
           <div class="widget-hdr"><span class="panel-icon" style="background:rgba(231,111,81,0.18); color:#ff9d80;">🔧</span><h3>Resolutions</h3></div>
@@ -1066,6 +1163,11 @@ body { padding-top: 30px; }
           <div class="widget-hdr"><span class="panel-icon" style="background:rgba(255,180,84,0.18); color:#ffb454;">🎉</span><h3>Invite Friends</h3></div>
           <div class="panel-body-text">They get a bonus to start, you get bragging rights</div>
           <div class="panel-hint">Share your invite link</div>
+        </div>
+
+        <div class="side-panel notif-panel" id="notifPanel" onclick="handleNotifPanelClick()">
+          <div class="widget-hdr"><span class="panel-icon" style="background:rgba(79,209,197,0.18); color:#9df1e6;">🔔</span><h3 id="notifPanelTitle">Notifications</h3></div>
+          <div id="notifPanelStatus" class="panel-body-text">Get reminders before your streak breaks</div>
         </div>
 
         <div class="side-panel backup-panel" onclick="openBackupPopup()">
@@ -1518,6 +1620,7 @@ function getQuestionsForLevel(subject, chapter, level) {
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script src="pyqbank.js"></script>
 <script src="firebase-config.js"></script>
 <script>
@@ -1598,6 +1701,101 @@ let firestoreReady = false;
         else { try { setBackendStatus('local', 'Reconnecting to shared server...'); } catch(_) {} }
       });
     } catch(_) {}
+
+    // Push notifications (Firebase Cloud Messaging). Get this key from
+    // Firebase Console > Project Settings > Cloud Messaging > Web Push
+    // certificates > "Generate key pair", then paste it below. Without it,
+    // enableNotifications() below fails silently with a console warning —
+    // everything else in the app keeps working normally.
+    const FCM_VAPID_KEY = 'PASTE_YOUR_VAPID_PUBLIC_KEY_HERE';
+
+    window.notificationsSupported = ('Notification' in window) && ('serviceWorker' in navigator) && !!firebase.messaging && firebase.messaging.isSupported();
+
+    window.getNotificationPermissionState = function () {
+      if (!window.notificationsSupported) return 'unsupported';
+      return Notification.permission; // 'default' | 'granted' | 'denied'
+    };
+
+    // Called from the "Enable Notifications" tile. Must run inside a user
+    // click/tap — browsers block permission prompts triggered without one.
+    window.enableNotifications = async function () {
+      if (!window.notificationsSupported) {
+        return { ok: false, reason: 'Notifications aren\'t supported in this browser.' };
+      }
+      if (!FCM_VAPID_KEY || FCM_VAPID_KEY === 'PASTE_YOUR_VAPID_PUBLIC_KEY_HERE') {
+        console.warn('[Explorer] No FCM VAPID key set — see FCM_VAPID_KEY comment above.');
+        return { ok: false, reason: 'Notifications aren\'t set up on this server yet.' };
+      }
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          return { ok: false, reason: permission === 'denied' ? 'Notifications are blocked in your browser settings.' : 'Permission was not granted.' };
+        }
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const messaging = firebase.messaging();
+        const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
+        if (!token) return { ok: false, reason: 'Could not get a notification token — try again.' };
+        const uid = window.__authUid || (await new Promise((res) => {
+          if (window.__resolveAuthReady === null && window.__authUid) return res(window.__authUid);
+          const t = setTimeout(() => res(null), 4000);
+          firebase.auth().onAuthStateChanged((u) => { if (u) { clearTimeout(t); res(u.uid); } });
+        }));
+        if (uid) {
+          await db.ref('users/' + uid + '/fcmTokens/' + token).set({ createdAt: firebase.database.ServerValue.TIMESTAMP, ua: navigator.userAgent });
+        }
+        try { localStorage.setItem('notifications_enabled_v1', '1'); } catch (_) {}
+        return { ok: true };
+      } catch (e) {
+        console.warn('[Explorer] enableNotifications failed:', e);
+        return { ok: false, reason: 'Something went wrong turning on notifications.' };
+      }
+    };
+
+    // Foreground messages (app open in an active tab) don't show a native
+    // OS notification automatically — show a lightweight in-app toast
+    // instead. Background messages (app closed/backgrounded) are handled
+    // by firebase-messaging-sw.js and do show a native notification.
+    try {
+      if (window.notificationsSupported) {
+        firebase.messaging().onMessage((payload) => {
+          const title = (payload.notification && payload.notification.title) || 'Expedition 11';
+          const body = (payload.notification && payload.notification.body) || '';
+          if (window.showToast) { window.showToast(title + (body ? ' — ' + body : '')); }
+          else console.log('[Explorer] Push (foreground):', title, body);
+        });
+      }
+    } catch (_) {}
+
+    // Drives the "Notifications" tile in the Quick Tools grid.
+    window.refreshNotifPanel = function () {
+      const statusEl = document.getElementById('notifPanelStatus');
+      const titleEl = document.getElementById('notifPanelTitle');
+      if (!statusEl) return;
+      const state = window.getNotificationPermissionState ? window.getNotificationPermissionState() : 'unsupported';
+      if (state === 'granted') {
+        titleEl.textContent = 'Notifications ✓';
+        statusEl.textContent = 'On — you\'ll get streak & challenge reminders';
+      } else if (state === 'denied') {
+        statusEl.textContent = 'Blocked — enable in your browser\'s site settings';
+      } else if (state === 'unsupported') {
+        statusEl.textContent = 'Not available in this browser';
+      } else {
+        statusEl.textContent = 'Get reminders before your streak breaks';
+      }
+    };
+    window.handleNotifPanelClick = async function () {
+      const state = window.getNotificationPermissionState ? window.getNotificationPermissionState() : 'unsupported';
+      if (state === 'granted' || state === 'denied' || state === 'unsupported') {
+        window.refreshNotifPanel();
+        return; // nothing actionable to do from a tap in these states
+      }
+      const statusEl = document.getElementById('notifPanelStatus');
+      if (statusEl) statusEl.textContent = 'Requesting permission…';
+      const result = await window.enableNotifications();
+      if (statusEl) statusEl.textContent = result.ok ? 'On — you\'ll get streak & challenge reminders' : (result.reason || 'Could not enable notifications');
+      window.refreshNotifPanel();
+    };
+    setTimeout(() => { if (window.refreshNotifPanel) window.refreshNotifPanel(); }, 0);
   } catch (e) {
     window.__lastFirebaseError = e && e.message || String(e);
     console.warn('[Explorer] Firebase init failed:', e);
@@ -1699,7 +1897,8 @@ window.DB_Engine = {
     const key = safeKeyPart(uid);
     const payload = {
       uid, username: name, xp, badges: (typeof computeBadges === 'function' ? computeBadges() : []), timestamp: Date.now(),
-      weeklyXp: state.weeklyXp || 0, weeklyXpWeekStart: state.weeklyXpWeekStart || getWeekKey()
+      weeklyXp: state.weeklyXp || 0, weeklyXpWeekStart: state.weeklyXpWeekStart || getWeekKey(),
+      streak: state.streak || 0, lastActive: Date.now()
     };
     if (!dbReady) {
       queueOfflineWrite({ type: 'score', key, payload });
@@ -4777,6 +4976,16 @@ async function renderPyqSubjectGrid() {
       hint.textContent = `${PYQ_YEARS[0]}–${PYQ_YEARS[PYQ_YEARS.length - 1]} · coming soon`;
     }
   });
+
+  // Mixed-practice banner: was previously a hardcoded "Coming soon" label
+  // that never reflected real data — now driven by the same availability
+  // check as the subject cards above, so it unlocks the moment any subject
+  // has at least one year of live questions.
+  const mixedCta = document.getElementById('pyqMixedBannerCta');
+  if (mixedCta) {
+    const anyUnlocked = PYQ_SUBJECTS.some(subj => (avail[subj.id] || []).length > 0);
+    mixedCta.textContent = anyUnlocked ? '▶ Start practicing' : '🔒 Coming soon';
+  }
 }
 
 let pyqSelectedYears = new Set();
@@ -5012,13 +5221,75 @@ function togglePyqSave(idx) {
   renderPyqQuizQuestion();
 }
 
+/* ---- Progress persistence: a PYQ quiz used to live only in the in-memory
+   `pyqQuiz` variable, so closing the tab or navigating away lost all
+   answers. Saved to localStorage under a stable key derived from the exact
+   subject/year selection, so reopening the same selection resumes exactly
+   where the student left off (idx, answers, running score) instead of
+   restarting with a freshly re-shuffled set. ---- */
+const PYQ_PROGRESS_KEY = 'pyq_quiz_progress_v1';
+
+function pyqSlugify(str) {
+  return String(str).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+function getAllPyqProgress() {
+  try { return JSON.parse(localStorage.getItem(PYQ_PROGRESS_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+
+function savePyqProgress() {
+  if (!pyqQuiz || !pyqQuiz.slug) return;
+  try {
+    const all = getAllPyqProgress();
+    all[pyqQuiz.slug] = {
+      title: pyqQuiz.title,
+      questions: pyqQuiz.questions,
+      idx: pyqQuiz.idx,
+      correct: pyqQuiz.correct,
+      answers: pyqQuiz.answers,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(PYQ_PROGRESS_KEY, JSON.stringify(all));
+  } catch (e) { console.warn('[PYQ] could not save progress:', e); }
+}
+
+function loadPyqProgress(slug) {
+  const all = getAllPyqProgress();
+  return all[slug] || null;
+}
+
+function clearPyqProgress(slug) {
+  try {
+    const all = getAllPyqProgress();
+    delete all[slug];
+    localStorage.setItem(PYQ_PROGRESS_KEY, JSON.stringify(all));
+  } catch (e) {}
+}
+
 function startPyqQuiz(title, questions) {
-  pyqQuiz = { title, questions: seededShuffle(questions, Math.random), idx: 0, correct: 0, answered: false, answers: {} };
+  const slug = pyqSlugify(title);
+  const saved = loadPyqProgress(slug);
+  // Only resume if the saved set matches the same question count (best-effort
+  // sanity check that this is genuinely the same selection, not stale data
+  // from before the question bank changed) and isn't already fully finished.
+  const canResume = saved && saved.questions && saved.questions.length === questions.length
+    && Object.keys(saved.answers || {}).length < saved.questions.length;
+
+  if (canResume) {
+    pyqQuiz = { title, slug, questions: saved.questions, idx: saved.idx || 0, correct: saved.correct || 0, answered: false, answers: saved.answers || {} };
+  } else {
+    if (saved) clearPyqProgress(slug); // stale/finished — start clean
+    pyqQuiz = { title, slug, questions: seededShuffle(questions, Math.random), idx: 0, correct: 0, answered: false, answers: {} };
+    savePyqProgress();
+  }
+
   document.getElementById('pyqViewerModal').classList.add('pyq-fullscreen', 'show');
   document.getElementById('pyqViewerTitle').textContent = title;
   document.getElementById('pyqQuizPalette').style.display = 'flex';
   renderPyqPalette();
   renderPyqQuizQuestion();
+  if (canResume && window.showToast) window.showToast('Resumed where you left off — Q' + ((pyqQuiz.idx || 0) + 1));
 }
 
 function renderPyqPalette() {
@@ -5043,6 +5314,7 @@ function jumpToPyqQuestion(i) {
   pyqQuiz.idx = i;
   renderPyqQuizQuestion();
   renderPyqPalette();
+  savePyqProgress();
 }
 
 function renderPyqQuizQuestion() {
@@ -5135,6 +5407,7 @@ function handlePyqQuizAnswer(selIdx, btnNode) {
   showPyqFeedback(q, isCorrect, selIdx);
   renderPyqNextRow();
   renderPyqPalette();
+  savePyqProgress();
 }
 
 function advancePyqQuiz() {
@@ -5143,9 +5416,11 @@ function advancePyqQuiz() {
     pyqQuiz.idx++;
     renderPyqQuizQuestion();
     renderPyqPalette();
+    savePyqProgress();
   } else {
     const total = pyqQuiz.questions.length;
     const correct = pyqQuiz.correct;
+    clearPyqProgress(pyqQuiz.slug); // finished — nothing left to resume
     document.getElementById('pyqViewerBody').innerHTML = `
       <div style="text-align:center; padding:20px 0;">
         <h3 style="margin-top:0;">📚 Set complete</h3>
