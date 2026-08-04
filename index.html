@@ -1377,7 +1377,10 @@ body { padding-top: 30px; }
     <div class="modal-box list-popup" style="max-width: 720px; text-align: left;">
       <div class="widget-hdr">
         <h3 id="pyqViewerTitle" class="pyq-modal-title">📚 PYQ Viewer</h3>
-        <button class="popup-close" onclick="closePyqViewerModal()">✕ Close</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="popup-close" id="pyqResetBtn" onclick="resetPyqQuiz()" title="Clear progress and start this set over from question 1" style="display:none;">🔄 Reset</button>
+          <button class="popup-close" onclick="closePyqViewerModal()">✕ Close</button>
+        </div>
       </div>
       <div id="pyqViewerBody" class="popup-list"></div>
       <div id="pyqQuizPalette" style="display:none; flex-direction:column; gap:6px; padding:10px 4px 4px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12)); margin-top:10px;">
@@ -5170,11 +5173,13 @@ function openPyqViewerLoading(title) {
   document.getElementById('pyqViewerModal').classList.add('pyq-fullscreen');
   document.getElementById('pyqViewerTitle').textContent = title;
   document.getElementById('pyqViewerBody').innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim,#c5bba8);">Loading questions…</div>`;
+  document.getElementById('pyqResetBtn').style.display = 'none';
   document.getElementById('pyqViewerModal').classList.add('show');
 }
 function closePyqViewerModal() {
   document.getElementById('pyqViewerModal').classList.remove('show', 'pyq-fullscreen');
   document.getElementById('pyqQuizPalette').style.display = 'none';
+  document.getElementById('pyqResetBtn').style.display = 'none';
   pyqQuiz = null;
 }
 
@@ -5191,6 +5196,7 @@ function cleanPyqPageText(text) {
 function renderPyqViewer(title, pages) {
   document.getElementById('pyqViewerModal').classList.add('pyq-fullscreen', 'show');
   document.getElementById('pyqQuizPalette').style.display = 'none';
+  document.getElementById('pyqResetBtn').style.display = 'none';
   document.getElementById('pyqViewerTitle').textContent = title;
   const body = document.getElementById('pyqViewerBody');
   if (!pages.length) {
@@ -5298,9 +5304,35 @@ function startPyqQuiz(title, questions) {
   document.getElementById('pyqViewerModal').classList.add('pyq-fullscreen', 'show');
   document.getElementById('pyqViewerTitle').textContent = title;
   document.getElementById('pyqQuizPalette').style.display = 'flex';
+  document.getElementById('pyqResetBtn').style.display = 'inline-flex';
   renderPyqPalette();
+  collapsePyqPaletteByDefault();
   renderPyqQuizQuestion();
   if (canResume && window.showToast) window.showToast('Resumed where you left off — Q' + ((pyqQuiz.idx || 0) + 1));
+}
+
+// Palette starts collapsed so the question itself is always the first thing
+// visible — the grid of question numbers is one tap away via the header
+// toggle, not something that pushes the actual question down/off-screen.
+function collapsePyqPaletteByDefault() {
+  const grid = document.getElementById('pyqQuizPaletteGrid');
+  const btn = document.getElementById('pyqPaletteToggleBtn');
+  if (grid) grid.style.display = 'none';
+  if (btn) btn.textContent = 'Expand';
+}
+
+function resetPyqQuiz() {
+  if (!pyqQuiz) return;
+  const ok = confirm(`Start "${pyqQuiz.title}" over from question 1? This clears your saved progress and score for this set — it can't be undone.`);
+  if (!ok) return;
+  clearPyqProgress(pyqQuiz.slug);
+  const freshQuestions = seededShuffle(pyqQuiz.questions.map((q) => ({ ...q })), Math.random);
+  pyqQuiz = { title: pyqQuiz.title, slug: pyqQuiz.slug, questions: freshQuestions, idx: 0, correct: 0, answered: false, answers: {} };
+  savePyqProgress();
+  renderPyqPalette();
+  collapsePyqPaletteByDefault();
+  renderPyqQuizQuestion();
+  if (window.showToast) window.showToast('Set restarted from question 1');
 }
 
 function renderPyqPalette() {
@@ -5379,15 +5411,52 @@ function renderPyqQuizQuestion() {
   typesetMath(body);
 }
 
+// Cheap, free, no-API heuristic to catch solutions that are too garbled by
+// OCR to be useful — rather than trying to "fix" broken text (which needs
+// either manual rewriting or a paid AI pass), this just hides it cleanly
+// so students see an honest "not available" instead of confusing junk.
+function isPyqSolutionUsable(text) {
+  if (!text) return false;
+  const clean = String(text).trim();
+  if (clean.length < 20) return false;
+
+  // Known junk markers seen in this OCR batch — coaching-institute branding
+  // or exam-metadata leftovers that leaked into the solution field.
+  const junkMarkers = /\b(allen answer|bonus|typing mistake|official ans\.?\s*by\s*nta)\b/i;
+  if (junkMarkers.test(clean)) return false;
+
+  // Garbled OCR tends to produce a soup of short fragments (lots of
+  // isolated 1-2 character "words" from broken symbols/spacing) rather
+  // than normal sentences. If more than ~35% of tokens are that short,
+  // treat it as unreadable rather than a real explanation.
+  const tokens = clean.split(/\s+/).filter(Boolean);
+  const shortTokens = tokens.filter((t) => t.replace(/[^a-zA-Z0-9]/g, '').length <= 2).length;
+  if (tokens.length > 6 && (shortTokens / tokens.length) > 0.35) return false;
+
+  return true;
+}
+
 function showPyqFeedback(q, isCorrect, selIdx) {
   const fb = document.getElementById('pyqQuizFeedback');
-  const explanation = q.sol || q.exp; // uploaded PYQ data uses "sol"; some older sources used "exp" — support both
+  const rawExplanation = q.sol || q.exp; // uploaded PYQ data uses "sol"; some older sources used "exp" — support both
+  const explanationOk = isPyqSolutionUsable(rawExplanation);
   fb.className = 'feedback show ' + (isCorrect ? 'ok' : 'bad');
-  fb.innerHTML = (isCorrect ? '✓ Correct!' : `✗ Incorrect — correct answer: <b>${escapeHtml(q.opts[q.ans])}</b>`) +
-    (explanation ? `<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12));">
+  let explanationBlock;
+  if (explanationOk) {
+    explanationBlock = `<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12));">
         <div style="font-family:'JetBrains Mono',monospace; font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color: var(--brass-light,#e8c382); margin-bottom:8px;">📖 Explanation</div>
-        <div style="font-weight:400; text-align:left; font-size:0.9rem; line-height:1.8;">${formatPyqSolution(explanation)}</div>
-      </div>` : '');
+        <div style="font-weight:400; text-align:left; font-size:0.9rem; line-height:1.8;">${formatPyqSolution(rawExplanation)}</div>
+      </div>`;
+  } else if (rawExplanation) {
+    // There WAS a solution field, it's just too garbled from OCR to show
+    // — say so honestly rather than silently showing nothing.
+    explanationBlock = `<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12)); font-size:0.82rem; color:var(--parchment-dim,#c5bba8); font-style:italic;">
+        📖 A written explanation isn't available in a readable form for this question yet — refer to your study material for the working.
+      </div>`;
+  } else {
+    explanationBlock = '';
+  }
+  fb.innerHTML = (isCorrect ? '✓ Correct!' : `✗ Incorrect — correct answer: <b>${escapeHtml(q.opts[q.ans])}</b>`) + explanationBlock;
   typesetMath(fb);
 }
 
@@ -5450,6 +5519,7 @@ function advancePyqQuiz() {
         <button class="btn primary" onclick="closePyqViewerModal()">Close</button>
       </div>`;
     document.getElementById('pyqQuizPalette').style.display = 'none';
+    document.getElementById('pyqResetBtn').style.display = 'none';
     pyqQuiz = null;
   }
 }
