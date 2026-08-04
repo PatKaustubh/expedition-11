@@ -5415,23 +5415,24 @@ function renderPyqQuizQuestion() {
 // OCR to be useful — rather than trying to "fix" broken text (which needs
 // either manual rewriting or a paid AI pass), this just hides it cleanly
 // so students see an honest "not available" instead of confusing junk.
+//
+// NOTE: this used to also reject solutions where >35% of tokens were 1-2
+// characters long, to catch OCR "soup." That check was too aggressive for
+// math/physics content — real math notation (variables, operators, single
+// numbers) is *naturally* full of short tokens, so it was hiding the large
+// majority of otherwise-correct solutions. Removed; length + junk-marker
+// checks below are enough now that the underlying OCR symbol garbling
+// (Symbol-font PUA codepoints, stray Latin-1 artifacts) has been cleaned
+// up at the data layer.
 function isPyqSolutionUsable(text) {
   if (!text) return false;
   const clean = String(text).trim();
-  if (clean.length < 20) return false;
+  if (clean.length < 15) return false;
 
   // Known junk markers seen in this OCR batch — coaching-institute branding
   // or exam-metadata leftovers that leaked into the solution field.
   const junkMarkers = /\b(allen answer|bonus|typing mistake|official ans\.?\s*by\s*nta)\b/i;
   if (junkMarkers.test(clean)) return false;
-
-  // Garbled OCR tends to produce a soup of short fragments (lots of
-  // isolated 1-2 character "words" from broken symbols/spacing) rather
-  // than normal sentences. If more than ~35% of tokens are that short,
-  // treat it as unreadable rather than a real explanation.
-  const tokens = clean.split(/\s+/).filter(Boolean);
-  const shortTokens = tokens.filter((t) => t.replace(/[^a-zA-Z0-9]/g, '').length <= 2).length;
-  if (tokens.length > 6 && (shortTokens / tokens.length) > 0.35) return false;
 
   return true;
 }
