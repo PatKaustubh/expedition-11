@@ -4897,11 +4897,16 @@ function saveWeeklyGoal() {
 /* ================= PREVIOUS YEAR QUESTIONS (PYQ) =================
    Subjects are shown as cards (mirroring the main subject grid); clicking
    one opens a modal listing years 2021-2025 as multiselect chips. Which
-   years are actually unlocked is driven by Realtime Database (the same
-   `db`/`dbReady` connection DB_Engine already uses for leaderboard/reports):
-   node "pyqBank/_availability" -> { physics: [2021], chemistry: [2021], math: [2021] }.
-   Individual year data lives at "pyqBank/{subject}_{year}" -> { pages: [...] }.
-   Rules for this path already exist (same as the old shared PYQ bank). */
+   years are actually unlocked is driven by Cloud Firestore (confirmed via
+   the Firebase console): collection "pyqBank", with a document called
+   "_availability" -> { chemistry: [2021, 2022], math: [...], physics: [...] }.
+   Individual year data lives in documents named "{subject}_{year}" (e.g.
+   "chemistry_2021"), each holding a "questions" array of objects shaped
+   like { subject, year, q, opts, ans, sol, sourcePage } — which happens to
+   already match the shape the quiz renderer expects, so no field mapping
+   is needed, just pointing at the right database.
+   NOTE: this used to incorrectly read from Realtime Database — that was
+   the bug (data existed, app was looking in the wrong place entirely). */
 const PYQ_YEARS = [2021, 2022, 2023, 2024, 2025];
 const PYQ_SUBJECTS = [
   { id: 'math', name: 'Mathematics', icon: '📐', theme: 'theme-math' },
@@ -4911,18 +4916,18 @@ const PYQ_SUBJECTS = [
 
 let pyqAvailability = null; // { subjectId: [years] } once loaded
 let pyqAvailabilityPromise = null;
-const _pyqPageCache = new Map(); // `${subjectId}_${year}` -> pages array
+const _pyqPageCache = new Map(); // `${subjectId}_${year}` -> { pages, questions }
 
 async function fetchPyqAvailability() {
   if (pyqAvailability) return pyqAvailability;
   if (pyqAvailabilityPromise) return pyqAvailabilityPromise;
   pyqAvailabilityPromise = (async () => {
-    if (!dbReady) { pyqAvailability = {}; return pyqAvailability; }
+    if (!firestoreReady || !firestoreDb) { pyqAvailability = {}; return pyqAvailability; }
     try {
-      const snap = await db.ref('pyqBank/_availability').once('value');
-      pyqAvailability = snap.val() || {};
+      const docSnap = await firestoreDb.collection('pyqBank').doc('_availability').get();
+      pyqAvailability = docSnap.exists ? (docSnap.data() || {}) : {};
     } catch (err) {
-      console.warn('[PYQ] availability fetch failed (check Firebase Rules for "pyqBank"):', err);
+      console.warn('[PYQ] availability fetch failed (check Firestore Rules for "pyqBank"):', err);
       pyqAvailability = {};
     }
     return pyqAvailability;
@@ -4933,10 +4938,10 @@ async function fetchPyqAvailability() {
 async function fetchPyqData(subjId, year) {
   const key = `${subjId}_${year}`;
   if (_pyqPageCache.has(key)) return _pyqPageCache.get(key);
-  if (!dbReady) return { pages: [], questions: [] };
+  if (!firestoreReady || !firestoreDb) return { pages: [], questions: [] };
   try {
-    const snap = await db.ref('pyqBank/' + key).once('value');
-    const val = snap.val() || {};
+    const docSnap = await firestoreDb.collection('pyqBank').doc(key).get();
+    const val = docSnap.exists ? (docSnap.data() || {}) : {};
     const data = { pages: val.pages || [], questions: val.questions || [] };
     _pyqPageCache.set(key, data);
     return data;
