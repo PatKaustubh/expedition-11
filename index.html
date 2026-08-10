@@ -1112,6 +1112,17 @@ body { padding-top: 30px; }
         <div class="resume-hero-arrow" id="resumePanelHint">→</div>
       </div>
 
+      <!-- BACKUP & RESTORE — deliberately kept OUTSIDE the level-gated
+           "Quick Tools" grid below and always visible, even for a brand-new
+           user with zero cleared levels. A new install/new device needs to
+           be able to restore an existing progress file immediately, without
+           first having to clear a level just to reveal the restore button. -->
+      <div class="side-panel backup-panel" onclick="openBackupPopup()" style="margin-bottom:14px;">
+        <div class="widget-hdr"><span class="panel-icon" style="background:rgba(108,140,255,0.18); color:#9ab0ff;">💾</span><h3>Backup & Restore</h3></div>
+        <div class="panel-body-text">Save your progress to a file, or restore it on a new device</div>
+        <div class="panel-hint">Open backup options</div>
+      </div>
+
       <div class="tools-section-label">Quick Tools</div>
       <div class="side-panels-grid" id="advancedPanelsGrid">
         <div class="side-panel resolutions-panel" onclick="openResolutionsPopup()">
@@ -1168,12 +1179,6 @@ body { padding-top: 30px; }
         <div class="side-panel notif-panel" id="notifPanel" onclick="handleNotifPanelClick()">
           <div class="widget-hdr"><span class="panel-icon" style="background:rgba(79,209,197,0.18); color:#9df1e6;">🔔</span><h3 id="notifPanelTitle">Notifications</h3></div>
           <div id="notifPanelStatus" class="panel-body-text">Get reminders before your streak breaks</div>
-        </div>
-
-        <div class="side-panel backup-panel" onclick="openBackupPopup()">
-          <div class="widget-hdr"><span class="panel-icon" style="background:rgba(108,140,255,0.18); color:#9ab0ff;">💾</span><h3>Backup & Restore</h3></div>
-          <div class="panel-body-text">Save your progress to a file, or restore it on a new device</div>
-          <div class="panel-hint">Open backup options</div>
         </div>
 
         <div class="side-panel notes-panel" onclick="openQuickNotes()" style="grid-column: 1 / -1;">
