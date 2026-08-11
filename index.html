@@ -1280,6 +1280,29 @@ body { padding-top: 30px; }
     </div>
   </div>
 
+  <!-- AI Doubt Solver — freeform Q&A, served by /api/ai-explain (mode:"doubt") -->
+  <div class="modal-backdrop" id="doubtSolverModal" onclick="if(event.target===this) closeDoubtSolver()">
+    <div class="modal-box" style="max-width: 560px; text-align: left;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0;">🤖 Ask AI</h3>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--parchment-dim,#c5bba8);">Class 11 · JEE</span>
+      </div>
+      <p style="font-size:0.85rem; color: var(--parchment-dim,#c5bba8); margin-top:0;">Stuck on a concept or a question? Ask in plain words.</p>
+      <textarea id="doubtInput" rows="3" placeholder="e.g. Why does dimensional analysis fail for trig functions?"
+        style="width:100%; resize:vertical; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:inherit; font-family:inherit; font-size:0.95rem;"></textarea>
+      <div id="doubtAnswerBox" style="margin-top:14px; font-size:0.92rem; line-height:1.5; display:none; white-space:pre-wrap;"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+        <button class="btn ghost" onclick="closeDoubtSolver()">Close</button>
+        <button class="btn primary" id="doubtAskBtn" onclick="sendDoubtQuestion()">Ask</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="askAiFab" onclick="openDoubtSolver()" title="Ask AI"
+    style="position:fixed; right:22px; bottom:22px; z-index:1500; width:56px; height:56px; border-radius:50%;
+           background:var(--brass-light,#9df1e6); color:#05070d; border:none; font-size:24px; cursor:pointer;
+           box-shadow:0 8px 24px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">🤖</button>
+
   <div class="modal-backdrop" id="activityPopup" onclick="if(event.target===this) closeActivityPopup()">
     <div class="modal-box list-popup" style="max-width: 620px; text-align: left;">
       <div class="widget-hdr">
@@ -4444,7 +4467,11 @@ function handleMistakeAnswer(selIdx) {
     const rec = bank[item.key];
     if (rec) bank[item.key] = { ...rec, correctStreak: 0, nextReviewAt: Date.now() };
     setMistakeBank(bank);
-    fb.innerHTML = `✗ Still not quite. The correct answer is <b>${item.opts[item.ans]}</b> — it'll stay in your bank.`;
+    fb.innerHTML = `✗ Still not quite. The correct answer is <b>${item.opts[item.ans]}</b> — it'll stay in your bank.
+      <div style="margin-top:10px;">
+        <button class="btn ghost" id="mistakeExplainBtn" style="font-size:0.82rem;" onclick="explainMistakeWithAI(mistakeRun.items[mistakeRun.idx], ${selIdx}, this)">🤖 Explain this</button>
+        <div id="mistakeAiExplain" style="display:none; margin-top:10px; font-size:0.88rem; line-height:1.5; white-space:pre-wrap; color: var(--parchment-dim,#c5bba8);"></div>
+      </div>`;
   }
   typesetMath(fb);
   const footer = grid.parentElement.querySelector('div[style*="flex-end"]');
@@ -4469,6 +4496,70 @@ function advanceMistakeRun() {
       <p>You cleared <b>${cleared}/${mistakeRun.items.length}</b> question${mistakeRun.items.length === 1 ? '' : 's'} from your mistake bank.</p>
       <div style="display:flex; justify-content:flex-end;"><button class="btn primary" onclick="closeMistakeBank()">Close</button></div>`;
     mistakeRun = null;
+  }
+}
+
+/* ================= AI FEATURES (Cloudflare Workers AI via /api/ai-explain) ================= */
+
+// ---- AI Doubt Solver: freeform chat, reachable from the floating 🤖 button ----
+function openDoubtSolver() {
+  document.getElementById('doubtSolverModal').classList.add('show');
+  document.getElementById('doubtAnswerBox').style.display = 'none';
+  document.getElementById('doubtAnswerBox').textContent = '';
+  document.getElementById('doubtInput').focus();
+}
+function closeDoubtSolver() {
+  document.getElementById('doubtSolverModal').classList.remove('show');
+}
+async function sendDoubtQuestion() {
+  const input = document.getElementById('doubtInput');
+  const question = input.value.trim();
+  if (!question) return;
+  const answerBox = document.getElementById('doubtAnswerBox');
+  const askBtn = document.getElementById('doubtAskBtn');
+  answerBox.style.display = 'block';
+  answerBox.textContent = 'Thinking…';
+  askBtn.disabled = true;
+  try {
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'doubt', question })
+    });
+    const data = await res.json();
+    answerBox.textContent = data.answer || data.error || 'No response — try again.';
+  } catch (e) {
+    answerBox.textContent = "Couldn't reach the AI tutor right now — check your connection and try again.";
+  } finally {
+    askBtn.disabled = false;
+  }
+}
+
+// ---- AI Mistake Coach: "Explain this" on a Mistake Bank wrong answer ----
+// Called from handleMistakeAnswer()'s wrong-answer branch below.
+async function explainMistakeWithAI(item, userAnswerIdx, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Asking AI…';
+  const holder = document.getElementById('mistakeAiExplain');
+  try {
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'mistake',
+        question: item.q, options: item.opts, correctAnswer: item.ans,
+        userAnswer: userAnswerIdx, subject: item.subject, chapter: item.chapter
+      })
+    });
+    const data = await res.json();
+    holder.style.display = 'block';
+    holder.textContent = data.answer || data.error || 'No explanation available — try again.';
+    btn.style.display = 'none';
+  } catch (e) {
+    holder.style.display = 'block';
+    holder.textContent = "Couldn't reach the AI tutor right now — check your connection and try again.";
+    btn.disabled = false;
+    btn.textContent = '🤖 Explain this';
   }
 }
 
