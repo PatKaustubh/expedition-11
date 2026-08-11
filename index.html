@@ -2303,6 +2303,13 @@ function loadSave() {
 }
 
 function doSave() {
+  // Guard against clobbering a just-restored backup: selecting a file in the
+  // native file picker fires 'visibilitychange', which triggers an autosave
+  // of the CURRENT in-memory state (still the old profile) a moment after
+  // importProgressBackup() has written the restored data to localStorage.
+  // Without this guard that autosave overwrites the restore before the
+  // page even reloads. See importProgressBackup().
+  if (window.__restoringBackup) return;
   localStorage.setItem('math_expedition_v9', JSON.stringify({
     xp: state.xp, progress: state.progress, streak: state.streak, explorerName: state.explorerName,
     weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart
@@ -2344,6 +2351,12 @@ function importProgressBackup(file) {
     try {
       const bundle = JSON.parse(reader.result);
       if (!bundle || !bundle.data) throw new Error('Not a valid Expedition 11 backup file.');
+      // Block any autosave (doSave() via visibilitychange/pagehide) from
+      // firing between now and the reload below — opening the file picker
+      // that led here already fires 'visibilitychange' once, and without
+      // this guard that autosave would overwrite the restored keys with
+      // the outgoing profile's still-in-memory state. See doSave().
+      window.__restoringBackup = true;
       Object.entries(bundle.data).forEach(([k, v]) => {
         if (BACKUP_KEYS.includes(k)) localStorage.setItem(k, v);
       });
