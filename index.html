@@ -2324,7 +2324,12 @@ function doSave() {
 const BACKUP_KEYS = [
   'math_expedition_v9', 'mistake_bank_v1', 'activity_log_v1', 'streak_freeze_v1',
   'daily_challenge_state_v1', 'exam_countdown_date_v1', 'weekly_xp_goal_v1',
-  'expedition11_quickNotes', 'pyqSavedQuestions', 'resolution_resolved_since'
+  'expedition11_quickNotes', 'pyqSavedQuestions', 'resolution_resolved_since',
+  // Actual PYQ practice-quiz progress (scores/attempts) — distinct from
+  // pyqSavedQuestions above, which is only the bookmarked-question list.
+  // Without this, a restored profile would keep XP/level progress but lose
+  // all PYQ quiz attempt history, which is still "progress made platform-wide".
+  'pyq_quiz_progress_v1'
 ];
 
 function exportProgressBackup() {
