@@ -269,6 +269,27 @@ let db = null;
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     dbReady = true;
+    // Anonymous Auth: security rules require `auth != null` to read
+    // "leaderboard" (same rule index.html satisfies for students). This
+    // panel was never signing in, so every read here was silently
+    // rejected by the rules and came back empty — regardless of device
+    // or browser, since it's a rules/auth gap, not a local issue.
+    // window.__adminAuthReadyPromise resolves once sign-in completes (or
+    // fails), so Admin_DB calls can await it before touching the DB.
+    window.__adminAuthReadyPromise = new Promise((resolve) => {
+      try {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) resolve(user.uid);
+        });
+        firebase.auth().signInAnonymously().catch((e) => {
+          console.warn('[Admin] Anonymous sign-in failed — reads will be rejected by security rules until this succeeds:', e);
+          resolve(null);
+        });
+      } catch (e) {
+        console.warn('[Admin] Firebase Auth unavailable:', e);
+        resolve(null);
+      }
+    });
     // Live connection indicator via Firebase's own .info/connected node.
     try {
       db.ref('.info/connected').on('value', (snap) => {
@@ -338,12 +359,21 @@ window.copyExpeditionDiagnostics = async function () {
   catch(_) { prompt('Copy this diagnostic info:', text); }
 };
 
+// Waits for the anonymous sign-in kicked off in initFirebase() to finish,
+// so reads/writes below don't race ahead of auth and get rejected by rules.
+async function ensureAdminAuth() {
+  if (!dbReady) return null;
+  if (firebase.auth().currentUser) return firebase.auth().currentUser.uid;
+  return window.__adminAuthReadyPromise || null;
+}
+
 window.Admin_DB = {
   // ── Broadcast announcement ────────────────────────────────────────────
   // Single shared node — one live announcement at a time, shown as a
   // dismissible banner in index.html. Educators overwrite it to send a
   // new one, or clear it to remove the banner for everyone.
   async sendAnnouncement(message, audience) {
+    await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.' };
     try {
       await db.ref('announcement').set({
@@ -355,11 +385,13 @@ window.Admin_DB = {
     }
   },
   async clearAnnouncement() {
+    await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.' };
     try { await db.ref('announcement').remove(); return { ok: true }; }
     catch (e) { return { ok: false, error: e.message }; }
   },
   async getAnnouncementOnce() {
+    await ensureAdminAuth();
     if (!dbReady) return null;
     try { const snap = await db.ref('announcement').once('value'); return snap.val(); }
     catch (e) { return null; }
@@ -372,6 +404,7 @@ window.Admin_DB = {
   // rather than written onto leaderboard/{uid}, since the leaderboard
   // node's write rules are schema-locked to score fields only.
   async setManualInactive(uid, val) {
+    await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.' };
     try {
       if (val) await db.ref('manualInactive/' + uid).set(true);
@@ -380,6 +413,7 @@ window.Admin_DB = {
     } catch (e) { return { ok: false, error: e.message }; }
   },
   async getManualInactiveOnce() {
+    await ensureAdminAuth();
     if (!dbReady) return {};
     try { const snap = await db.ref('manualInactive').once('value'); return snap.val() || {}; }
     catch (e) { return {}; }
@@ -393,6 +427,7 @@ window.Admin_DB = {
   },
 
   async updateReport(id, updateData) {
+    await ensureAdminAuth();
     if (dbReady) {
       try {
         await db.ref('reports/' + id).update(updateData);
@@ -417,6 +452,7 @@ window.Admin_DB = {
   },
 
   async clearAll() {
+    await ensureAdminAuth();
     if (dbReady) {
       try {
         // NOTE: db.ref('reports').remove() would require write permission
@@ -444,6 +480,7 @@ window.Admin_DB = {
   },
 
   async clearResolvedOnly() {
+    await ensureAdminAuth();
     if (dbReady) {
       try {
         const snap = await db.ref('reports').once('value');
@@ -496,6 +533,7 @@ window.Admin_DB = {
   // ── Leaderboard management ──────────────────────────────────────────────
   async getLeaderboardOnce() {
     if (!dbReady) return [];
+    await ensureAdminAuth();
     try {
       const snap = await db.ref('leaderboard').once('value');
       const val = snap.val() || {};
@@ -521,6 +559,7 @@ window.Admin_DB = {
   // live listener, and so their client stops re-syncing a score that would
   // otherwise silently resurrect the entry we just removed.
   async removeLeaderboardEntries(uids, reason, labels) {
+    await ensureAdminAuth();
     if (!dbReady || !uids || !uids.length) return { ok: false, removed: 0 };
     try {
       const lbUpdates = {};
@@ -548,6 +587,7 @@ window.Admin_DB = {
 
   // ── Removed-candidates review & discussion ──────────────────────────────
   async getRemovedCandidatesOnce() {
+    await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected to the shared database.', list: [] };
     try {
       const snap = await db.ref('removedCandidates').once('value');
@@ -577,6 +617,7 @@ window.Admin_DB = {
   },
 
   async sendDiscussionMessage(uid, text) {
+    await ensureAdminAuth();
     if (!dbReady || !text || !text.trim()) return { ok: false, error: 'Not connected.' };
     try {
       const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
@@ -593,6 +634,7 @@ window.Admin_DB = {
   // Un-removes a candidate: clears the removal record so their next score
   // sync writes back to the shared leaderboard normally again.
   async restoreCandidate(uid) {
+    await ensureAdminAuth();
     if (!dbReady) return { ok: false };
     try {
       await db.ref('removedCandidates/' + uid).remove();
@@ -609,6 +651,7 @@ window.Admin_DB = {
   // legitimate rights to use (official papers, their own textbook, etc.)
   // and we sync them to every student via Firebase.
   async getPyqOnce() {
+    await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.', list: [] };
     try {
       const snap = await db.ref('pyqBank').once('value');
@@ -621,6 +664,7 @@ window.Admin_DB = {
   },
 
   async importPyqBatch(items) {
+    await ensureAdminAuth();
     if (!dbReady || !items || !items.length) return { ok: false, imported: 0 };
     try {
       const updates = {};
@@ -637,6 +681,7 @@ window.Admin_DB = {
   },
 
   async deletePyq(id) {
+    await ensureAdminAuth();
     if (!dbReady) return { ok: false };
     try {
       await db.ref('pyqBank/' + id).remove();
