@@ -1954,8 +1954,13 @@ window.DB_Engine = {
     const key = safeKeyPart(uid);
     const payload = {
       uid, username: name, xp, badges: (typeof computeBadges === 'function' ? computeBadges() : []), timestamp: Date.now(),
-      weeklyXp: state.weeklyXp || 0, weeklyXpWeekStart: state.weeklyXpWeekStart || getWeekKey(),
-      streak: state.streak || 0, lastActive: Date.now()
+      weeklyXp: state.weeklyXp || 0, weeklyXpWeekStart: state.weeklyXpWeekStart || getWeekKey()
+      // NOTE: do NOT add fields here without also adding them to the
+      // Firebase Rules whitelist at leaderboard/$uid — that node has
+      // "$other": { ".validate": false }, so ANY extra field (this payload
+      // used to include streak/lastActive, which aren't in the rules)
+      // causes the ENTIRE write to be rejected with permission_denied,
+      // silently breaking leaderboard sync for every candidate at once.
     };
     if (!dbReady) {
       queueOfflineWrite({ type: 'score', key, payload });
@@ -2078,27 +2083,49 @@ window.DB_Engine = {
   // reflected on THIS candidate's screen automatically (no refresh needed),
   // and so we stop re-syncing their score (which would otherwise silently
   // resurrect the leaderboard entry the educator just removed).
+  // See NOTE on listenDiscussion below — same race condition applied here too.
   listenRemovalStatus(callback) {
-    const uid = getPlayerUid();
-    if (!dbReady) { callback(null); return () => {}; }
-    const ref = db.ref('removedCandidates/' + safeKeyPart(uid));
-    const handler = (snapshot) => callback(snapshot.val() || null);
-    const errHandler = (e) => { console.error('[Explorer] Removal-status listener failed (check Firebase Rules for "removedCandidates"):', e); callback(null); };
-    ref.on('value', handler, errHandler);
-    return () => ref.off('value', handler);
+    let unsub = () => {};
+    let cancelled = false;
+    ensureAnonymousAuth().then(() => {
+      if (cancelled) return;
+      const uid = getPlayerUid();
+      if (!dbReady) { callback(null); return; }
+      const ref = db.ref('removedCandidates/' + safeKeyPart(uid));
+      const handler = (snapshot) => callback(snapshot.val() || null);
+      const errHandler = (e) => { console.error('[Explorer] Removal-status listener failed (check Firebase Rules for "removedCandidates"):', e); callback(null); };
+      ref.on('value', handler, errHandler);
+      unsub = () => ref.off('value', handler);
+    });
+    return () => { cancelled = true; unsub(); };
   },
 
+  // NOTE: this must wait for ensureAnonymousAuth() before reading the uid.
+  // getPlayerUid() falls back to a local placeholder id when Firebase Auth
+  // hasn't resolved yet, and since this function used to call it
+  // synchronously, the listener could attach to that placeholder path
+  // instead of the real signed-in uid if it ran even slightly before auth
+  // resolved — silently watching the wrong path for the entire session
+  // (messages/replies exist in the database and are readable, they just
+  // never reach this listener). Every other write path here already awaits
+  // ensureAnonymousAuth() first; this one just hadn't been brought in line.
   listenDiscussion(callback) {
-    const uid = getPlayerUid();
-    if (!dbReady) { callback([]); return () => {}; }
-    const ref = db.ref('removalDiscussion/' + safeKeyPart(uid) + '/messages');
-    const handler = (snapshot) => {
-      const val = snapshot.val() || {};
-      callback(Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)));
-    };
-    const errHandler = (e) => { console.error('[Explorer] Discussion listener failed (check Firebase Rules for "removalDiscussion"):', e); callback([]); };
-    ref.on('value', handler, errHandler);
-    return () => ref.off('value', handler);
+    let unsub = () => {};
+    let cancelled = false;
+    ensureAnonymousAuth().then(() => {
+      if (cancelled) return;
+      const uid = getPlayerUid();
+      if (!dbReady) { callback([]); return; }
+      const ref = db.ref('removalDiscussion/' + safeKeyPart(uid) + '/messages');
+      const handler = (snapshot) => {
+        const val = snapshot.val() || {};
+        callback(Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)));
+      };
+      const errHandler = (e) => { console.error('[Explorer] Discussion listener failed (check Firebase Rules for "removalDiscussion"):', e); callback([]); };
+      ref.on('value', handler, errHandler);
+      unsub = () => ref.off('value', handler);
+    });
+    return () => { cancelled = true; unsub(); };
   },
 
   async sendDiscussionMessage(text) {
