@@ -3925,7 +3925,7 @@ const Factory = {
       () => {
         let fa = a, fb = b;
         if (fa === fb) fb = fa + 1; // avoid a-b colliding with the hardcoded "0 J" distractor below
-        return { q: `A force $F = ${fa}\\hat{i} + ${fb}\\hat{j}$ acts on a particle. Work done moving from origin to $(1,1)$?`, ans: `$${fa+fb} \\text{ J}$`, opts: [`$${fa*fb} \\text{ J}$`, `$${fa-fb} \\text{ J}$`, `$0 \\text{ J}$`], exp: `Work $W = \\vec{F} \\cdot \\vec{d} = (${fa})(1) + (${fb})(1)$.` };
+        return { q: `A force $F = ${fa}\\hat{\\imath} + ${fb}\\hat{\\jmath}$ acts on a particle. Work done moving from origin to $(1,1)$?`, ans: `$${fa+fb} \\text{ J}$`, opts: [`$${fa*fb} \\text{ J}$`, `$${fa-fb} \\text{ J}$`, `$0 \\text{ J}$`], exp: `Work $W = \\vec{F} \\cdot \\vec{d} = (${fa})(1) + (${fb})(1)$.` };
       }
     ];
     return pool[variant % pool.length]();
