@@ -1592,22 +1592,24 @@ body { padding-top: 30px; }
   </div>
 </div>
 
-<!-- REMOVAL NOTICE + DISCUSSION PANE (student <-> teacher chat) -->
+<!-- TEACHER CHAT / REMOVAL DISCUSSION (student <-> teacher chat) -->
 <div class="modal-backdrop" id="removedModal">
   <div class="modal-box" style="max-width: 460px; text-align: left;">
-    <h3 style="text-align:center;">You've been removed from the leaderboard</h3>
-    <p style="margin-bottom: 8px;">Your teacher removed your entry from the shared leaderboard. Reason given:</p>
-    <div id="removedReasonBox" style="background: rgba(231,111,81,0.08); border: 1px solid rgba(231,111,81,0.3); border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; color: var(--parchment-dim); margin-bottom: 16px;"></div>
-    <p style="margin-bottom: 8px; font-size: 0.85rem;">You can ask your teacher for clarification below — they'll see it and can reply here.</p>
+    <h3 id="teacherChatTitle" style="text-align:center;">Message your teacher</h3>
+    <p id="teacherChatIntro" style="margin-bottom: 8px;">Ask a question, report something, or just say hi — your teacher will see it and can reply here.</p>
+    <div id="removedReasonWrap" style="display:none;">
+      <p style="margin-bottom: 8px;">Your teacher removed your entry from the shared leaderboard. Reason given:</p>
+      <div id="removedReasonBox" style="background: rgba(231,111,81,0.08); border: 1px solid rgba(231,111,81,0.3); border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; color: var(--parchment-dim); margin-bottom: 16px;"></div>
+    </div>
     <div id="removedDiscussionList" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;"></div>
-    <textarea id="removedDiscussionInput" placeholder="Ask your teacher why..." style="width:100%; min-height:60px; resize:vertical; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 10px; padding: 10px; color: #fff; font-family: inherit; font-size: 0.9rem; outline: none;"></textarea>
+    <textarea id="removedDiscussionInput" placeholder="Type a message..." style="width:100%; min-height:60px; resize:vertical; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 10px; padding: 10px; color: #fff; font-family: inherit; font-size: 0.9rem; outline: none;"></textarea>
     <div class="btn-row" style="justify-content: space-between; margin-top: 12px;">
       <button class="btn ghost" onclick="closeRemovedModal()">Close</button>
       <button class="btn primary" onclick="sendRemovalDiscussionMsg()">Send</button>
     </div>
   </div>
 </div>
-<button id="reopenRemovedTab" onclick="openRemovedModal()" style="display:none; position:fixed; bottom: 16px; left: 16px; z-index: 3000; background: var(--coral); color:#fff; border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35);">⚠️ Removed from leaderboard — view details</button>
+<button id="reopenRemovedTab" onclick="openRemovedModal()" style="position:fixed; bottom: 16px; left: 16px; z-index: 3000; background: var(--brass); color:var(--ink); border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35);">💬 Message your teacher</button>
 
 <!-- QUICK NOTES — freeform scratchpad, autosaved to this browser (localStorage) -->
 <div class="modal-backdrop" id="quickNotesModal" onclick="if(event.target===this) closeQuickNotes()">
@@ -5819,13 +5821,25 @@ function startApp() {
       const wasRemoved = state.isRemoved;
       state.isRemoved = !!info;
       state.removalInfo = info;
+      const reasonWrap = document.getElementById('removedReasonWrap');
+      const title = document.getElementById('teacherChatTitle');
+      const intro = document.getElementById('teacherChatIntro');
+      const tab = document.getElementById('reopenRemovedTab');
       if (info) {
         renderRemovalReason(info);
+        if (reasonWrap) reasonWrap.style.display = 'block';
+        if (title) title.textContent = "You've been removed from the leaderboard";
+        if (intro) intro.style.display = 'none';
         if (!wasRemoved) openRemovedModal();
-        document.getElementById('reopenRemovedTab').style.display = 'block';
+        if (tab) { tab.textContent = '⚠️ Removed from leaderboard — view details'; tab.style.background = 'var(--coral)'; tab.style.color = '#fff'; }
       } else {
-        document.getElementById('reopenRemovedTab').style.display = 'none';
-        closeRemovedModal();
+        if (reasonWrap) reasonWrap.style.display = 'none';
+        if (title) title.textContent = 'Message your teacher';
+        if (intro) intro.style.display = 'block';
+        if (tab) { tab.textContent = '💬 Message your teacher'; tab.style.background = 'var(--brass)'; tab.style.color = 'var(--ink)'; }
+        // Note: the button stays visible either way now — it's a general
+        // chat entry point, not just a removal notice — so we no longer
+        // hide it or auto-close the modal when a student isn't removed.
       }
     });
     window.DB_Engine.listenDiscussion((messages) => renderRemovalDiscussion(messages));

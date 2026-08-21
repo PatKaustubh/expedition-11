@@ -1170,15 +1170,19 @@ function renderLeaderboard() {
     </div>`;
 
   const rowHtml = (r) => `
-    <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-      <div>
-        <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
-        <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div>
+    <div class="report-card" style="padding:16px 20px; display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}', 'lb')">${openDiscussionUid === r.uid ? 'Hide' : '💬 Message'}</button>
+          <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', true)">Mark Inactive</button>
+          <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
+        </div>
       </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', true)">Mark Inactive</button>
-        <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
-      </div>
+      <div id="discBox-${r.uid}"></div>
     </div>
   `;
 
@@ -1216,6 +1220,7 @@ function renderLeaderboard() {
   }
 
   container.innerHTML = exportBar + quickPurgeBar + rows + inactiveSection;
+  if (openDiscussionUid) openDiscussionThread(openDiscussionUid);
 }
 
 let inactiveLbExpanded = false;
@@ -1348,15 +1353,17 @@ function exportRemovedCsv() {
   URL.revokeObjectURL(url);
 }
 
-function toggleDiscussion(uid) {
+function toggleDiscussion(uid, source) {
   if (openDiscussionUid === uid) {
     if (discussionUnsub) { discussionUnsub(); discussionUnsub = null; }
     openDiscussionUid = null;
-    renderRemovedCandidates();
-    return;
+  } else {
+    openDiscussionUid = uid;
   }
-  openDiscussionUid = uid;
-  renderRemovedCandidates();
+  // 'lb' = triggered from the main leaderboard tab; otherwise assume the
+  // removed-candidates tab. Re-render whichever list actually has the row,
+  // since both tabs share this same discussion-thread UI/backend.
+  if (source === 'lb') { renderLeaderboard(); } else { renderRemovedCandidates(); }
 }
 
 function openDiscussionThread(uid) {
