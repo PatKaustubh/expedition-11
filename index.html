@@ -2397,6 +2397,7 @@ function doSave() {
   // Without this guard that autosave overwrites the restore before the
   // page even reloads. See importProgressBackup().
   if (window.__restoringBackup) return;
+  if (window.__switchingPlayer) return; // see confirmSwitchPlayer() — prevents pagehide/visibilitychange autosave from re-writing the just-cleared save with the outgoing candidate's name
   archiveCurrentProfile();
   localStorage.setItem('math_expedition_v9', JSON.stringify({
     xp: state.xp, progress: state.progress, streak: state.streak, explorerName: state.explorerName,
@@ -3459,6 +3460,9 @@ function openSwitchPlayerModal() {
 function closeSwitchPlayerModal() { document.getElementById('switchPlayerModal').classList.remove('show'); }
 async function confirmSwitchPlayer() {
   try { doSave(); } catch (e) {} // flush + archive the outgoing candidate's progress by name first
+  window.__switchingPlayer = true; // must be set BEFORE clearing the key below, so the pagehide/visibilitychange
+                                    // autosave listeners (triggered by location.reload() itself) can't re-write
+                                    // math_expedition_v9 with the old name in the split-second before the page unloads
   localStorage.removeItem('math_expedition_v9'); // clear the ACTIVE slot only — archive above keeps the actual data safe
   localStorage.removeItem('explorer_player_uid');
   try {
