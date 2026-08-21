@@ -132,6 +132,10 @@ body { padding-top: 30px; }
       <button class="tab-btn" id="tabResolved" onclick="switchTab('Resolved')">Resolved Archives</button>
       <button class="tab-btn" id="tabLeaderboard" onclick="switchTab('Leaderboard')">Leaderboard</button>
       <button class="tab-btn" id="tabRemoved" onclick="switchTab('Removed')">Removed Candidates</button>
+      <button class="tab-btn" id="tabMessages" onclick="switchTab('Messages')" style="display:flex; align-items:center; gap:6px;">
+        Messages
+        <span id="messagesTabBadge" style="display:none; background:#2A9D8F; color:#fff; border-radius:999px; min-width:18px; height:18px; padding:0 5px; font-size:0.68rem; line-height:18px; text-align:center; font-weight:800;"></span>
+      </button>
       <button class="tab-btn" id="tabPyq" onclick="switchTab('Pyq')">PYQ Bank</button>
       <button class="tab-btn" id="tabInsights" onclick="switchTab('Insights')">Weak Topics</button>
     </div>
@@ -152,6 +156,9 @@ body { padding-top: 30px; }
     </div>
     <div class="report-list" id="removedList" style="display:none;">
       <!-- Removed candidates + discussion threads rendered here -->
+    </div>
+    <div class="report-list" id="inboxList" style="display:none;">
+      <!-- All candidate <-> teacher message threads, sorted by most recent -->
     </div>
     <div class="report-list" id="pyqPanelWrap" style="display:none; flex-direction:column;">
       <div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.8rem; margin-bottom:14px;">
@@ -601,6 +608,30 @@ window.Admin_DB = {
     }
   },
 
+  // Top-level listener across ALL candidates' discussion threads at once —
+  // powers the Messages inbox so the educator doesn't have to remember to
+  // check each candidate individually (previously the only way to see a
+  // message was to already be on that candidate's leaderboard/removed row).
+  listenAllDiscussions(callback) {
+    if (!dbReady) { callback({ ok: false, error: 'Not connected.', byUid: {} }); return () => {}; }
+    const ref = db.ref('removalDiscussion');
+    const handler = (snapshot) => {
+      const val = snapshot.val() || {};
+      const byUid = {};
+      Object.keys(val).forEach(uid => {
+        const msgsObj = (val[uid] && val[uid].messages) || {};
+        byUid[uid] = Object.keys(msgsObj).map(id => ({ id, ...msgsObj[id] })).sort((a, b) => (a.at || 0) - (b.at || 0));
+      });
+      callback({ ok: true, byUid });
+    };
+    const errHandler = (e) => {
+      console.error("[Admin] All-discussions listener failed (likely a rules/permission issue).", e);
+      callback({ ok: false, error: e.message, byUid: {} });
+    };
+    ref.on('value', handler, errHandler);
+    return () => ref.off('value', handler);
+  },
+
   listenDiscussion(uid, callback) {
     if (!dbReady) { callback({ ok: false, error: 'Not connected.', messages: [] }); return () => {}; }
     const ref = db.ref('removalDiscussion/' + uid + '/messages');
@@ -775,8 +806,137 @@ function startAdminEngine() {
       activeReports = reports;
       renderReports();
     });
+    // Started immediately (not lazily on tab switch) so the unread badge on
+    // the Messages tab is accurate the moment the panel loads, even if the
+    // educator never clicks into that tab.
+    window.Admin_DB.listenAllDiscussions((result) => {
+      allDiscussions = result.byUid || {};
+      updateMessagesTabBadge();
+      if (activeTab === 'Messages') renderInbox();
+    });
   }
 }
+
+// ── MESSAGES INBOX ──────────────────────────────────────────────────────
+// Solves: "candidates can message me, but I have no easy way to see who's
+// messaged." Previously a thread was only reachable by finding that exact
+// candidate on the Leaderboard or Removed Candidates tab first.
+let allDiscussions = {};      // uid -> messages[]
+const ADMIN_LAST_SEEN_KEY = 'admin_chat_last_seen_v1';
+function getAdminLastSeenMap() {
+  try { return JSON.parse(localStorage.getItem(ADMIN_LAST_SEEN_KEY)) || {}; } catch (e) { return {}; }
+}
+function setAdminLastSeen(uid) {
+  const map = getAdminLastSeenMap();
+  map[uid] = Date.now();
+  try { localStorage.setItem(ADMIN_LAST_SEEN_KEY, JSON.stringify(map)); } catch (e) {}
+}
+function unreadCountFor(uid, messages) {
+  const lastSeen = getAdminLastSeenMap()[uid] || 0;
+  return (messages || []).filter(m => m.from === 'student' && (m.at || 0) > lastSeen).length;
+}
+// Best-effort name lookup: checks whatever leaderboard/removed data is
+// already cached in memory from those tabs, falling back to a shortened uid.
+function nameForUid(uid) {
+  const fromLb = (currentLeaderboard || []).find(r => r.uid === uid);
+  if (fromLb && fromLb.username) return fromLb.username;
+  const fromRemoved = (currentRemoved || []).find(r => r.uid === uid);
+  if (fromRemoved && fromRemoved.username) return fromRemoved.username;
+  return uid.slice(0, 10) + '…';
+}
+function totalUnreadMessages() {
+  return Object.keys(allDiscussions).reduce((sum, uid) => sum + unreadCountFor(uid, allDiscussions[uid]), 0);
+}
+function updateMessagesTabBadge() {
+  const badge = document.getElementById('messagesTabBadge');
+  if (!badge) return;
+  const n = totalUnreadMessages();
+  if (n > 0) { badge.textContent = n > 99 ? '99+' : String(n); badge.style.display = 'inline-block'; }
+  else { badge.style.display = 'none'; }
+}
+let openInboxUid = null;
+let inboxThreadUnsub = null;
+function renderInbox() {
+  const container = document.getElementById('inboxList');
+  if (!container) return;
+  // Ensure names are available for the lookup above.
+  if (!currentLeaderboard || !currentLeaderboard.length) loadLeaderboard();
+  const uids = Object.keys(allDiscussions).filter(uid => (allDiscussions[uid] || []).length > 0);
+  if (!uids.length) {
+    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">No messages yet — candidate messages will show up here.</div>`;
+    return;
+  }
+  const rows = uids.map(uid => {
+    const msgs = allDiscussions[uid];
+    const last = msgs[msgs.length - 1];
+    const unread = unreadCountFor(uid, msgs);
+    return { uid, last, unread };
+  }).sort((a, b) => (b.last.at || 0) - (a.last.at || 0));
+
+  container.innerHTML = rows.map(row => `
+    <div class="report-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; cursor:pointer;" onclick="openInboxThread('${row.uid}')">
+        <div style="min-width:0;">
+          <div style="font-family:'Playfair Display',serif; font-size:1.05rem; color:var(--brass-light); display:flex; align-items:center; gap:8px;">
+            ${nameForUid(row.uid)}
+            ${row.unread > 0 ? `<span style="background:#2A9D8F; color:#fff; border-radius:999px; min-width:20px; height:20px; padding:0 6px; font-size:0.7rem; line-height:20px; text-align:center; font-weight:800;">${row.unread}</span>` : ''}
+          </div>
+          <div style="font-size:0.82rem; color:var(--parchment-dim); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:520px;">
+            ${row.last.from === 'educator' ? '<span style="opacity:0.7;">You: </span>' : ''}${escapeHtmlAdmin(row.last.text || '')}
+          </div>
+        </div>
+        <div style="font-size:0.7rem; color:var(--parchment-dim); opacity:0.7; white-space:nowrap;">${row.last.at ? new Date(row.last.at).toLocaleString() : ''}</div>
+      </div>
+      ${openInboxUid === row.uid ? `
+        <div id="inboxThreadBox-${row.uid}" style="margin-top:12px; border-top:1px solid var(--line); padding-top:12px;">
+          <div id="inboxThreadMsgs-${row.uid}" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; margin-bottom:8px;"></div>
+          <div style="display:flex; gap:8px;">
+            <textarea id="inboxThreadInput-${row.uid}" class="reply-textarea" style="min-height:50px;" placeholder="Reply..."></textarea>
+            <button class="btn primary" style="align-self:flex-end; padding:10px 16px; font-size:0.75rem;" onclick="sendInboxReply('${row.uid}')">Send</button>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+
+  if (openInboxUid) renderInboxThreadMessages(openInboxUid, allDiscussions[openInboxUid] || []);
+}
+function escapeHtmlAdmin(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+function renderInboxThreadMessages(uid, messages) {
+  const msgsEl = document.getElementById('inboxThreadMsgs-' + uid);
+  if (!msgsEl) return;
+  if (!messages.length) {
+    msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet.</div>`;
+    return;
+  }
+  msgsEl.innerHTML = messages.map(m => `
+    <div style="align-self:${m.from === 'educator' ? 'flex-end' : 'flex-start'}; max-width:85%; background:${m.from === 'educator' ? 'rgba(201,156,81,0.12)' : 'rgba(42,157,143,0.15)'}; border:1px solid ${m.from === 'educator' ? 'var(--line)' : 'rgba(42,157,143,0.3)'}; border-radius:10px; padding:8px 12px; font-size:0.85rem;">
+      <div style="font-size:0.65rem; opacity:0.7; margin-bottom:2px; text-transform:uppercase;">${m.from === 'educator' ? 'You' : (m.name || 'Candidate')}</div>
+      ${escapeHtmlAdmin(m.text || '')}
+    </div>
+  `).join('');
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+function openInboxThread(uid) {
+  openInboxUid = (openInboxUid === uid) ? null : uid;
+  if (openInboxUid) { setAdminLastSeen(uid); updateMessagesTabBadge(); }
+  renderInbox();
+}
+async function sendInboxReply(uid) {
+  const input = document.getElementById('inboxThreadInput-' + uid);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text || !window.Admin_DB) return;
+  const result = await window.Admin_DB.sendDiscussionMessage(uid, text);
+  if (!result.ok) { alert('Failed to send reply: ' + (result.error || 'unknown error')); return; }
+  input.value = '';
+}
+window.openInboxThread = openInboxThread;
+window.sendInboxReply = sendInboxReply;
 
 /* ================= STREAMING_CHUNK: Executing tab controller filters ================= */
 function switchTab(tab) {
@@ -785,12 +945,14 @@ function switchTab(tab) {
   document.getElementById('tabResolved').classList.toggle('active', tab === 'Resolved');
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'Leaderboard');
   document.getElementById('tabRemoved').classList.toggle('active', tab === 'Removed');
+  document.getElementById('tabMessages').classList.toggle('active', tab === 'Messages');
   document.getElementById('tabPyq').classList.toggle('active', tab === 'Pyq');
   document.getElementById('tabInsights').classList.toggle('active', tab === 'Insights');
 
   const reportsList = document.getElementById('reportCardsList');
   const lbList = document.getElementById('leaderboardList');
   const removedList = document.getElementById('removedList');
+  const inboxList = document.getElementById('inboxList');
   const pyqList = document.getElementById('pyqPanelWrap');
   const insightsPanel = document.getElementById('insightsPanel');
   const toolbar = document.getElementById('reportsToolbar');
@@ -798,6 +960,7 @@ function switchTab(tab) {
   reportsList.style.display = 'none';
   lbList.style.display = 'none';
   removedList.style.display = 'none';
+  inboxList.style.display = 'none';
   pyqList.style.display = 'none';
   insightsPanel.style.display = 'none';
   toolbar.style.display = 'none';
@@ -808,6 +971,9 @@ function switchTab(tab) {
   } else if (tab === 'Removed') {
     removedList.style.display = 'flex';
     loadRemovedCandidates();
+  } else if (tab === 'Messages') {
+    inboxList.style.display = 'flex';
+    renderInbox();
   } else if (tab === 'Pyq') {
     pyqList.style.display = 'flex';
     loadPyqAdmin();

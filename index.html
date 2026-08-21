@@ -995,6 +995,7 @@ body { padding-top: 30px; }
       <div id="examCountdownChip" class="exam-countdown-chip" onclick="openExamCountdownSettings()" title="Click to set/edit your exam date"></div>
       <div class="hud-chip" id="topbarFocusChip" onclick="openFocusTimer()" style="display:none; cursor:pointer;" title="Focus timer running — click to open">⏱️ <span id="topbarFocusTime">25:00</span></div>
       <button class="back-btn" style="font-size:0.8rem;padding:8px 14px;" onclick="openResetModal()" title="Reset all progress">↺ Reset</button>
+      <button class="back-btn" style="font-size:0.8rem;padding:8px 14px;" onclick="openSwitchPlayerModal()" title="Not you? Switch to a different profile on this device">👤 Switch Player</button>
     </div>
   </div>
 
@@ -1537,6 +1538,20 @@ body { padding-top: 30px; }
   </div>
 </div>
 
+<!-- SWITCH PLAYER — clears this device's saved profile so a different
+     candidate can enter their own name. Distinct from "Reset Progress",
+     which wipes XP/levels but keeps you signed in as the same explorer. -->
+<div class="modal-backdrop" id="switchPlayerModal">
+  <div class="modal-box">
+    <h3>Switch Player?</h3>
+    <p>This signs out <strong id="switchPlayerCurrentName">this profile</strong> on this device and takes you back to the name screen so someone else can play. Their progress is safely saved and nothing is deleted — they (or you) can just type the same name again later to pick it back up.</p>
+    <div class="btn-row" style="margin-top:0;">
+      <button class="btn ghost" onclick="closeSwitchPlayerModal()">Cancel</button>
+      <button class="btn primary" onclick="confirmSwitchPlayer()">Yes, Switch Player</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="submitJeeModal">
   <div class="modal-box">
     <h3>Submit Exam?</h3>
@@ -1609,7 +1624,10 @@ body { padding-top: 30px; }
     </div>
   </div>
 </div>
-<button id="reopenRemovedTab" onclick="openRemovedModal()" style="position:fixed; bottom: 16px; left: 16px; z-index: 3000; background: var(--brass); color:var(--ink); border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35);">💬 Message your teacher</button>
+<button id="reopenRemovedTab" onclick="openRemovedModal()" style="position:fixed; bottom: 16px; left: 16px; z-index: 3000; background: var(--brass); color:var(--ink); border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35); display:flex; align-items:center; gap:6px;">
+  <span id="reopenRemovedTabLabel">💬 Message your teacher</span>
+  <span id="teacherReplyBadge" style="display:none; background:#2A9D8F; color:#fff; border-radius:999px; min-width:18px; height:18px; padding:0 5px; font-size:0.68rem; line-height:18px; text-align:center; font-weight:800;"></span>
+</button>
 
 <!-- QUICK NOTES — freeform scratchpad, autosaved to this browser (localStorage) -->
 <div class="modal-backdrop" id="quickNotesModal" onclick="if(event.target===this) closeQuickNotes()">
@@ -2327,6 +2345,50 @@ function loadSave() {
   });
 }
 
+// ── PER-NAME PROFILE ARCHIVE ─────────────────────────────────────────────
+// The single 'math_expedition_v9' key only ever holds ONE active profile,
+// which is fine for one candidate per device but meant a second candidate
+// on the same browser would silently overwrite the first candidate's save
+// the moment they typed a name and played. This archive mirrors every save
+// into a name-keyed object too, so Switch Player can safely clear the
+// active slot without losing anyone's progress — typing a previously-used
+// name back in restores that candidate's XP/streak/progress automatically.
+const PROFILE_ARCHIVE_KEY = 'math_expedition_profiles_v1';
+function loadProfileArchive() {
+  try { return JSON.parse(localStorage.getItem(PROFILE_ARCHIVE_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveProfileArchive(archive) {
+  try { localStorage.setItem(PROFILE_ARCHIVE_KEY, JSON.stringify(archive)); } catch (e) {}
+}
+function archiveCurrentProfile() {
+  if (!state.explorerName || state.explorerName === 'Explorer') return;
+  const archive = loadProfileArchive();
+  archive[state.explorerName] = {
+    xp: state.xp, progress: state.progress, streak: state.streak,
+    weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart,
+    savedAt: Date.now()
+  };
+  saveProfileArchive(archive);
+}
+// Returns true (and restores state in place) if a saved profile exists for
+// this exact name, so registerExplorer() can resume it instead of starting
+// the candidate over from zero.
+function restoreProfileIfExists(name) {
+  const archive = loadProfileArchive();
+  const saved = archive[name];
+  if (!saved) return false;
+  state.xp = saved.xp || 0;
+  state.progress = saved.progress || {};
+  state.streak = saved.streak || 0;
+  state.weeklyXp = saved.weeklyXp || 0;
+  state.weeklyXpWeekStart = saved.weeklyXpWeekStart || null;
+  DATA.forEach(subj => subj.chapters.forEach(ch => {
+    if (!state.progress[ch.id]) state.progress[ch.id] = { maxUnlocked: 1, stars: {} };
+    if (!state.progress[ch.id].stars) state.progress[ch.id].stars = {};
+  }));
+  return true;
+}
+
 function doSave() {
   // Guard against clobbering a just-restored backup: selecting a file in the
   // native file picker fires 'visibilitychange', which triggers an autosave
@@ -2335,6 +2397,7 @@ function doSave() {
   // Without this guard that autosave overwrites the restore before the
   // page even reloads. See importProgressBackup().
   if (window.__restoringBackup) return;
+  archiveCurrentProfile();
   localStorage.setItem('math_expedition_v9', JSON.stringify({
     xp: state.xp, progress: state.progress, streak: state.streak, explorerName: state.explorerName,
     weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart
@@ -2909,6 +2972,10 @@ function registerExplorer() {
   inputEl.classList.remove('border-error');
   feedbackEl.style.display = 'none';
   state.explorerName = nameVal;
+  // If this device has a saved profile under this exact name (e.g. this
+  // candidate played here before, then someone else used Switch Player),
+  // resume their XP/streak/progress instead of starting them at zero.
+  restoreProfileIfExists(nameVal);
   doSave();
   
   // Sync the new profile immediately
@@ -3368,6 +3435,42 @@ function confirmResetProgress() {
   if(window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
   closeResetModal(); 
   goToSubjects();
+}
+
+// ── SWITCH PLAYER ─────────────────────────────────────────────────────────
+// Lets a different candidate use this same browser/device without inheriting
+// the previous candidate's saved name. Reset Progress alone doesn't do this
+// because it never clears state.explorerName, so window.onload's
+// `if (state.explorerName && state.explorerName !== "Explorer") startApp()`
+// check kept auto-booting straight into the old profile every time — even
+// after a hard refresh, since that check only looks at localStorage, which
+// a normal refresh never clears.
+//
+// This also signs the anonymous Firebase Auth session out. Anonymous auth
+// persists across reloads by design (that's what lets a returning student
+// keep their leaderboard identity) — so simply clearing localStorage keys
+// is NOT enough on its own; without signing out, a new name typed on this
+// device would still write under the *previous* candidate's auth uid.
+function openSwitchPlayerModal() {
+  const nameEl = document.getElementById('switchPlayerCurrentName');
+  if (nameEl) nameEl.textContent = state.explorerName && state.explorerName !== 'Explorer' ? `"${state.explorerName}"` : 'this profile';
+  document.getElementById('switchPlayerModal').classList.add('show');
+}
+function closeSwitchPlayerModal() { document.getElementById('switchPlayerModal').classList.remove('show'); }
+async function confirmSwitchPlayer() {
+  try { doSave(); } catch (e) {} // flush + archive the outgoing candidate's progress by name first
+  localStorage.removeItem('math_expedition_v9'); // clear the ACTIVE slot only — archive above keeps the actual data safe
+  localStorage.removeItem('explorer_player_uid');
+  try {
+    if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+      await firebase.auth().signOut();
+    }
+  } catch (e) { console.warn('[Explorer] Sign-out before switching player failed (continuing anyway):', e); }
+  // Reload rather than trying to reset dozens of in-memory fields and live
+  // Firebase listeners by hand — this guarantees a clean slate and a fresh
+  // anonymous sign-in, and the name screen is what window.onload shows by
+  // default when there's no saved explorerName to auto-boot into.
+  location.reload();
 }
 
 function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -5831,12 +5934,16 @@ function startApp() {
         if (title) title.textContent = "You've been removed from the leaderboard";
         if (intro) intro.style.display = 'none';
         if (!wasRemoved) openRemovedModal();
-        if (tab) { tab.textContent = '⚠️ Removed from leaderboard — view details'; tab.style.background = 'var(--coral)'; tab.style.color = '#fff'; }
+        if (tab) { tab.style.background = 'var(--coral)'; tab.style.color = '#fff'; }
+        const labelEl1 = document.getElementById('reopenRemovedTabLabel');
+        if (labelEl1) labelEl1.textContent = '⚠️ Removed from leaderboard — view details';
       } else {
         if (reasonWrap) reasonWrap.style.display = 'none';
         if (title) title.textContent = 'Message your teacher';
         if (intro) intro.style.display = 'block';
-        if (tab) { tab.textContent = '💬 Message your teacher'; tab.style.background = 'var(--brass)'; tab.style.color = 'var(--ink)'; }
+        if (tab) { tab.style.background = 'var(--brass)'; tab.style.color = 'var(--ink)'; }
+        const labelEl2 = document.getElementById('reopenRemovedTabLabel');
+        if (labelEl2) labelEl2.textContent = '💬 Message your teacher';
         // Note: the button stays visible either way now — it's a general
         // chat entry point, not just a removal notice — so we no longer
         // hide it or auto-close the modal when a student isn't removed.
@@ -5853,6 +5960,8 @@ function renderRemovalReason(info) {
 }
 
 function renderRemovalDiscussion(messages) {
+  lastKnownDiscussionMessages = messages || [];
+  updateTeacherReplyBadge(lastKnownDiscussionMessages);
   const list = document.getElementById('removedDiscussionList');
   if (!list) return;
   if (!messages.length) {
@@ -6236,8 +6345,36 @@ function formatPyqSolution(raw) {
   return escaped;
 }
 
-function openRemovedModal() { document.getElementById('removedModal').classList.add('show'); }
+const TEACHER_CHAT_LAST_SEEN_KEY = 'teacher_chat_last_seen_at';
+function openRemovedModal() {
+  document.getElementById('removedModal').classList.add('show');
+  // Opening the chat means the student has seen everything currently in it —
+  // mark "now" as read-through-point and clear the unread badge.
+  try { localStorage.setItem(TEACHER_CHAT_LAST_SEEN_KEY, String(Date.now())); } catch (e) {}
+  updateTeacherReplyBadge(lastKnownDiscussionMessages);
+}
 function closeRemovedModal() { document.getElementById('removedModal').classList.remove('show'); }
+
+// Shows a small badge on the "Message your teacher" tab when the teacher
+// has replied since the student last opened the chat — a solid dot if there's
+// exactly one unseen reply worth flagging, or a count if there's more than
+// one, so it reads at a glance without opening the thread.
+let lastKnownDiscussionMessages = [];
+function updateTeacherReplyBadge(messages) {
+  const badge = document.getElementById('teacherReplyBadge');
+  if (!badge) return;
+  const modalOpen = document.getElementById('removedModal').classList.contains('show');
+  if (modalOpen) { badge.style.display = 'none'; return; } // already looking at it
+  let lastSeen = 0;
+  try { lastSeen = Number(localStorage.getItem(TEACHER_CHAT_LAST_SEEN_KEY) || 0); } catch (e) {}
+  const unread = (messages || []).filter(m => m.from === 'teacher' && (m.at || 0) > lastSeen).length;
+  if (unread > 0) {
+    badge.textContent = unread > 1 ? String(unread) : '●';
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
 
 function sendRemovalDiscussionMsg() {
   const input = document.getElementById('removedDiscussionInput');
