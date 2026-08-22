@@ -370,8 +370,18 @@ window.copyExpeditionDiagnostics = async function () {
 // so reads/writes below don't race ahead of auth and get rejected by rules.
 async function ensureAdminAuth() {
   if (!dbReady) return null;
-  if (firebase.auth().currentUser) return firebase.auth().currentUser.uid;
-  return window.__adminAuthReadyPromise || null;
+  const user = firebase.auth().currentUser || await (window.__adminAuthReadyPromise || Promise.resolve(null)).then(() => firebase.auth().currentUser);
+  if (!user) return null;
+  // Force-refresh the ID token so a recently-granted "admin" custom claim is
+  // actually present. Custom claims only take effect on the NEXT token
+  // refresh after they're set — if this admin account's claim was assigned
+  // (or re-assigned) after this browser session started, every write that
+  // requires auth.token.admin === true (removing a candidate, clearing
+  // reports, etc.) fails with permission_denied using the stale cached
+  // token, even though the account genuinely has the claim. This makes sure
+  // we're always checking against the latest claims, not a cached token.
+  try { await user.getIdToken(true); } catch (e) { console.warn('[Admin] Token refresh failed:', e); }
+  return user.uid;
 }
 
 window.Admin_DB = {
@@ -835,9 +845,14 @@ function unreadCountFor(uid, messages) {
   const lastSeen = getAdminLastSeenMap()[uid] || 0;
   return (messages || []).filter(m => m.from === 'student' && (m.at || 0) > lastSeen).length;
 }
-// Best-effort name lookup: checks whatever leaderboard/removed data is
-// already cached in memory from those tabs, falling back to a shortened uid.
-function nameForUid(uid) {
+// Name lookup, in priority order: (1) the name attached to the student's own
+// messages — reliable since it's set to their exact explorerName at time of
+// sending — (2) whatever's cached from the Leaderboard/Removed tabs, in case
+// a candidate has never actually typed anything themselves (e.g. this is a
+// still-empty thread the educator started), (3) a shortened uid as a last resort.
+function nameForUid(uid, messages) {
+  const studentMsg = (messages || []).slice().reverse().find(m => m.from === 'student' && m.name);
+  if (studentMsg) return studentMsg.name;
   const fromLb = (currentLeaderboard || []).find(r => r.uid === uid);
   if (fromLb && fromLb.username) return fromLb.username;
   const fromRemoved = (currentRemoved || []).find(r => r.uid === uid);
@@ -849,10 +864,17 @@ function totalUnreadMessages() {
 }
 function updateMessagesTabBadge() {
   const badge = document.getElementById('messagesTabBadge');
-  if (!badge) return;
   const n = totalUnreadMessages();
-  if (n > 0) { badge.textContent = n > 99 ? '99+' : String(n); badge.style.display = 'inline-block'; }
-  else { badge.style.display = 'none'; }
+  if (badge) {
+    if (n > 0) { badge.textContent = n > 99 ? '99+' : String(n); badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  }
+  // Also reflect the count in the browser tab title, so unread messages are
+  // noticeable even when the educator is looking at a different tab/app and
+  // hasn't clicked into "Messages" (or this panel at all) — the button badge
+  // alone only helps if they're already looking at this page.
+  const baseTitle = 'Expedition 11 — Educator Control Panel';
+  document.title = n > 0 ? `(${n > 99 ? '99+' : n}) ${baseTitle}` : baseTitle;
 }
 let openInboxUid = null;
 let inboxThreadUnsub = null;
@@ -878,7 +900,7 @@ function renderInbox() {
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; cursor:pointer;" onclick="openInboxThread('${row.uid}')">
         <div style="min-width:0;">
           <div style="font-family:'Playfair Display',serif; font-size:1.05rem; color:var(--brass-light); display:flex; align-items:center; gap:8px;">
-            ${nameForUid(row.uid)}
+            ${nameForUid(row.uid, allDiscussions[row.uid])}
             ${row.unread > 0 ? `<span style="background:#2A9D8F; color:#fff; border-radius:999px; min-width:20px; height:20px; padding:0 6px; font-size:0.7rem; line-height:20px; text-align:center; font-weight:800;">${row.unread}</span>` : ''}
           </div>
           <div style="font-size:0.82rem; color:var(--parchment-dim); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:520px;">
