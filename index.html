@@ -2381,6 +2381,13 @@ function loadSave() {
 // active slot without losing anyone's progress — typing a previously-used
 // name back in restores that candidate's XP/streak/progress automatically.
 const PROFILE_ARCHIVE_KEY = 'math_expedition_profiles_v1';
+// Archive keys are normalized (trimmed + lowercased) so "Nexyy", "nexyy", and
+// " Nexyy " all resolve to the same saved profile. Without this, retyping a
+// name with even slightly different capitalization on the SAME device after
+// Switch Player would silently miss the archive and start the candidate over
+// at 0 XP — their real progress wouldn't be lost, just unreachable under a
+// different-cased key.
+function normalizeProfileName(name) { return (name || '').trim().toLowerCase(); }
 function loadProfileArchive() {
   try { return JSON.parse(localStorage.getItem(PROFILE_ARCHIVE_KEY)) || {}; } catch (e) { return {}; }
 }
@@ -2390,7 +2397,8 @@ function saveProfileArchive(archive) {
 function archiveCurrentProfile() {
   if (!state.explorerName || state.explorerName === 'Explorer') return;
   const archive = loadProfileArchive();
-  archive[state.explorerName] = {
+  archive[normalizeProfileName(state.explorerName)] = {
+    displayName: state.explorerName,
     xp: state.xp, progress: state.progress, streak: state.streak,
     weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart,
     savedAt: Date.now()
@@ -2402,7 +2410,9 @@ function archiveCurrentProfile() {
 // the candidate over from zero.
 function restoreProfileIfExists(name) {
   const archive = loadProfileArchive();
-  const saved = archive[name];
+  // Normalized key first (current scheme); fall back to the exact raw name
+  // for profiles archived before this normalization fix existed.
+  const saved = archive[normalizeProfileName(name)] || archive[name];
   if (!saved) return false;
   state.xp = saved.xp || 0;
   state.progress = saved.progress || {};
