@@ -1,6 +1,6 @@
 {
-  "name": "Expedition 11 — Educator Panel",
-  "short_name": "Educator Panel",
+  "name": "Expedition 11 Faculty",
+  "short_name": "Faculty",
   "description": "Flagged questions, leaderboard moderation, and candidate messages for Expedition 11",
   "start_url": "/educator_control_panel.html",
   "scope": "/",
@@ -8,7 +8,7 @@
   "background_color": "#0c1220",
   "theme_color": "#0c1220",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/faculty-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/faculty-icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
