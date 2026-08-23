@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <title>Expedition 11 — Educator Control Panel</title>
+<!-- ============================================================
+     PWA: separate manifest/identity from the student app, so this
+     installs as its own distinct "Educator Panel" app rather than
+     being lumped in with (or conflicting with) the student install.
+     ============================================================ -->
+<link rel="manifest" href="/admin-manifest.json">
+<meta name="theme-color" content="#0c1220">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Educator Panel">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2212%22 fill=%22%230b1320%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2222%22 fill=%22none%22 stroke=%22%23c99c51%22 stroke-width=%222%22/%3E%3Ctext x=%2232%22 y=%2240%22 font-family=%22Georgia,serif%22 font-size=%2220%22 font-weight=%22700%22 text-anchor=%22middle%22 fill=%22%23e8c382%22%3E11%3C/text%3E%3C/svg%3E">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
@@ -121,6 +133,7 @@ body { padding-top: 30px; }
       </div>
       <div style="display:flex; gap:8px;">
         <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openAnnouncementModal()">📢 Broadcast</button>
+        <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto; display:none;" id="adminInstallBtn" onclick="triggerAdminInstall()">⬇️ Install App</button>
         <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearResolvedModal()">Purge Resolved</button>
         <button class="btn danger" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearModal()">Clear All Reports</button>
       </div>
@@ -1826,5 +1839,59 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+<script>
+// ── PWA install (Educator Panel) ────────────────────────────────────────
+// Mirrors the student app's install flow, but simpler: just a toolbar
+// button rather than a timed nudge, since an educator opening this panel
+// has already shown clear intent to use it (no need to wait for a "level
+// clear" moment the way the student app does).
+(function () {
+  var deferredPrompt = null;
+  var installBtn;
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (err) {
+        console.warn('[Admin PWA] service worker registration failed:', err);
+      });
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn && !isStandalone()) installBtn.style.display = 'inline-block';
+  });
+
+  window.addEventListener('appinstalled', function () {
+    if (installBtn) installBtn.style.display = 'none';
+    deferredPrompt = null;
+  });
+
+  window.triggerAdminInstall = function () {
+    if (isIOS()) {
+      alert('To install: tap the Share icon in Safari\'s toolbar, then "Add to Home Screen".');
+      return;
+    }
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(function () { deferredPrompt = null; });
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    installBtn = document.getElementById('adminInstallBtn');
+    // iOS never fires beforeinstallprompt, so show the button unconditionally
+    // there (it just explains the manual Share-sheet steps when tapped).
+    if (isIOS() && !isStandalone() && installBtn) installBtn.style.display = 'inline-block';
+  });
+})();
+</script>
 </body>
 </html>
