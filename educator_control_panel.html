@@ -1365,6 +1365,40 @@ function renderLeaderboard() {
       </div>`;
   }
 
+  // Duplicate-name detection: the leaderboard is keyed by Firebase auth uid,
+  // not by candidate name — so a candidate who uses Switch Player (or plays
+  // from a second device) gets a brand-new uid, and shows up as a second,
+  // separate row under the same name rather than updating their old one.
+  // Firebase Rules also mean a student's own browser can never merge or
+  // delete a past uid's entry (only an admin account can) — so this has to
+  // be a manual cleanup tool here rather than something that fixes itself.
+  const nameGroups = {};
+  sorted.forEach(r => {
+    const key = (r.username || '').trim().toLowerCase();
+    if (!key) return;
+    (nameGroups[key] = nameGroups[key] || []).push(r);
+  });
+  const duplicateGroups = Object.values(nameGroups).filter(g => g.length > 1);
+
+  let duplicatesBar = '';
+  if (duplicateGroups.length) {
+    duplicatesBar = duplicateGroups.map(group => {
+      // Keep whichever entry has the highest XP (most likely the "real"
+      // ongoing progress); flag the rest as the stale duplicates to purge.
+      const sortedGroup = [...group].sort((a, b) => (b.xp || 0) - (a.xp || 0));
+      const keep = sortedGroup[0];
+      const stale = sortedGroup.slice(1);
+      return `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(233,196,106,0.08); border:1px solid rgba(233,196,106,0.3); border-radius:12px; padding:14px 18px; margin-bottom:6px; flex-wrap:wrap;">
+          <div style="font-size:0.9rem; color:var(--parchment-dim);">
+            <strong style="color:var(--brass-light);">${keep.username}</strong> appears ${group.length} times (likely re-entered after Switch Player). Keeping the ${keep.xp || 0} XP entry, ${stale.length} older duplicate${stale.length > 1 ? 's' : ''} can be removed:
+            <span style="opacity:0.75;">${stale.map(r => `${r.xp || 0} XP, ${r.timestamp ? new Date(r.timestamp).toLocaleDateString() : 'no date'}`).join(' · ')}</span>
+          </div>
+          <button class="btn danger" style="padding:10px 16px; font-size:0.8rem; align-self:auto;" onclick="openClearLbModal(${JSON.stringify(stale.map(r=>r.uid)).replace(/"/g,'&quot;')}, '${keep.username.replace(/'/g,"\\'")} duplicates')">Remove Duplicates</button>
+        </div>`;
+    }).join('');
+  }
+
   const exportBar = `
     <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
       <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportLeaderboardCsv()">Export CSV</button>
@@ -1420,7 +1454,7 @@ function renderLeaderboard() {
       </div>`;
   }
 
-  container.innerHTML = exportBar + quickPurgeBar + rows + inactiveSection;
+  container.innerHTML = exportBar + duplicatesBar + quickPurgeBar + rows + inactiveSection;
   if (openDiscussionUid) openDiscussionThread(openDiscussionUid);
 }
 
