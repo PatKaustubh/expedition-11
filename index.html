@@ -374,6 +374,23 @@ body { padding-top: 30px; }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--sea); animation: pulseGreen 1.2s infinite; }
 @keyframes pulseGreen { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.4; } }
 
+/* LIVE LEADERBOARD BAR CHART — updates in place (no rebuild flash) as
+   Firebase pushes new leaderboard values, via CSS height/transform
+   transitions rather than DOM replacement of the bars themselves. */
+.lb-chart-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.lb-chart-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; color: var(--parchment-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.lb-chart { display: flex; align-items: flex-end; gap: 10px; height: 130px; overflow-x: auto; overflow-y: hidden; padding: 4px 2px 2px; }
+.lb-chart::-webkit-scrollbar { height: 5px; }
+.lb-chart::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+.lb-bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; min-width: 42px; flex: 1 1 0; height: 100%; }
+.lb-bar-val { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--parchment-dim); white-space: nowrap; }
+.lb-bar-track { width: 24px; height: 78px; display: flex; align-items: flex-end; }
+.lb-bar { width: 100%; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, var(--sea), rgba(108,140,255,0.3)); box-shadow: 0 0 10px rgba(108,140,255,0.25); transition: height 0.7s cubic-bezier(0.16,1,0.3,1); min-height: 4px; }
+.lb-bar-col.user-bar .lb-bar { background: linear-gradient(180deg, var(--brass), rgba(201,156,81,0.3)); box-shadow: 0 0 12px rgba(201,156,81,0.4); }
+.lb-bar-rank { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--brass-light); }
+.lb-bar-name { font-size: 0.62rem; color: var(--parchment-dim); text-align: center; max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-bar-col.user-bar .lb-bar-name { color: var(--brass-light); font-weight: 600; }
+
 .widget-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 10px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
 .widget-row.user-row { background: rgba(201, 156, 81, 0.1); border: 1px solid var(--brass); }
 .widget-row .rank-user { display: flex; align-items: center; gap: 10px; font-weight: 500; }
@@ -426,7 +443,7 @@ body { padding-top: 30px; }
   font-family: 'JetBrains Mono', monospace;
 }
 .list-popup .popup-close:hover { border-color: var(--brass); color: var(--brass-light); }
-.popup-list { max-height: 65vh; overflow-y: auto; }
+.popup-list { max-height: 65vh; overflow-y: auto; overflow-x: hidden; }
 .popup-list::-webkit-scrollbar { width: 6px; }
 .popup-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
@@ -873,27 +890,53 @@ body.sidebar-collapsed #sidebarCollapseBtn .sb-icon { transform: rotate(180deg);
 
   /* Feature popups opened from the sidebar should feel like full pages
      docked next to the sidebar, not small floating dialogs. */
-  body.has-sidebar .modal-backdrop { left: 172px; padding: 0; align-items: stretch; justify-content: stretch; background: var(--navy-deep); backdrop-filter: none; animation: none !important; }
-  body.has-sidebar .modal-box.list-popup {
-    animation: none !important; box-shadow: none !important; border: none !important; background: transparent !important;
-    max-width: 100% !important; width: 100% !important; height: 100%; border-radius: 0;
-    box-shadow: none; overflow-y: auto;
-    padding: 36px 40px !important;
-  }
-  body.has-sidebar .modal-box.list-popup .widget-hdr h3 {
-    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.6rem;
-    color: var(--parchment); border: none; padding: 0; margin: 0;
-  }
-  body.has-sidebar .modal-box.list-popup .widget-hdr {
-    border: none; align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 22px;
-  }
-  body.has-sidebar .modal-box.list-popup .widget-hdr .popup-close {
-    position: absolute; top: 30px; right: 34px;
-  }
-  body.has-sidebar .modal-box.list-popup .lb-tab-row { margin-bottom: 22px; }
-  body.has-sidebar .modal-box.list-popup .lb-tab {
-    border-radius: 20px; padding: 9px 18px; font-weight: 600;
-  }
+  body.has-sidebar .modal-backdrop { left: 172px; }
+  body.sidebar-collapsed.has-sidebar .modal-backdrop { left: 56px; }
+}
+
+/* Every feature popup (Formulas, Notes, Focus, Badges, Leaderboard,
+   Resolutions, Backup, mocks, etc.) opens as a full page, not a floating
+   dialog — on every screen size, sidebar or no sidebar. Only small
+   confirm/alert dialogs (no .list-popup box inside) keep the centered
+   card look. */
+.modal-backdrop:has(.modal-box.list-popup) {
+  padding: 0; align-items: stretch; justify-content: stretch;
+  background: var(--navy-deep); backdrop-filter: none; animation: none !important;
+}
+.modal-box.list-popup {
+  animation: none !important; box-shadow: none !important; border: none !important; background: transparent !important;
+  max-width: 100% !important; width: 100% !important; height: 100%; border-radius: 0 !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  overflow-y: auto; overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 36px 40px !important;
+}
+/* FIX: rows inside full-page popups (Badges, Leaderboard, Resolutions, etc.)
+   were overflowing horizontally on narrow/docked layouts, which pushed the
+   label text off-canvas so only its tail end was visible ("...ub", "...aster").
+   Letting the row wrap and constraining the label column with min-width:0
+   keeps every row's text inside the visible popup width at any screen size. */
+.widget-row { flex-wrap: wrap; row-gap: 4px; }
+.widget-row .rank-user { min-width: 0; flex: 1 1 220px; overflow-wrap: anywhere; }
+.widget-row .rank-num { flex-shrink: 0; }
+.widget-row .score { flex-shrink: 0; margin-left: auto; }
+.modal-box.list-popup .widget-hdr h3 {
+  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.6rem;
+  color: var(--parchment); border: none; padding: 0; margin: 0;
+}
+.modal-box.list-popup .widget-hdr {
+  border: none; align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 22px;
+}
+.modal-box.list-popup .widget-hdr .popup-close {
+  position: absolute; top: 30px; right: 34px;
+}
+.modal-box.list-popup .lb-tab-row { margin-bottom: 22px; }
+.modal-box.list-popup .lb-tab {
+  border-radius: 20px; padding: 9px 18px; font-weight: 600;
+}
+@media (max-width: 950px) {
+  .modal-box.list-popup { padding: 22px 16px !important; }
+  .modal-box.list-popup .widget-hdr .popup-close { top: 18px; right: 16px; }
 }
 
 /* Formula sheet cards — matches the flat rounded-card reference look */
@@ -902,7 +945,7 @@ body.sidebar-collapsed #sidebarCollapseBtn .sb-icon { transform: rotate(180deg);
 /* FOCUS TIMER — circular ring layout, matching the reference screenshot.
    The popup is docked full-page (via .list-popup rules above), so this
    centers the whole card both horizontally and vertically within it. */
-body.has-sidebar .modal-box.ft-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 460px !important; margin: 0 auto; height: 100%; }
+.modal-box.ft-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 460px !important; margin: 0 auto; height: 100%; }
 .ft-wrap .widget-hdr { width: 100%; max-width: 340px; margin-bottom: 28px !important; }
 .ft-ring-wrap { position: relative; width: 220px; height: 220px; margin: 0 auto 28px; }
 .ft-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -1130,6 +1173,7 @@ body.has-sidebar .fp-subtitle { display: block; }
   <div class="sb-item" data-sb="focus" onclick="sbNav('focus')"><span class="sb-icon">⏱️</span><span class="sb-label">Focus</span></div>
   <div class="sb-item" data-sb="badges" onclick="sbNav('badges')"><span class="sb-icon">🎖️</span><span class="sb-label">Badges</span></div>
   <div class="sb-item" data-sb="leaderboard" onclick="sbNav('leaderboard')"><span class="sb-icon">📊</span><span class="sb-label">Leaderboard</span></div>
+  <div class="sb-item" data-sb="resolutions" onclick="sbNav('resolutions')"><span class="sb-icon">🔧</span><span class="sb-label">Resolutions</span></div>
   <div class="sb-item" data-sb="invite" onclick="sbNav('invite')"><span class="sb-icon">🎉</span><span class="sb-label">Invite friends</span></div>
   <div class="sb-item" data-sb="backup" onclick="sbNav('backup')"><span class="sb-icon">💾</span><span class="sb-label">Backup</span></div>
   <div id="sidebarCollapseBtn" onclick="toggleSidebarCollapse()" title="Collapse sidebar"><span class="sb-icon">⇤</span><span class="sb-label">Collapse</span></div>
@@ -1140,18 +1184,38 @@ if (localStorage.getItem('sidebarCollapsed') === '1') document.body.classList.ad
 function toggleSidebarCollapse() {
   const collapsed = document.body.classList.toggle('sidebar-collapsed');
   localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+  // Belt-and-suspenders: set widths directly via JS as well as CSS classes,
+  // so this can never silently fail to visually collapse regardless of any
+  // other stylesheet rule ordering.
+  const nav = document.getElementById('sidebarNav');
+  const app = document.querySelector('.app');
+  if (window.innerWidth >= 951) {
+    if (nav) nav.style.width = collapsed ? '56px' : '172px';
+    if (app) app.style.marginLeft = collapsed ? '56px' : '172px';
+    document.querySelectorAll('.modal-backdrop').forEach(function(m){ m.style.left = collapsed ? '56px' : '172px'; });
+  }
 }
 window.toggleSidebarCollapse = toggleSidebarCollapse;
+// Apply the persisted state on load too (not just on click).
+(function applyInitialSidebarWidth() {
+  if (window.innerWidth < 951) return;
+  const collapsed = document.body.classList.contains('sidebar-collapsed');
+  const nav = document.getElementById('sidebarNav');
+  const app = document.querySelector('.app');
+  if (nav) nav.style.width = collapsed ? '56px' : '172px';
+  if (app) app.style.marginLeft = collapsed ? '56px' : '172px';
+})();
 function sbNav(which) {
   document.querySelectorAll('#sidebarNav .sb-item').forEach(function(el){ el.classList.toggle('active', el.dataset.sb === which); });
   switch (which) {
-    case 'home': if (typeof goToSubjects === 'function') goToSubjects(); break;
+    case 'home': if (typeof renderHomeScreen === 'function') renderHomeScreen(); break;
     case 'subjects': if (typeof goToSubjects === 'function') goToSubjects(); break;
     case 'mocks': if (typeof openPyqMixedModal === 'function') openPyqMixedModal(); break;
     case 'formulas': if (typeof openFormulaSheet === 'function') openFormulaSheet(); break;
     case 'notes': if (typeof openQuickNotes === 'function') openQuickNotes(); break;
     case 'focus': if (typeof openFocusTimer === 'function') openFocusTimer(); break;
     case 'badges': if (typeof openBadgesPopup === 'function') openBadgesPopup(); break;
+    case 'resolutions': if (typeof openResolutionsPopup === 'function') openResolutionsPopup(); break;
     case 'leaderboard': if (typeof openLeaderboardPopup === 'function') openLeaderboardPopup(); break;
     case 'invite': if (typeof shareInviteLink === 'function') shareInviteLink(); break;
     case 'backup': if (typeof openBackupPopup === 'function') openBackupPopup(); break;
@@ -1179,6 +1243,50 @@ function sbNav(which) {
   </div>
 
   <div class="dashboard-row">
+    <div class="screen" id="screen-home">
+      <div class="title-wrap">
+        <h2 id="homeWelcomeText">Welcome back</h2>
+        <p id="homeSubText">Rank 4 · Explorer Guild</p>
+      </div>
+
+      <div class="home-stats-row" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+        <div class="stat" style="flex:1; min-width:90px;"><span class="num" id="homeXpVal">0</span><span class="lbl">XP</span></div>
+        <div class="stat" style="flex:1; min-width:90px;"><span class="num" id="homeStreakVal">0</span><span class="lbl">Streak</span></div>
+        <div class="stat" style="flex:1; min-width:90px;"><span class="num" id="homeBadgesVal">0</span><span class="lbl">Badges</span></div>
+      </div>
+
+      <div class="resume-hero" onclick="resumePractice()" style="margin-bottom:20px;">
+        <div class="resume-hero-icon">▶️</div>
+        <div class="resume-hero-body">
+          <h3>Continue Practice</h3>
+          <div id="resumePanelStatus">Pick up right where you left off</div>
+        </div>
+        <div class="resume-hero-arrow" id="resumePanelHint">→</div>
+      </div>
+
+      <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <div class="side-panel" style="flex:1; min-width:260px;">
+          <div class="widget-hdr"><h3>Subject progress</h3></div>
+          <div id="homeSubjectProgress"></div>
+        </div>
+        <div class="side-panel leaderboard-panel" onclick="openLeaderboardPopup()" style="flex:1; min-width:260px;">
+          <div class="widget-hdr">
+            <h3>Leaderboard</h3>
+            <div class="live-indicator">
+              <span id="playerCountBadge" style="font-size:0.7rem; font-weight:600; margin-right:10px; color:#2A9D8F; white-space:nowrap;">👥 -- online</span>
+              <span id="backendStatusBadge" style="font-size:0.7rem; font-weight:600;">● Connecting...</span>
+            </div>
+          </div>
+          <div id="leaderboardList"></div>
+          <div class="lb-chart-wrap">
+            <div class="lb-chart-title"><span class="live-dot" style="width:6px;height:6px;"></span> Live XP standings</div>
+            <div class="lb-chart" id="leaderboardChart" onclick="event.stopPropagation();"></div>
+          </div>
+          <div class="panel-hint">Click to open full leaderboard</div>
+        </div>
+      </div>
+    </div>
+
     <div class="screen" id="screen-subjects">
       <!-- CHALLENGE-ACCEPTED BANNER — shown when arriving via a friend's
            "Challenge a Friend" share link (?challenge=...&score=...&from=...).
@@ -1270,28 +1378,7 @@ function sbNav(which) {
       </div>
     </div>
 
-    <div class="side-panels-wrap">
-      <div class="side-panel leaderboard-panel" onclick="openLeaderboardPopup()">
-        <div class="widget-hdr">
-          <h3>Leaderboard</h3>
-          <div class="live-indicator">
-            <span id="playerCountBadge" style="font-size:0.7rem; font-weight:600; margin-right:10px; color:#2A9D8F; white-space:nowrap;">👥 -- online</span>
-            <span id="backendStatusBadge" style="font-size:0.7rem; font-weight:600;">● Connecting...</span>
-          </div>
-        </div>
-        <div id="leaderboardList"></div>
-        <div class="panel-hint">Click to open full leaderboard</div>
-      </div>
-
-      <div class="resume-hero" onclick="resumePractice()">
-        <div class="resume-hero-icon">▶️</div>
-        <div class="resume-hero-body">
-          <h3>Continue Practice</h3>
-          <div id="resumePanelStatus">Pick up right where you left off</div>
-        </div>
-        <div class="resume-hero-arrow" id="resumePanelHint">→</div>
-      </div>
-
+    <div class="side-panels-wrap" style="display:none !important;">
       <!-- BACKUP & RESTORE — deliberately kept OUTSIDE the level-gated
            "Quick Tools" grid below and always visible, even for a brand-new
            user with zero cleared levels. A new install/new device needs to
@@ -1399,6 +1486,10 @@ function sbNav(which) {
       <div class="lb-tab-row">
         <button class="lb-tab active" id="lbTabAll" onclick="setLeaderboardMode('alltime')">🏆 All-time</button>
         <button class="lb-tab" id="lbTabWeek" onclick="setLeaderboardMode('weekly')">📅 This Week</button>
+      </div>
+      <div class="lb-chart-wrap" style="margin-top:0; padding-top:0; border-top:none; margin-bottom:18px;">
+        <div class="lb-chart-title"><span class="live-dot" style="width:6px;height:6px;"></span> Live XP standings — updates automatically</div>
+        <div class="lb-chart" id="leaderboardChartPopup"></div>
       </div>
       <div id="leaderboardPopupList" class="popup-list"></div>
       <div id="leaderboardInactiveWrap" style="display:none; margin-top:10px;">
@@ -3441,6 +3532,9 @@ function renderLeaderboard() {
   buildRows(listEl);
   if (popupEl) buildRows(popupEl);
 
+  renderLeaderboardChart('leaderboardChart', sorted, useWeekly);
+  renderLeaderboardChart('leaderboardChartPopup', sorted, useWeekly);
+
   const inactiveWrap = document.getElementById('leaderboardInactiveWrap');
   const inactiveList = document.getElementById('leaderboardPopupInactiveList');
   const inactiveLabel = document.getElementById('leaderboardInactiveToggleLabel');
@@ -3461,6 +3555,44 @@ function renderLeaderboard() {
   if (countEl) countEl.textContent = countText;
   const countPopupEl = document.getElementById('playerCountBadgePopup');
   if (countPopupEl) countPopupEl.textContent = countText;
+}
+
+// Renders/updates the live XP bar chart for the leaderboard. Called every
+// time renderLeaderboard() runs (i.e. every Firebase 'value' push), so the
+// bars grow/shrink live as XP changes. Existing bar elements are reused
+// (matched by uid/username) rather than rebuilt, so a live update animates
+// smoothly via the .lb-bar CSS transition instead of flashing/rebuilding.
+function renderLeaderboardChart(containerId, sorted, useWeekly) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const top = sorted.slice(0, 10);
+  if (!top.length) { el.innerHTML = ''; return; }
+  const maxVal = Math.max(1, ...top.map(p => useWeekly ? (p.weeklyXp || 0) : p.xp));
+  const trackPx = 78;
+
+  top.forEach((p, idx) => {
+    const val = useWeekly ? (p.weeklyXp || 0) : p.xp;
+    const h = Math.max(4, Math.round((val / maxVal) * trackPx));
+    const rawName = (p.username || '').replace(' (You)', '');
+    const shortName = p.isUser ? 'You' : rawName;
+    const colId = 'lbcol_' + containerId + '_' + idx;
+    let col = document.getElementById(colId);
+    if (!col) {
+      col = document.createElement('div');
+      col.id = colId;
+      col.className = 'lb-bar-col';
+      col.innerHTML = `<span class="lb-bar-val"></span><div class="lb-bar-track"><div class="lb-bar" style="height:0px;"></div></div><span class="lb-bar-rank"></span><span class="lb-bar-name"></span>`;
+      el.appendChild(col);
+    }
+    col.title = `${rawName}: ${val} XP`;
+    col.classList.toggle('user-bar', !!p.isUser);
+    col.querySelector('.lb-bar-val').textContent = val;
+    col.querySelector('.lb-bar').style.height = h + 'px';
+    col.querySelector('.lb-bar-rank').textContent = '#' + (idx + 1);
+    col.querySelector('.lb-bar-name').textContent = shortName;
+  });
+  // Remove any leftover columns from a previous render with more players.
+  while (el.children.length > top.length) el.removeChild(el.lastChild);
 }
 
 function toggleInactiveLeaderboard() {
@@ -6130,7 +6262,8 @@ function startApp() {
   parseIncomingChallenge();
   loadSave();
   applyReferralWelcomeBonusIfEligible();
-  goToSubjects(); 
+  goToSubjects();
+  if (typeof renderHomeScreen === 'function') renderHomeScreen({ skipHistory: true });
   // Safety net: abortGame()/levelComplete() already save on their own, but if
   // someone just closes the tab, kills the app, or backgrounds it mid-level
   // (very common on mobile — switching apps, a phone call, locking the
@@ -6156,7 +6289,15 @@ function startApp() {
   if (window.DB_Engine) {
     window.DB_Engine.listenLeaderboard((leaders) => {
       liveLeaderboard = leaders;
-      if(document.getElementById('screen-subjects').classList.contains('active')) renderLeaderboard();
+      // FIX: the leaderboard panel + chart actually live on screen-home
+      // (not screen-subjects), and the full-leaderboard popup is a modal
+      // overlay that can be open on top of ANY screen — so gate the
+      // re-render on whichever of those is currently visible, instead of
+      // a screen id the leaderboard was never on. Without this, Firebase
+      // pushes were arriving but the "live" board almost never repainted.
+      const homeActive = document.getElementById('screen-home') && document.getElementById('screen-home').classList.contains('active');
+      const popupOpen = document.getElementById('leaderboardPopup') && document.getElementById('leaderboardPopup').classList.contains('show');
+      if (homeActive || popupOpen) renderLeaderboard();
     });
     window.DB_Engine.listenAnnouncement((ann) => { renderAnnouncementBanner(ann); });
     window.DB_Engine.listenRemovalStatus((info) => {
@@ -6650,6 +6791,43 @@ function goToSubjects(navOpts) {
     grid.appendChild(card);
   });
   updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); toggleAdvancedPanels(); renderStreakRiskBanner(); renderBackupReminderBanner(); renderFreshSessionBanner(); renderChallengeBanner(); renderReferralWelcomeToast(); showScreen('screen-subjects', navOpts);
+}
+
+// HOME DASHBOARD — distinct from the Subjects (discipline picker) screen.
+// Shows a welcome header, quick stats, the resume-practice card, per-subject
+// progress bars, and a leaderboard snapshot — matching the reference design.
+function renderHomeScreen(navOpts) {
+  AudioSys.startPeacefulAmbient();
+  document.getElementById('appTitleText').textContent = 'Expedition Hub';
+  setBodyThemeClass('');
+  const nameEl = document.getElementById('homeWelcomeText');
+  if (nameEl) nameEl.textContent = 'Welcome back, ' + (state.explorerName || 'Explorer');
+  const badgeCount = (typeof getEarnedBadges === 'function') ? getEarnedBadges().length : (state.badges ? state.badges.length : 0);
+  const subEl = document.getElementById('homeSubText');
+  if (subEl) subEl.textContent = badgeCount + ' badges earned';
+  const xpEl = document.getElementById('homeXpVal'); if (xpEl) xpEl.textContent = state.xp || 0;
+  const streakEl = document.getElementById('homeStreakVal'); if (streakEl) streakEl.textContent = state.streak || 0;
+  const badgesEl = document.getElementById('homeBadgesVal'); if (badgesEl) badgesEl.textContent = badgeCount;
+
+  const progWrap = document.getElementById('homeSubjectProgress');
+  if (progWrap) {
+    progWrap.innerHTML = DATA.map(sub => {
+      let cleared = 0, total = 0;
+      sub.chapters.forEach(ch => {
+        const p = state.progress[ch.id];
+        cleared += Math.max(0, ((p && p.maxUnlocked) || 1) - 1);
+        total += TOTAL_LEVELS;
+      });
+      const pct = total ? Math.round((cleared / total) * 100) : 0;
+      return `<div style="margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;"><strong>${sub.name}</strong><span>${pct}%</span></div>
+        <div style="background:rgba(255,255,255,0.08); border-radius:8px; height:8px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:var(--brass);"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  updateStats(); renderLeaderboard(); renderResumePanel();
+  showScreen('screen-home', navOpts);
 }
 
 function loadChapters(navOpts) {
