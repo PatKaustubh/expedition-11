@@ -4355,7 +4355,15 @@ const Factory = {
       }
       if (ansIdx < 0) return null; // no gradable correct answer — skip
 
-      const qHtml = `<div>${row.question || ''}</div>`;
+      // A row can have perfectly valid options/correct_option but a blank or
+      // whitespace-only question field (seen in a handful of upstream rows).
+      // Without this check it still passed validation and rendered as a
+      // completely empty question with real, clickable answer options —
+      // confusing and looks exactly like "broken" rendering. Skip it here
+      // the same way the fallback branch below already skips blank rows.
+      const qBody = String(row.question || '').trim();
+      if (!qBody) return null;
+      const qHtml = `<div>${qBody}</div>`;
       let explanation = String(row.explanation || row.solution || '').trim();
       explanation = this.cleanScrapedExplanation(explanation);
       if (this.looksLikeCorruptedMathText(explanation)) {
@@ -4380,7 +4388,7 @@ const Factory = {
       else if (row.image.path) imgUrl = row.image.path;
     }
     if (imgUrl) {
-      qHtml += `<img src="${imgUrl}" alt="JEE question" loading="lazy" style="max-width:100%;border-radius:12px;display:block;margin:0 auto 12px;background:#fff;padding:6px;">`;
+      qHtml += `<img src="${imgUrl}" alt="JEE question" loading="lazy" style="max-width:100%;border-radius:12px;display:block;margin:0 auto 12px;background:#fff;padding:6px;" onerror="this.replaceWith(Object.assign(document.createElement('div'), {className:'ocr-extracted-text', textContent:'Question image failed to load — check your connection and try refreshing.'}))">`;
     }
 
     const textQ = row.question || row.prompt || row.text || row.problem || null;
@@ -6989,6 +6997,24 @@ function goToSubjects(navOpts) {
 // HOME DASHBOARD — distinct from the Subjects (discipline picker) screen.
 // Shows a welcome header, quick stats, the resume-practice card, per-subject
 // progress bars, and a leaderboard snapshot — matching the reference design.
+// Lets the Home screen's "Subject progress" panel expand in place to show
+// per-chapter detail, instead of only ever showing one flat subject-level %.
+function toggleHomeSubjectExpand(subjId) {
+  if (!window._homeExpandedSubjects) window._homeExpandedSubjects = new Set();
+  if (window._homeExpandedSubjects.has(subjId)) window._homeExpandedSubjects.delete(subjId);
+  else window._homeExpandedSubjects.add(subjId);
+  renderHomeScreen();
+}
+function jumpToChapterFromHome(subjId, chapId) {
+  const sub = DATA.find(d => d.id === subjId);
+  const ch = sub && sub.chapters.find(c => c.id === chapId);
+  if (!sub || !ch) return;
+  setBodyThemeClass(sub.theme);
+  state.curSubj = sub;
+  state.curChap = ch;
+  loadLevels();
+}
+
 function renderHomeScreen(navOpts) {
   AudioSys.startPeacefulAmbient();
   document.getElementById('appTitleText').textContent = 'Expedition Hub';
@@ -7009,6 +7035,7 @@ function renderHomeScreen(navOpts) {
     // color for everything — a small thing, but it's what makes this read
     // as a hand-tuned map legend rather than a generic progress widget.
     const subjColors = { math: 'var(--brass)', physics: '#9b8ecb', chemistry: 'var(--sea)', mixed: 'var(--brass-light)' };
+    if (!window._homeExpandedSubjects) window._homeExpandedSubjects = new Set();
     progWrap.innerHTML = DATA.map(sub => {
       let cleared = 0, total = 0;
       sub.chapters.forEach(ch => {
@@ -7018,9 +7045,37 @@ function renderHomeScreen(navOpts) {
       });
       const pct = total ? Math.round((cleared / total) * 100) : 0;
       const color = subjColors[sub.id] || 'var(--brass)';
+      const expanded = window._homeExpandedSubjects.has(sub.id);
+
+      const chapterRows = sub.chapters.map(ch => {
+        const p = state.progress[ch.id];
+        const chCleared = Math.max(0, ((p && p.maxUnlocked) || 1) - 1);
+        const chStars = p && p.stars ? Object.values(p.stars).reduce((a,b)=>a+(b||0),0) : 0;
+        const chPct = Math.round((chCleared / TOTAL_LEVELS) * 100);
+        const status = chCleared === TOTAL_LEVELS ? 'Mastered' : (chCleared === 0 ? 'Not started' : `Level ${chCleared + 1}`);
+        return `<div onclick="event.stopPropagation(); jumpToChapterFromHome('${sub.id}','${ch.id}')"
+             style="display:flex; align-items:center; gap:10px; padding:8px 4px; cursor:pointer; border-radius:3px;"
+             onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom:4px;">
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ch.name}</span>
+              <span style="font-family:'Space Mono',monospace; color:var(--parchment-dim); flex-shrink:0; margin-left:8px;">${chCleared}/${TOTAL_LEVELS}</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06); border-radius:2px; height:3px; overflow:hidden;"><div style="height:100%; width:${chPct}%; background:${color};"></div></div>
+          </div>
+          <span style="font-size:0.68rem; color:var(--parchment-dim); flex-shrink:0; width:70px; text-align:right;">${status}${chStars ? ' · ' + chStars + '★' : ''}</span>
+        </div>`;
+      }).join('');
+
       return `<div style="margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;"><strong>${sub.name}</strong><span style="font-family:'Space Mono',monospace; color:var(--parchment-dim); font-size:0.8rem;">${pct}%</span></div>
-        <div style="background:rgba(255,255,255,0.06); border-radius:2px; height:4px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${color};"></div></div>
+        <div onclick="toggleHomeSubjectExpand('${sub.id}')" style="cursor:pointer; user-select:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; margin-bottom:6px;">
+            <strong style="display:flex; align-items:center; gap:6px;"><span style="display:inline-block; transition:transform 0.15s ease; transform:rotate(${expanded ? '90deg' : '0deg'}); font-size:0.7rem; color:var(--parchment-dim);">▶</span>${sub.name}</strong>
+            <span style="font-family:'Space Mono',monospace; color:var(--parchment-dim); font-size:0.8rem;">${pct}%</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.06); border-radius:2px; height:4px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${color};"></div></div>
+        </div>
+        ${expanded ? `<div style="margin-top:8px; padding-left:16px; border-left:1px solid var(--line);">${chapterRows}</div>` : ''}
       </div>`;
     }).join('');
   }
