@@ -17,23 +17,28 @@
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Public+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Caveat:wght@500;600&display=swap');
 
 :root {
-  --navy: #0c1220; --navy-deep: #05070d;
-  --parchment: #eef2f8; --parchment-dim: #a6b3c9;
-  --ink: #0d121c; --brass: #4fd1c5; --brass-light: #9df1e6;
-  --sea: #6c8cff; --coral: #ff5d8f; --line: rgba(79, 209, 197, 0.35); --violet: #b892ff;
-  --glass: rgba(12, 18, 32, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.14);
+  /* Night-sky indigo, not flat black — and an aged brass/ochre accent
+     instead of the generic neon-teal-on-navy "AI dashboard" default. */
+  --navy: #1a2138; --navy-deep: #12182b;
+  --parchment: #f4efe4; --parchment-dim: #b9b3a2;
+  --ink: #0d121c; --brass: #c99a4b; --brass-light: #e0b768;
+  --sea: #7fa06f; --coral: #c4573f; --line: rgba(244, 239, 228, 0.14); --violet: #9b8ecb;
+  --glass: rgba(26, 33, 56, 0.72);
+  --glass-border: rgba(244, 239, 228, 0.12);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Public Sans', sans-serif; min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
-/* THEMES */
-body.theme-physics { --navy: #131029; --navy-deep: #070613; --brass: #b892ff; --brass-light: #ddc9ff; --sea: #45c8f0; --coral: #ff7ab6; --line: rgba(184, 146, 255, 0.35); }
-body.theme-chemistry { --navy: #0a2420; --navy-deep: #041312; --brass: #34e0a1; --brass-light: #a0f5d3; --sea: #22b8cf; --coral: #ffa14a; --line: rgba(52, 224, 161, 0.35); }
-body.theme-math { --navy: #0c1220; --navy-deep: #05070d; --brass: #4fd1c5; --brass-light: #9df1e6; --sea: #6c8cff; --coral: #ff5d8f; --line: rgba(79, 209, 197, 0.35); }
+/* THEMES — each subject keeps a distinct accent (the way a cartographer
+   would color-code different map layers), just re-hued to fit the new
+   palette: brass/ochre for math, muted violet for physics, moss green for
+   chemistry — no theme uses a neon or candy hue. */
+body.theme-physics { --navy: #201a35; --navy-deep: #14101f; --brass: #9b8ecb; --brass-light: #c3b9e8; --sea: #6f9bb0; --coral: #c15f7a; --line: rgba(155, 142, 203, 0.16); }
+body.theme-chemistry { --navy: #16261f; --navy-deep: #0d1712; --brass: #7fa06f; --brass-light: #a8c398; --sea: #5e9c8f; --coral: #c47a3f; --line: rgba(127, 160, 111, 0.16); }
+body.theme-math { --navy: #1a2138; --navy-deep: #12182b; --brass: #c99a4b; --brass-light: #e0b768; --sea: #7fa06f; --coral: #c4573f; --line: rgba(244, 239, 228, 0.14); }
 
 /* FOCUS MODE — applied to <body> while the Focus Timer is running, so the
    whole app visibly signals "you're in a focus session" rather than just a
@@ -43,7 +48,7 @@ body.focus-active { --navy: #120c08; --navy-deep: #030202; --brass: #ffb454; --b
 body.focus-active { background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); transition: background 0.6s ease; }
 body.focus-active::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; box-shadow: inset 0 0 140px rgba(255, 180, 84, 0.16); animation: focusPulse 4s ease-in-out infinite; }
 @keyframes focusPulse { 0%, 100% { box-shadow: inset 0 0 120px rgba(255, 180, 84, 0.12); } 50% { box-shadow: inset 0 0 170px rgba(255, 180, 84, 0.22); } }
-.focus-mode-banner { position: fixed; top: 30px; left: 0; right: 0; z-index: 4997; display: none; align-items: center; justify-content: center; gap: 10px; padding: 9px 16px; background: linear-gradient(90deg, rgba(255,180,84,0.95), rgba(255,138,91,0.95)); color: #1a0f04; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.5px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
+.focus-mode-banner { position: fixed; top: 30px; left: 0; right: 0; z-index: 4997; display: none; align-items: center; justify-content: center; gap: 10px; padding: 9px 16px; background: linear-gradient(90deg, rgba(255,180,84,0.95), rgba(255,138,91,0.95)); color: #1a0f04; font-family: 'Space Mono', monospace; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.5px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
 body.focus-active .focus-mode-banner { display: flex; }
 body.focus-active { padding-top: 68px; }
 .focus-mode-banner .fmb-time { font-weight: 800; }
@@ -57,8 +62,8 @@ body.focus-active { padding-top: 68px; }
    html2canvas needs to actually capture something (a 0-size or opacity:0
    element captures as blank). */
 #pdfExpRenderHolder { position: fixed; top: 0; left: 0; z-index: -1; pointer-events: none; }
-.pdf-exp-card { width: 640px; box-sizing: border-box; padding: 18px 22px; background: #ffffff; color: #1a2233; font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.75; }
-.pdf-exp-card .pdf-exp-label { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; color: #43837a; margin-bottom: 8px; }
+.pdf-exp-card { width: 640px; box-sizing: border-box; padding: 18px 22px; background: #ffffff; color: #1a2233; font-family: 'Public Sans', sans-serif; font-size: 15px; line-height: 1.75; }
+.pdf-exp-card .pdf-exp-label { font-family: 'Public Sans', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; color: #43837a; margin-bottom: 8px; }
 .pdf-exp-card .pdf-exp-final { margin-top: 10px; font-weight: 700; color: #1e826e; }
 
 /* SHARE/CHALLENGE CARD — rasterized off-screen (same html2canvas approach as
@@ -66,46 +71,46 @@ body.focus-active { padding-top: 68px; }
    status / Instagram stories, so a student's result becomes something worth
    posting rather than just a stat on their own screen. */
 #shareCardRenderHolder { position: fixed; top: 0; left: 0; z-index: -1; pointer-events: none; }
-.share-card { width: 720px; height: 900px; box-sizing: border-box; padding: 56px 44px; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+.share-card { width: 720px; height: 900px; box-sizing: border-box; padding: 56px 44px; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Public Sans', sans-serif; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
 .share-card::before { content: ''; position: absolute; inset: 0; border: 3px solid var(--brass); border-radius: 28px; pointer-events: none; }
-.share-card .sc-brand { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--brass-light); text-align: center; letter-spacing: 0.5px; }
+.share-card .sc-brand { font-family: 'Fraunces', serif; font-size: 1.5rem; color: var(--brass-light); text-align: center; letter-spacing: 0.5px; }
 .share-card .sc-icon { font-size: 5rem; text-align: center; margin: 18px 0; }
-.share-card .sc-chapter { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--parchment); text-align: center; margin: 0 0 6px; line-height: 1.25; }
-.share-card .sc-level { font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: var(--parchment-dim); text-align: center; letter-spacing: 1px; text-transform: uppercase; }
+.share-card .sc-chapter { font-family: 'Fraunces', serif; font-size: 2rem; color: var(--parchment); text-align: center; margin: 0 0 6px; line-height: 1.25; }
+.share-card .sc-level { font-family: 'Space Mono', monospace; font-size: 1rem; color: var(--parchment-dim); text-align: center; letter-spacing: 1px; text-transform: uppercase; }
 .share-card .sc-stars { text-align: center; font-size: 2.6rem; margin: 22px 0; letter-spacing: 8px; }
 .share-card .sc-stars .on { color: var(--brass-light); }
 .share-card .sc-stars .off { color: rgba(255,255,255,0.15); }
 .share-card .sc-stats-row { display: flex; justify-content: center; gap: 40px; margin: 10px 0 30px; }
 .share-card .sc-stat { text-align: center; }
-.share-card .sc-stat .n { font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; font-weight: 700; color: var(--brass-light); display: block; }
+.share-card .sc-stat .n { font-family: 'Space Mono', monospace; font-size: 2.2rem; font-weight: 700; color: var(--brass-light); display: block; }
 .share-card .sc-stat .l { font-size: 0.75rem; color: var(--parchment-dim); text-transform: uppercase; letter-spacing: 1px; }
-.share-card .sc-cta { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--coral); border-top: 1px solid var(--line); padding-top: 24px; }
-.share-card .sc-footer { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--parchment-dim); margin-top: 8px; }
+.share-card .sc-cta { text-align: center; font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--coral); border-top: 1px solid var(--line); padding-top: 24px; }
+.share-card .sc-footer { text-align: center; font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--parchment-dim); margin-top: 8px; }
 body.theme-mixed { --navy: #241129; --navy-deep: #120714; --brass: #ff9a3c; --brass-light: #ffc98a; --sea: #ff6f61; --coral: #f7418a; --line: rgba(255, 154, 60, 0.35); }
 
-.app { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; position: relative; z-index: 10; }
+.app { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; position: relative; z-index: 5500; }
 
 /* DEV-BUILD SCROLLING DISCLAIMER */
 .dev-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 5000; height: 30px; background: rgba(255, 93, 143, 0.16); border-bottom: 1px solid var(--coral); backdrop-filter: blur(6px); overflow: hidden; display: flex; align-items: center; }
 .dev-banner-track { display: inline-flex; white-space: nowrap; animation: devBannerScroll 22s linear infinite; will-change: transform; }
-.dev-banner-track span { display: inline-block; padding: 0 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--coral); }
+.dev-banner-track span { display: inline-block; padding: 0 40px; font-family: 'Space Mono', monospace; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--coral); }
 @keyframes devBannerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-body { padding-top: 30px; --banner-offset: 30px; }
+body { padding-top: 30px; }
 @media (prefers-reduced-motion: reduce) { .dev-banner-track { animation: none; } }
 
 /* BACKGROUND CANVAS */
 #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; }
 
 /* HEADER & TOPBAR */
-.topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border: 1px solid var(--brass); border-radius: 16px; background: var(--glass); margin-bottom: 24px; gap: 10px; flex-wrap: wrap; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border: 1px solid var(--line); border-radius: 4px; background: var(--navy); margin-bottom: 24px; gap: 10px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 12px; }
-.brand-text h1 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0; letter-spacing: 0.5px; color: var(--brass-light); }
-.brand-text p { margin: 0; font-size: 0.75rem; color: var(--parchment-dim); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
-.stats { display: flex; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; align-items: center; }
+.brand-text h1 { font-family: 'Fraunces', serif; font-size: 1.3rem; margin: 0; letter-spacing: 0.5px; color: var(--brass-light); }
+.brand-text p { margin: 0; font-size: 0.75rem; color: var(--parchment-dim); font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
+.stats { display: flex; gap: 20px; font-family: 'Space Mono', monospace; font-size: 0.85rem; align-items: center; }
 .badges-row { display: flex; gap: 4px; cursor: pointer; min-height: 22px; align-items: center; }
 .badge-chip { font-size: 1.2rem; line-height: 1; filter: drop-shadow(0 0 4px rgba(232,195,130,0.4)); }
 .badge-inline { display: inline-flex; gap: 2px; margin-left: 6px; font-size: 0.9rem; vertical-align: middle; }
-.exam-countdown-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line, rgba(201,156,81,0.3)); cursor: pointer; white-space: nowrap; }
+.exam-countdown-chip { font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line, rgba(201,156,81,0.3)); cursor: pointer; white-space: nowrap; }
 .exam-countdown-chip:hover { border-color: var(--brass, #c99c51); }
 .stat { text-align: center; }
 .stat .num { font-size: 1.2rem; font-weight: 700; color: var(--brass-light); display: block; }
@@ -125,7 +130,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .shaking { animation: shake 0.35s ease both; }
 
 .title-wrap { text-align: center; margin-bottom: 30px; padding: 10px 0; }
-.title-wrap h2 { font-family: 'Playfair Display', serif; font-size: 2.4rem; margin: 0 0 10px; color: var(--brass-light); text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+.title-wrap h2 { font-family: 'Fraunces', serif; font-size: 2.4rem; margin: 0 0 10px; color: var(--brass-light); text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
 .title-wrap p { color: var(--parchment-dim); font-size: 1.05rem; margin: 0; line-height: 1.6; }
 
 /* SUBJECT & CHAPTER CARDS */
@@ -134,20 +139,20 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .pyq-banner:hover { border-color: var(--brass, #c99c51); transform: translateY(-2px); }
 .pyq-banner-left { display: flex; align-items: center; gap: 16px; }
 .pyq-banner-icon { font-size: 2rem; }
-.pyq-banner-left h3 { margin: 0 0 2px; font-family: 'Playfair Display', serif; font-size: 1.15rem; }
+.pyq-banner-left h3 { margin: 0 0 2px; font-family: 'Fraunces', serif; font-size: 1.15rem; }
 .pyq-banner-left p { margin: 0; font-size: 0.85rem; color: var(--parchment-dim, #c5bba8); }
-.pyq-banner-cta { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--brass, #c99c51); white-space: nowrap; }
+.pyq-banner-cta { font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--brass, #c99c51); white-space: nowrap; }
 .pyq-subject-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.pyq-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: transparent; color: var(--parchment-dim, #c5bba8); cursor: pointer; transition: all 0.15s; }
+.pyq-chip { font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: transparent; color: var(--parchment-dim, #c5bba8); cursor: pointer; transition: all 0.15s; }
 .pyq-chip.active { background: rgba(42,157,143,0.25); border-color: var(--sea, #2A9D8F); color: #fff; }
 
 /* PYQ subject cards — mirrors .card-item but with a locked overlay */
 .pyq-section-title { display: flex; align-items: center; justify-content: space-between; margin: 30px 0 14px; flex-wrap: wrap; gap: 8px; }
-.pyq-section-title h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0; color: var(--brass-light); }
+.pyq-section-title h3 { font-family: 'Fraunces', serif; font-size: 1.3rem; margin: 0; color: var(--brass-light); }
 .pyq-section-title p { margin: 2px 0 0; font-size: 0.85rem; color: var(--parchment-dim); }
 .pyq-card { position: relative; overflow: hidden; }
-.pyq-card .pyq-lock-badge { position: absolute; top: 14px; right: 14px; font-size: 0.95rem; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border); border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.5px; color: var(--parchment-dim); text-transform: uppercase; }
-.pyq-card .pyq-years-hint { margin-top: -4px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--parchment-dim); letter-spacing: 0.5px; }
+.pyq-card .pyq-lock-badge { position: absolute; top: 14px; right: 14px; font-size: 0.95rem; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border); border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 4px; font-family: 'Space Mono', monospace; font-size: 0.65rem; letter-spacing: 0.5px; color: var(--parchment-dim); text-transform: uppercase; }
+.pyq-card .pyq-years-hint { margin-top: -4px; font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--parchment-dim); letter-spacing: 0.5px; }
 
 /* Under-development notice inside the years modal */
 .pyq-dev-notice { display: flex; align-items: flex-start; gap: 10px; background: rgba(255,180,84,0.1); border: 1px solid rgba(255,180,84,0.35); border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; color: var(--parchment-dim, #c5bba8); margin-bottom: 16px; line-height: 1.5; }
@@ -155,7 +160,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 
 /* Year multiselect chips */
 .pyq-year-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
-.pyq-year-chip { position: relative; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.95rem; padding: 14px 0; width: 84px; text-align: center; border-radius: 12px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: rgba(255,255,255,0.02); color: var(--parchment); cursor: pointer; transition: all 0.15s; opacity: 0.55; }
+.pyq-year-chip { position: relative; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.95rem; padding: 14px 0; width: 84px; text-align: center; border-radius: 12px; border: 1px solid var(--line, rgba(201,156,81,0.3)); background: rgba(255,255,255,0.02); color: var(--parchment); cursor: pointer; transition: all 0.15s; opacity: 0.55; }
 .pyq-year-chip:hover { border-color: var(--brass); opacity: 0.8; }
 .pyq-year-chip.selected { background: rgba(42,157,143,0.22); border-color: var(--sea, #2A9D8F); color: #fff; opacity: 1; }
 .pyq-year-chip .chk { position: absolute; top: 6px; right: 8px; font-size: 0.7rem; }
@@ -166,15 +171,16 @@ body { padding-top: 30px; --banner-offset: 30px; }
 
 /* PYQ modal titles — allow wrapping instead of overflowing the card */
 .modal-box h3.pyq-modal-title { font-size: 1.25rem; line-height: 1.35; text-align: left; white-space: normal; overflow-wrap: break-word; word-break: break-word; margin: 0; flex: 1 1 auto; min-width: 0; max-width: 100%; }
-.card-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px 20px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); text-align: center; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-.card-item:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--brass-light) inset; background: rgba(255,255,255,0.03); }
-.card-item .ico { font-size: 3.2rem; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); margin-bottom: 5px; }
-.card-item h3 { font-family: 'Playfair Display', serif; margin: 0; font-size: 1.4rem; color: var(--parchment); }
+.card-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 30px 20px; border-radius: 4px; background: var(--navy); border: 1px solid var(--line); cursor: pointer; transition: border-color 0.2s ease; text-align: center; }
+.card-item:hover { border-color: var(--brass); background: var(--navy); }
+.card-item .ico { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(201,154,75,0.12); font-size: 1.7rem; margin-bottom: 5px; }
+.card-item .ico svg { width: 26px; height: 26px; }
+.card-item h3 { font-family: 'Fraunces', serif; margin: 0; font-size: 1.4rem; color: var(--parchment); font-weight: 600; }
 .card-item p { margin: 0; font-size: 0.85rem; color: var(--parchment-dim); line-height: 1.5; }
 
 /* LEVELS GRID */
 .levels-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; justify-content: center; }
-.level-btn { padding: 18px; border-radius: 16px; border: 1px solid var(--glass-border); background: var(--glass); color: var(--parchment); font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
+.level-btn { padding: 18px; border-radius: 16px; border: 1px solid var(--glass-border); background: var(--glass); color: var(--parchment); font-family: 'Space Mono', monospace; font-size: 1.15rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
 .level-btn.unlocked { border-color: var(--line); background: rgba(255,255,255,0.02); }
 .level-btn.unlocked:hover { background: rgba(201, 156, 81, 0.1); transform: scale(1.04); border-color: var(--brass-light); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
 .level-btn.locked { opacity: 0.4; cursor: not-allowed; }
@@ -182,9 +188,9 @@ body { padding-top: 30px; --banner-offset: 30px; }
 
 /* GAME UI */
 .path-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-.back-btn { background: var(--glass); border: 1px solid var(--glass-border); color: var(--parchment); border-radius: 10px; padding: 10px 18px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; backdrop-filter: blur(8px); }
+.back-btn { background: var(--glass); border: 1px solid var(--glass-border); color: var(--parchment); border-radius: 10px; padding: 10px 18px; cursor: pointer; font-family: 'Public Sans', sans-serif; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; backdrop-filter: blur(8px); }
 .back-btn:hover { background: rgba(255,255,255,0.05); border-color: var(--parchment-dim); }
-.game-hud { display: flex; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; font-weight: 700; align-items: center; }
+.game-hud { display: flex; gap: 12px; font-family: 'Space Mono', monospace; font-size: 0.95rem; font-weight: 700; align-items: center; }
 .hud-chip { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--glass); display: flex; align-items: center; gap: 8px; backdrop-filter: blur(8px); }
 .hud-chip.prog { color: var(--sea); border-color: rgba(42, 157, 143, 0.3); }
 .hud-chip.lives { color: var(--coral); border-color: rgba(231, 111, 81, 0.3); transition: background 0.3s; }
@@ -195,9 +201,9 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .lockdown-warning { position: fixed; inset: 0; z-index: 9000; display: none; align-items: center; justify-content: center; background: rgba(5,7,13,0.92); backdrop-filter: blur(6px); text-align: center; padding: 24px; }
 .lockdown-warning.show { display: flex; }
 .lockdown-warning-box { max-width: 460px; border: 1px solid var(--coral); border-radius: 18px; padding: 32px 28px; background: var(--glass); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-.lockdown-warning-box h3 { margin: 0 0 12px; font-family: 'Playfair Display', serif; color: var(--coral); font-size: 1.4rem; }
+.lockdown-warning-box h3 { margin: 0 0 12px; font-family: 'Fraunces', serif; color: var(--coral); font-size: 1.4rem; }
 .lockdown-warning-box p { margin: 0 0 20px; color: var(--parchment-dim); line-height: 1.6; font-size: 0.95rem; }
-.lockdown-strike-note { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--coral); margin-bottom: 18px !important; }
+.lockdown-strike-note { font-family: 'Space Mono', monospace; font-size: 0.78rem; color: var(--coral); margin-bottom: 18px !important; }
 
 /* SCORE-TIER PAGE ANIMATIONS */
 .score-fx-layer { position: fixed; inset: 0; z-index: 9500; pointer-events: none; overflow: hidden; }
@@ -207,23 +213,23 @@ body { padding-top: 30px; --banner-offset: 30px; }
 @keyframes screenGlowPulse { 0%, 100% { box-shadow: inset 0 0 0px rgba(79,209,197,0); } 50% { box-shadow: inset 0 0 120px rgba(79,209,197,0.35); } }
 .fx-glow-pulse { animation: screenGlowPulse 1.6s ease-in-out 2; }
 @keyframes fxFadeComfort { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
-.fx-comfort-banner { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); z-index: 9600; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px 28px; font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--parchment); text-align: center; animation: fxFadeComfort 3.2s ease both; backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+.fx-comfort-banner { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); z-index: 9600; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px 28px; font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--parchment); text-align: center; animation: fxFadeComfort 3.2s ease both; backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
 
 /* JEE SOLUTION SHARING — reworked review layout */
 .jee-report-summary-bar { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 18px; }
-.jee-report-summary-bar .srb-pill { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); }
+.jee-report-summary-bar .srb-pill { font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: 700; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); }
 .jee-solution-card { background: rgba(255,255,255,0.035); border: 1px solid var(--glass-border); border-left-width: 4px; border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; text-align: left; }
 .jee-solution-card .jsc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.jee-solution-card .jsc-qnum { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px; color: var(--parchment-dim); text-transform: uppercase; }
+.jee-solution-card .jsc-qnum { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px; color: var(--parchment-dim); text-transform: uppercase; }
 .jee-solution-card .jsc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-.jee-solution-card .jsc-tag { font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; padding: 3px 9px; border-radius: 12px; background: rgba(255,255,255,0.06); color: var(--parchment-dim); border: 1px solid var(--glass-border); }
+.jee-solution-card .jsc-tag { font-size: 0.68rem; font-family: 'Space Mono', monospace; padding: 3px 9px; border-radius: 12px; background: rgba(255,255,255,0.06); color: var(--parchment-dim); border: 1px solid var(--glass-border); }
 .jee-solution-card .jsc-status { font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
 .jee-solution-card .jsc-q { margin-bottom: 10px; }
 .jee-solution-card .jsc-q img { max-width: 100%; border-radius: 10px; background: #fff; padding: 6px; }
 .jee-solution-card .jsc-ans-row { font-size: 0.88rem; margin-bottom: 6px; }
-.jee-solution-card .jsc-exp { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; color: var(--brass-light); border: 1px solid rgba(255,255,255,0.05); margin-top: 8px; line-height: 1.55; max-height: 260px; overflow-y: auto; }
+.jee-solution-card .jsc-exp { font-family: 'Space Mono', monospace; font-size: 0.82rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; color: var(--brass-light); border: 1px solid rgba(255,255,255,0.05); margin-top: 8px; line-height: 1.55; max-height: 260px; overflow-y: auto; }
 .jee-solution-card .jsc-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-.jsc-share-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); color: var(--parchment); cursor: pointer; transition: all .15s; }
+.jsc-share-btn { font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); color: var(--parchment); cursor: pointer; transition: all .15s; }
 .jsc-share-btn:hover { border-color: var(--brass-light, var(--sea)); background: rgba(255,255,255,0.08); }
 
 @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 transparent; } 50% { box-shadow: 0 0 15px rgba(231, 111, 81, 0.6); } }
@@ -238,7 +244,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 
 /* LEVEL COMPLETE / FAIL OVERLAYS */
 .ov-panel { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 24px; padding: 40px 30px; margin-top: 24px; text-align: center; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: fadeIn 0.4s ease; }
-.ov-panel h3 { font-family: 'Playfair Display', serif; font-size: 2rem; margin: 0 0 10px; }
+.ov-panel h3 { font-family: 'Fraunces', serif; font-size: 2rem; margin: 0 0 10px; }
 .ov-panel p { color: var(--parchment-dim); font-size: 1.05rem; line-height: 1.6; margin: 0; }
 .fail-ov h3 { color: var(--coral); }
 .complete-ov h3 { color: var(--sea); }
@@ -250,24 +256,24 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .level-stars-row .star.filled:nth-child(3) { animation-delay: 0.24s; }
 @keyframes starPop { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 
-.new-best-badge { display: block; margin: 6px auto 0; padding: 4px 14px; border-radius: 20px; background: rgba(42, 157, 143, 0.18); border: 1px solid var(--sea); color: var(--sea); font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1.5px; width: fit-content; }
+.new-best-badge { display: block; margin: 6px auto 0; padding: 4px 14px; border-radius: 20px; background: rgba(42, 157, 143, 0.18); border: 1px solid var(--sea); color: var(--sea); font-size: 0.7rem; font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 1.5px; width: fit-content; }
 
 .level-stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 22px 0 6px; }
-.stat-pill { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--parchment); }
+.stat-pill { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 16px; font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--parchment); }
 
 .revive-box { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
 .revive-info { font-size: 0.85rem; color: var(--parchment-dim); margin-bottom: 14px; }
 
 /* QUESTION CARD */
 .card { background: var(--glass); color: var(--parchment); border-radius: 24px; padding: 45px 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1); border: 1px solid var(--glass-border); text-align: center; backdrop-filter: blur(20px); position: relative; }
-.qtag { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; letter-spacing: 1.5px; color: var(--brass-light); text-transform: uppercase; font-weight: 700; margin-bottom: 20px; opacity: 0.9; }
+.qtag { font-family: 'Space Mono', monospace; font-size: 0.85rem; letter-spacing: 1.5px; color: var(--brass-light); text-transform: uppercase; font-weight: 700; margin-bottom: 20px; opacity: 0.9; }
 
 /* Image and equation handlers */
-.qtext { font-size: 1.45rem; line-height: 1.6; margin-bottom: 35px; font-weight: 500; font-family: 'Playfair Display', serif; overflow-x: auto; }
+.qtext { font-size: 1.45rem; line-height: 1.6; margin-bottom: 35px; font-weight: 500; font-family: 'Fraunces', serif; overflow-x: auto; }
 .qtext img, .opt img, .feedback img, .terminal img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 15px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3); background: #fff; padding: 5px; }
 
 .opt-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-.opt { text-align: left; border: 1.5px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px 24px; cursor: pointer; font-size: 1.15rem; color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.8); font-weight: 600; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); font-family: 'JetBrains Mono', monospace; overflow-x: auto; }
+.opt { text-align: left; border: 1.5px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px 24px; cursor: pointer; font-size: 1.15rem; color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.8); font-weight: 600; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); font-family: 'Space Mono', monospace; overflow-x: auto; }
 .opt:hover { border-color: var(--brass-light); background: rgba(201, 156, 81, 0.18); transform: translateX(8px); }
 .opt.correct { border-color: var(--sea) !important; background: rgba(42, 157, 143, 0.35) !important; color: #ffffff !important; box-shadow: 0 0 25px rgba(42, 157, 143, 0.5); }
 .opt.wrong { border-color: var(--coral) !important; background: rgba(231, 111, 81, 0.35) !important; color: #ffffff !important; box-shadow: 0 0 25px rgba(231, 111, 81, 0.5); }
@@ -307,7 +313,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .hud-chip.combo.pop { animation: comboPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
-.xp-float { position: fixed; z-index: 950; font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 1.1rem; color: var(--sea); text-shadow: 0 2px 10px rgba(42,157,143,0.6); pointer-events: none; animation: xpFloat 0.9s ease-out forwards; }
+.xp-float { position: fixed; z-index: 950; font-family: 'Space Mono', monospace; font-weight: 800; font-size: 1.1rem; color: var(--sea); text-shadow: 0 2px 10px rgba(42,157,143,0.6); pointer-events: none; animation: xpFloat 0.9s ease-out forwards; }
 @keyframes xpFloat { 0% { opacity: 0; transform: translateY(0) scale(0.8); } 15% { opacity: 1; transform: translateY(-6px) scale(1.05); } 100% { opacity: 0; transform: translateY(-46px) scale(1); } }
 
 .stat .num.bump { animation: numBump 0.35s ease both; }
@@ -338,18 +344,18 @@ body { padding-top: 30px; --banner-offset: 30px; }
 @media (max-width: 480px) {
   .complete-actions-row .btn { flex: 1 1 100%; min-width: 100%; font-size: 0.95rem; padding: 14px 20px; }
 }
-.btn { border: none; border-radius: 12px; padding: 16px 32px; cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
-.btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
-.btn.primary { background: var(--sea); color: #fff; box-shadow: 0 4px 15px rgba(42, 157, 143, 0.3); }
-.btn.primary:hover { background: #33bdae; }
-.btn.ghost { background: transparent; border: 1px solid var(--parchment-dim); color: var(--parchment); }
-.btn.ghost:hover { background: rgba(255,255,255,0.05); border-color: #fff; }
+.btn { border: none; border-radius: 3px; padding: 14px 28px; cursor: pointer; font-weight: 700; font-family: 'Public Sans', sans-serif; font-size: 0.95rem; letter-spacing: 0.2px; transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease; }
+.btn:hover { }
+.btn.primary { background: var(--brass); color: var(--ink); border: 1px solid var(--brass); }
+.btn.primary:hover { background: var(--brass-light); border-color: var(--brass-light); }
+.btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--parchment); }
+.btn.ghost:hover { background: rgba(255,255,255,0.03); border-color: var(--brass); color: var(--brass-light); }
 .btn.danger { background: var(--coral); color: white; box-shadow: 0 4px 15px rgba(231, 111, 81, 0.3); }
 .btn.danger:hover { background: #f2866b; }
 
 /* SYSTEM DIALOG SELECTS */
 .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; text-align: left; }
-.form-group label { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--brass-light); text-transform: uppercase; letter-spacing: 1px; }
+.form-group label { font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--brass-light); text-transform: uppercase; letter-spacing: 1px; }
 .form-group select, .form-group textarea, .form-group input { background: #0b1320 !important; border: 1px solid var(--brass); border-radius: 12px; padding: 14px; color: #ffffff !important; font-size: 1rem; outline: none; transition: border-color 0.3s; width: 100%; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
 .form-group select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'><path d='M1 1L7 7L13 1' stroke='%23c99c51' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") !important; background-repeat: no-repeat !important; background-position: right 16px center !important; background-size: 14px 9px !important; padding-right: 44px !important; }
 .form-group select option { background-color: #0b1320 !important; color: #ffffff !important; padding: 8px; }
@@ -361,7 +367,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .palette-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-height: 250px; overflow-y: auto; margin-bottom: 25px; padding-right: 5px; }
 .palette-grid::-webkit-scrollbar { width: 8px; }
 .palette-grid::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
-.palette-btn { width: 44px; height: 44px; border-radius: 10px; background: rgba(255,255,255,0.05); color: var(--parchment); border: 1px solid var(--glass-border); cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; transition: all 0.15s; }
+.palette-btn { width: 44px; height: 44px; border-radius: 10px; background: rgba(255,255,255,0.05); color: var(--parchment); border: 1px solid var(--glass-border); cursor: pointer; font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 600; transition: all 0.15s; }
 .palette-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
 .palette-btn.answered { background: var(--sea); border-color: var(--sea); color: #fff; box-shadow: 0 0 15px rgba(42, 157, 143, 0.4); }
 .palette-btn.current { outline: 2px solid var(--brass-light); outline-offset: 3px; background: rgba(255,255,255,0.1); }
@@ -369,35 +375,19 @@ body { padding-top: 30px; --banner-offset: 30px; }
 /* LEADERBOARD & RESOLUTION PANELS */
 .widget-panel { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 20px; }
 .widget-hdr { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 16px; }
-.widget-hdr h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0; color: var(--brass-light); flex-shrink: 0; }
-.live-indicator { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; color: var(--sea); font-weight: 700; letter-spacing: 1px; }
+.widget-hdr h3 { font-family: 'Fraunces', serif; font-size: 1.3rem; margin: 0; color: var(--brass-light); flex-shrink: 0; font-weight: 600; }
+.widget-hdr h3::before { content: '§'; color: var(--brass); margin-right: 8px; font-family: 'Space Mono', monospace; font-size: 0.85em; opacity: 0.85; }
+.live-indicator { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-family: 'Space Mono', monospace; font-size: 0.7rem; text-transform: uppercase; color: var(--sea); font-weight: 700; letter-spacing: 1px; }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--sea); animation: pulseGreen 1.2s infinite; }
 @keyframes pulseGreen { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.4; } }
-
-/* LIVE LEADERBOARD BAR CHART — updates in place (no rebuild flash) as
-   Firebase pushes new leaderboard values, via CSS height/transform
-   transitions rather than DOM replacement of the bars themselves. */
-.lb-chart-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
-.lb-chart-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; color: var(--parchment-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-.lb-chart { display: flex; align-items: flex-end; gap: 10px; height: 130px; overflow-x: auto; overflow-y: hidden; padding: 4px 2px 2px; }
-.lb-chart::-webkit-scrollbar { height: 5px; }
-.lb-chart::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
-.lb-bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; min-width: 42px; flex: 1 1 0; height: 100%; }
-.lb-bar-val { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--parchment-dim); white-space: nowrap; }
-.lb-bar-track { width: 24px; height: 78px; display: flex; align-items: flex-end; }
-.lb-bar { width: 100%; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, var(--sea), rgba(108,140,255,0.3)); box-shadow: 0 0 10px rgba(108,140,255,0.25); transition: height 0.7s cubic-bezier(0.16,1,0.3,1); min-height: 4px; }
-.lb-bar-col.user-bar .lb-bar { background: linear-gradient(180deg, var(--brass), rgba(201,156,81,0.3)); box-shadow: 0 0 12px rgba(201,156,81,0.4); }
-.lb-bar-rank { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--brass-light); }
-.lb-bar-name { font-size: 0.62rem; color: var(--parchment-dim); text-align: center; max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-bar-col.user-bar .lb-bar-name { color: var(--brass-light); font-weight: 600; }
 
 .widget-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 10px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
 .widget-row.user-row { background: rgba(201, 156, 81, 0.1); border: 1px solid var(--brass); }
 .widget-row .rank-user { display: flex; align-items: center; gap: 10px; font-weight: 500; }
-.widget-row .rank-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--brass-light); min-width: 24px; }
-.widget-row .score { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--sea); }
+.widget-row .rank-num { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass-light); min-width: 24px; }
+.widget-row .score { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--sea); }
 
-.resolution-tag { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+.resolution-tag { font-size: 0.7rem; font-family: 'Space Mono', monospace; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
 .resolution-tag.pending { background: rgba(231, 111, 81, 0.15); color: var(--coral); border: 1px solid rgba(231, 111, 81, 0.3); }
 .resolution-tag.resolved { background: rgba(42, 157, 143, 0.15); color: var(--sea); border: 1px solid rgba(42, 157, 143, 0.3); }
 
@@ -405,17 +395,17 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .intro-modal { position: fixed; inset: 0; background: var(--navy-deep); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .intro-bg { position: absolute; inset: 0; background-image: radial-gradient(circle at 50% 0%, rgba(201, 156, 81, 0.15), transparent 60%); pointer-events: none; }
 .intro-content { position: relative; z-index: 1; text-align: center; max-width: 600px; padding: 40px; }
-.intro-content h1 { font-family: 'Playfair Display', serif; font-size: 4rem; color: var(--parchment); margin: 0 0 10px; text-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.intro-content h1 { font-family: 'Fraunces', serif; font-size: 4rem; color: var(--parchment); margin: 0 0 10px; text-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 .intro-content h1 span { color: var(--brass-light); }
 .intro-content p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 30px; color: var(--parchment-dim); }
 .intro-form { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; margin-bottom: 30px; backdrop-filter: blur(10px); }
-.intro-input { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--brass); border-radius: 12px; padding: 14px 20px; width: 100%; color: #fff; font-size: 1.1rem; outline: none; margin-bottom: 12px; text-align: center; font-family: 'Inter', sans-serif; }
+.intro-input { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--brass); border-radius: 12px; padding: 14px 20px; width: 100%; color: #fff; font-size: 1.1rem; outline: none; margin-bottom: 12px; text-align: center; font-family: 'Public Sans', sans-serif; }
 .intro-input:focus { border-color: var(--brass-light); box-shadow: 0 0 10px rgba(201, 156, 81, 0.3); }
-.intro-btn { background: linear-gradient(135deg, var(--brass), #e8c382); color: var(--navy-deep); border: none; padding: 18px 45px; font-size: 1.3rem; font-family: 'Inter', sans-serif; font-weight: 700; border-radius: 40px; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 30px rgba(201, 156, 81, 0.3); width: 100%; }
+.intro-btn { background: linear-gradient(135deg, var(--brass), #e8c382); color: var(--navy-deep); border: none; padding: 18px 45px; font-size: 1.3rem; font-family: 'Public Sans', sans-serif; font-weight: 700; border-radius: 40px; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 30px rgba(201, 156, 81, 0.3); width: 100%; }
 .intro-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(201, 156, 81, 0.5); filter: brightness(1.1); }
 
 /* RESET MODAL */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(5, 9, 20, 0.75); backdrop-filter: blur(6px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(5, 9, 20, 0.75); backdrop-filter: blur(6px); z-index: 5200; display: none; align-items: center; justify-content: center; padding: 20px; }
 /* Full-window mode for the PYQ practice quiz: instead of a small centered
    popup box, the modal box expands to fill the whole viewport so it reads
    as its own screen rather than an overlay dialog. */
@@ -423,8 +413,9 @@ body { padding-top: 30px; --banner-offset: 30px; }
 #pyqViewerModal.pyq-fullscreen .modal-box { max-width: 100% !important; width: 100%; height: 100%; max-height: 100%; border-radius: 0; margin: 0; display: flex; flex-direction: column; }
 #pyqViewerModal.pyq-fullscreen .popup-list { flex: 1 1 auto; max-height: none; overflow-y: auto; }
 .modal-backdrop.show { display: flex; }
-.modal-box { background: var(--glass); border: 1px solid var(--brass); border-radius: 20px; padding: 36px 30px; max-width: 420px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(20px); }
-.modal-box h3 { font-family: 'Playfair Display', serif; color: var(--coral); font-size: 1.6rem; margin: 0 0 14px; }
+.modal-box { background: var(--glass); border: 1px solid var(--line); border-radius: 6px; padding: 34px 30px; max-width: 420px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.45); backdrop-filter: blur(20px); }
+.modal-box h3 { font-family: 'Fraunces', serif; color: var(--brass-light); font-weight: 700; text-shadow: none; }
+.modal-box h3 { font-family: 'Fraunces', serif; color: var(--coral); font-size: 1.6rem; margin: 0 0 14px; }
 .modal-box p { color: var(--parchment-dim); font-size: 1rem; line-height: 1.6; margin: 0 0 26px; }
 
 .modal-box.list-popup {
@@ -440,10 +431,10 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .list-popup .popup-close {
   background: none; border: 1px solid var(--line); color: var(--parchment-dim);
   border-radius: 8px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Space Mono', monospace;
 }
 .list-popup .popup-close:hover { border-color: var(--brass); color: var(--brass-light); }
-.popup-list { max-height: 65vh; overflow-y: auto; overflow-x: hidden; }
+.popup-list { max-height: 65vh; overflow-y: auto; }
 .popup-list::-webkit-scrollbar { width: 6px; }
 .popup-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
@@ -476,19 +467,17 @@ body { padding-top: 30px; --banner-offset: 30px; }
 }
 
 .side-panel {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
+  background: var(--navy);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 22px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   position: relative;
 }
 
 /* Compact 2-up grid for the smaller feature widgets so they stop reading as
    one long scrolling list. Leaderboard stays full-width above the grid. */
 .tools-section-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -617,15 +606,30 @@ body { padding-top: 30px; --banner-offset: 30px; }
   align-items: center;
   gap: 16px;
   padding: 18px 22px;
-  border-radius: 18px;
+  border-radius: 4px;
   cursor: pointer;
-  background: linear-gradient(135deg, rgba(79,209,197,0.16), rgba(108,140,255,0.10));
-  border: 1px solid var(--line, rgba(79,209,197,0.35));
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  transition: border-color 0.25s ease, transform 0.2s ease;
+  background: var(--navy);
+  border: 1px solid var(--line, rgba(244,239,228,0.14));
+  position: relative;
+  transition: border-color 0.2s ease;
 }
-.resume-hero:hover { border-color: var(--brass); transform: translateY(-2px); }
+.resume-hero::before {
+  content: 'CONTINUE'; position: absolute; top: -9px; left: 22px;
+  background: var(--brass); color: var(--ink); font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; padding: 3px 8px;
+  transform: rotate(-2deg); border-radius: 2px;
+}
+.resume-hero:hover { border-color: var(--brass); }
 .resume-hero-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(201,154,75,0.12);
+}
   flex-shrink: 0;
   width: 46px;
   height: 46px;
@@ -639,7 +643,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .resume-hero-body { flex: 1 1 auto; min-width: 0; }
 .resume-hero-body h3 {
   margin: 0 0 3px;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.05rem;
   color: var(--brass-light);
 }
@@ -665,7 +669,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .lb-tab-row { display: flex; gap: 8px; margin-bottom: 14px; }
 .lb-tab {
   flex: 1 1 auto;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 0.78rem;
   font-weight: 600;
   padding: 9px 12px;
@@ -687,31 +691,31 @@ body { padding-top: 30px; --banner-offset: 30px; }
   font-size: 0.72rem;
   color: var(--parchment-dim);
   margin-top: 12px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Space Mono', monospace;
   animation: pulseOpacity 2s infinite;
 }
 
 @keyframes pulseOpacity { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-.side-panel { cursor: pointer; transition: box-shadow 0.25s ease, border-color 0.25s ease; }
-.side-panel:hover { box-shadow: 0 14px 40px rgba(0,0,0,0.5); border-color: var(--brass); }
+.side-panel { cursor: pointer; transition: border-color 0.2s ease; }
+.side-panel:hover { border-color: var(--brass); }
 
 
 /* --- Level progression polish (added) --- */
-.crumbs { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:0.8px; text-transform:uppercase; color:var(--parchment-dim); margin: 0 0 12px; }
+.crumbs { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-family:'Space Mono',monospace; font-size:0.72rem; letter-spacing:0.8px; text-transform:uppercase; color:var(--parchment-dim); margin: 0 0 12px; }
 .crumbs .sep { opacity:0.5; }
 .crumbs .now { color: var(--brass-light); }
 
 .chap-progress { margin-top: 10px; }
 .chap-progress .bar { position: relative; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; border: 1px solid var(--glass-border); }
 .chap-progress .fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, var(--sea), var(--brass-light)); border-radius: 999px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 12px color-mix(in oklab, var(--brass-light) 45%, transparent); }
-.chap-progress .meta { display:flex; justify-content:space-between; margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--parchment-dim); letter-spacing:0.5px; }
+.chap-progress .meta { display:flex; justify-content:space-between; margin-top:6px; font-family:'Space Mono',monospace; font-size:0.7rem; color: var(--parchment-dim); letter-spacing:0.5px; }
 .chap-progress .meta .pct { color: var(--brass-light); font-weight: 700; }
 
 .level-progress-panel { display:flex; flex-direction:column; gap:8px; padding: 14px 16px; margin: 4px 0 18px; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
 .level-progress-panel .row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-.level-progress-panel .title { font-family:'Playfair Display',serif; font-size:1rem; color: var(--parchment); }
-.level-progress-panel .stat { font-family:'JetBrains Mono',monospace; font-size:0.75rem; color: var(--parchment-dim); }
+.level-progress-panel .title { font-family:'Fraunces',serif; font-size:1rem; color: var(--parchment); }
+.level-progress-panel .stat { font-family:'Space Mono',monospace; font-size:0.75rem; color: var(--parchment-dim); }
 .level-progress-panel .stat b { color: var(--brass-light); }
 .level-progress-panel .bar { position: relative; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
 .level-progress-panel .fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, var(--sea), var(--brass-light)); border-radius: 999px; transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -719,7 +723,7 @@ body { padding-top: 30px; --banner-offset: 30px; }
 /* Level dot connector strip — visible progression at a glance */
 .level-dots { display:flex; gap:6px; align-items:center; overflow-x:auto; padding: 4px 2px 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .level-dots::-webkit-scrollbar { display: none; }
-.level-dots .dot { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; display:grid; place-items:center; font-size: 0.62rem; font-family:'JetBrains Mono',monospace; font-weight:700; background: rgba(255,255,255,0.04); color: var(--parchment-dim); border: 1px solid var(--glass-border); position: relative; }
+.level-dots .dot { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; display:grid; place-items:center; font-size: 0.62rem; font-family:'Space Mono',monospace; font-weight:700; background: rgba(255,255,255,0.04); color: var(--parchment-dim); border: 1px solid var(--glass-border); position: relative; }
 .level-dots .dot.done { background: linear-gradient(135deg, var(--sea), var(--brass)); color: var(--navy-deep); border-color: transparent; box-shadow: 0 0 8px color-mix(in oklab, var(--brass) 50%, transparent); }
 .level-dots .dot.current { background: rgba(255,255,255,0.08); color: var(--brass-light); border-color: var(--brass-light); animation: pulseDot 1.6s ease-in-out infinite; }
 .level-dots .connector { flex: 0 0 auto; width: 10px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; }
@@ -784,25 +788,36 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .install-nudge.show { transform: translate(-50%, 0); }
 .install-nudge .in-icon { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
 .install-nudge .in-body { flex: 1; min-width: 0; }
-.install-nudge .in-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--brass-light, #e8c382); margin: 0 0 4px; }
-.install-nudge .in-sub { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--parchment-dim, #a6b3c9); margin: 0 0 10px; line-height: 1.4; }
+.install-nudge .in-title { font-family: 'Public Sans', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--brass-light, #e8c382); margin: 0 0 4px; }
+.install-nudge .in-sub { font-family: 'Public Sans', sans-serif; font-size: 0.8rem; color: var(--parchment-dim, #a6b3c9); margin: 0 0 10px; line-height: 1.4; }
 .install-nudge .in-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.install-nudge button { font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600; border-radius: 10px; padding: 7px 12px; cursor: pointer; border: 1px solid transparent; }
+.install-nudge button { font-family: 'Public Sans', sans-serif; font-size: 0.78rem; font-weight: 600; border-radius: 10px; padding: 7px 12px; cursor: pointer; border: 1px solid transparent; }
 .install-nudge .in-primary { background: var(--brass, #c99c51); color: #14100a; }
 .install-nudge .in-secondary { background: transparent; border-color: var(--glass-border, rgba(255,255,255,0.2)); color: var(--parchment-dim, #a6b3c9); }
 .install-nudge .in-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--parchment-dim, #a6b3c9); font-size: 1rem; padding: 2px 6px; }
 .install-nudge .in-steps { margin: 6px 0 10px; padding-left: 18px; font-size: 0.78rem; color: var(--parchment-dim, #a6b3c9); line-height: 1.5; }
 @media (max-width: 480px) { .install-nudge { bottom: 12px; } }
 .install-nudge .in-benefits { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.install-nudge .in-benefits li { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--parchment-dim, #a6b3c9); line-height: 1.35; }
+.install-nudge .in-benefits li { font-family: 'Public Sans', sans-serif; font-size: 0.78rem; color: var(--parchment-dim, #a6b3c9); line-height: 1.35; }
 
 /* ===================== DASHBOARD VISUAL REFRESH ===================== */
-.topbar { border-radius: 18px; padding: 14px 20px; }
+
+/* Subtle paper-grain overlay — the single biggest "this was designed for a
+   screen, not printed" tell is a perfectly flat gradient background. A faint
+   noise texture over the whole app breaks that up without being visible as
+   a "texture" per se — it just reads as less synthetic. */
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  opacity: 0.035; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.topbar { border-radius: 4px; padding: 14px 20px; }
 .stats { gap: 10px; }
 .stat {
-  background: rgba(255,255,255,0.045);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 8px 16px;
   min-width: 64px;
 }
@@ -810,58 +825,76 @@ body { padding-top: 30px; --banner-offset: 30px; }
 .stat .lbl { font-size: 0.6rem; letter-spacing: 0.5px; margin-top: 2px; }
 
 .resume-hero {
-  background: linear-gradient(90deg, rgba(79,209,197,0.14), rgba(79,209,197,0.02));
-  border: 1px solid rgba(79,209,197,0.28) !important;
-  border-radius: 16px !important;
+  background: var(--navy) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 4px !important;
 }
-.resume-hero-body h3 { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1rem; }
+.resume-hero-body h3 { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.1rem; }
 
 .side-panel {
-  background: rgba(255,255,255,0.045) !important;
-  border: 1px solid rgba(255,255,255,0.06) !important;
-  border-radius: 14px !important;
+  background: var(--glass) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 4px !important;
   box-shadow: none !important;
 }
 .side-panel:hover { border-color: var(--brass) !important; }
-.widget-hdr h3 { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.95rem; }
-.tools-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; color: var(--parchment-dim); margin: 18px 0 10px; }
+.widget-hdr h3 { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.05rem; }
+.tools-section-label { font-family: 'Space Mono', monospace; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; color: var(--parchment-dim); margin: 18px 0 10px; }
 
 .subject-card, .chapter-card, .level-card {
-  background: rgba(255,255,255,0.04) !important;
-  border-radius: 16px !important;
+  background: var(--glass) !important;
+  border-radius: 4px !important;
 }
 #sidebarNav { display: none; }
 @media (min-width: 951px) {
   #sidebarNav {
     display: flex; flex-direction: column; gap: 2px;
-    position: fixed; top: var(--banner-offset, 30px); left: 0; bottom: 0; z-index: 30;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 30;
     width: 172px; padding: 20px 14px;
-    background: rgba(5,7,13,0.9); backdrop-filter: blur(12px);
-    border-right: 1px solid rgba(255,255,255,0.07);
+    background: var(--navy-deep); backdrop-filter: blur(4px);
+    border-right: 1px solid var(--line, rgba(244,239,228,0.14));
     box-sizing: border-box; overflow-y: auto;
-    transition: width 0.2s ease, padding 0.2s ease, top 0.2s ease;
+    transition: width 0.2s ease, padding 0.2s ease;
   }
-  body.has-sidebar .app { margin-left: 172px; max-width: 1100px; transition: margin-left 0.2s ease; }
+  body.has-sidebar .app { margin-left: max(172px, calc(50vw - 464px)); max-width: 1100px; transition: margin-left 0.2s ease; }
 
   /* COLLAPSED STATE — icon-only rail. Toggled via #sidebarCollapseBtn,
      persisted in localStorage so it survives reloads. */
   body.sidebar-collapsed #sidebarNav { width: 56px; padding: 20px 8px; }
-  body.sidebar-collapsed .app { margin-left: 56px; }
+  body.sidebar-collapsed .app { margin-left: max(56px, calc(50vw - 522px)); }
   body.sidebar-collapsed #sidebarNav .sb-brand span,
   body.sidebar-collapsed #sidebarNav .sb-label { display: none; }
   body.sidebar-collapsed #sidebarNav .sb-brand { justify-content: center; padding: 0; }
   body.sidebar-collapsed #sidebarNav .sb-item { justify-content: center; padding: 9px 0; }
-  body.sidebar-collapsed .modal-backdrop, body.sidebar-collapsed.has-sidebar .modal-backdrop { left: 56px; }
+  body.sidebar-collapsed .modal-backdrop:has(.list-popup), body.sidebar-collapsed.has-sidebar .modal-backdrop:has(.list-popup) { left: 56px; }
 }
+/* JEE MOCK LOCKDOWN — the left sidebar must not be visible/usable during a
+   timed mock (it's a proctored full-screen exam, not a normal browsing
+   screen). Wins over the normal has-sidebar layout regardless of collapse
+   state or viewport width. */
+body.exam-lockdown-active #sidebarNav { display: none !important; }
+body.exam-lockdown-active .app,
+body.exam-lockdown-active.has-sidebar .app,
+body.exam-lockdown-active.sidebar-collapsed .app { margin-left: 0 !important; max-width: 100% !important; }
+body.exam-lockdown-active .modal-backdrop,
+body.exam-lockdown-active.has-sidebar .modal-backdrop { left: 0 !important; }
 #sidebarNav .sb-brand { display: flex; align-items: center; gap: 8px; margin-bottom: 22px; padding: 0 6px; }
-#sidebarNav .sb-brand .sb-logo { width: 28px; height: 28px; border-radius: 8px; background: #0b1320; border: 1px solid #c99c51; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #e8c382; font-weight: 700; flex-shrink: 0; }
-#sidebarNav .sb-brand span { font-size: 0.82rem; font-weight: 600; color: var(--parchment); }
-#sidebarNav .sb-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; color: var(--parchment-dim); font-size: 0.78rem; cursor: pointer; border-left: 2px solid transparent; background: none; }
-#sidebarNav .sb-item:hover { background: rgba(255,255,255,0.05); color: var(--parchment); }
-#sidebarNav .sb-item.active { background: rgba(79,209,197,0.14); color: var(--brass-light); border-left-color: var(--brass); font-weight: 600; }
-#sidebarNav .sb-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
-#sidebarCollapseBtn { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 10px; border-radius: 9px; color: var(--parchment-dim); font-size: 0.75rem; cursor: pointer; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-#sidebarCollapseBtn:hover { color: var(--parchment); background: rgba(255,255,255,0.06); }
+#sidebarNav .sb-brand .sb-logo { width: 28px; height: 28px; border-radius: 50%; background: var(--ink); border: 1.5px solid var(--brass); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--brass-light); font-weight: 700; flex-shrink: 0; font-family: 'Space Mono', monospace; transform: rotate(-4deg); position: relative; }
+#sidebarNav .sb-brand .sb-logo::after { content: ''; position: absolute; top: -4px; left: 50%; width: 1px; height: 4px; background: var(--brass); }
+#sidebarNav .sb-brand:hover .sb-logo { transform: rotate(0deg); transition: transform 0.3s ease; }
+#sidebarNav .sb-brand span { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 700; color: var(--brass-light); letter-spacing: 0.3px; }
+#sidebarNav .sb-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 4px; color: var(--parchment-dim); font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.3px; cursor: pointer; border-left: 2px solid transparent; background: none; position: relative; }
+#sidebarNav .sb-item:hover { background: rgba(255,255,255,0.04); color: var(--parchment); }
+#sidebarNav .sb-item.active { background: rgba(0,0,0,0.18); color: var(--brass-light); border-left-color: transparent; font-weight: 600; }
+#sidebarNav .sb-item.active::before {
+  content: ''; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 3px;
+  background: var(--brass);
+  clip-path: polygon(0% 4%, 100% 0%, 100% 100%, 0% 96%);
+}
+#sidebarNav .sb-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0.8; color: var(--parchment-dim); }
+#sidebarNav .sb-item:hover .sb-icon, #sidebarNav .sb-item.active .sb-icon { opacity: 1; color: var(--brass-light); }
+#sidebarCollapseBtn { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 10px; border-radius: 4px; color: var(--parchment-dim); font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.3px; cursor: pointer; background: none; border-top: 1px solid var(--line, rgba(255,255,255,0.08)); }
+#sidebarCollapseBtn:hover { color: var(--brass-light); }
 body.sidebar-collapsed #sidebarCollapseBtn .sb-label { display: none; }
 body.sidebar-collapsed #sidebarCollapseBtn .sb-icon { transform: rotate(180deg); }
 
@@ -871,6 +904,7 @@ body.sidebar-collapsed #sidebarCollapseBtn .sb-icon { transform: rotate(180deg);
    reachable via the left nav (Formulas, Notes, Focus, Badges, Invite,
    Backup) or from within a subject/level. */
 @media (min-width: 951px) {
+  body.has-sidebar .topbar { display: none !important; }
   body.has-sidebar .tools-section-label,
   body.has-sidebar #advancedPanelsGrid,
   body.has-sidebar .backup-panel,
@@ -889,77 +923,67 @@ body.sidebar-collapsed #sidebarCollapseBtn .sb-icon { transform: rotate(180deg);
   body.has-sidebar .side-panels-wrap { display: none !important; }
 
   /* Feature popups opened from the sidebar should feel like full pages
-     docked next to the sidebar, not small floating dialogs. */
-  body.has-sidebar .modal-backdrop { left: 172px; }
-  body.sidebar-collapsed.has-sidebar .modal-backdrop { left: 56px; }
+     docked next to the sidebar, not small floating dialogs. Small confirm
+     dialogs (Switch Player, Reset Progress, Submit Exam, etc.) are NOT
+     list-popups, so they're deliberately excluded here and stay centered
+     over the whole screen — that's the correct pattern for a yes/no prompt. */
+  body.has-sidebar .modal-backdrop:has(.list-popup) { left: 172px; padding: 0; align-items: stretch; justify-content: stretch; background: var(--navy-deep); backdrop-filter: none; animation: none !important; }
+  body.sidebar-collapsed .modal-backdrop:has(.list-popup) { left: 56px; }
+  body.has-sidebar .modal-box.list-popup {
+    animation: none !important; box-shadow: none !important; border: none !important; background: transparent !important;
+    max-width: 100% !important; width: 100% !important; height: 100%; border-radius: 0 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    overflow-y: auto;
+    padding: 36px 40px !important;
+  }
+  body.has-sidebar .modal-box.list-popup .widget-hdr h3 {
+    font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.9rem;
+    color: var(--brass-light); border: none; padding: 0; margin: 0;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  body.has-sidebar .modal-box.list-popup .widget-hdr {
+    border: none; align-items: flex-start; flex-direction: column; gap: 6px; margin-bottom: 26px;
+  }
+  body.has-sidebar .modal-box.list-popup .widget-hdr .popup-close {
+    position: absolute; top: 30px; right: 34px;
+  }
+  body.has-sidebar .modal-box.list-popup .lb-tab-row { margin-bottom: 22px; }
+  body.has-sidebar .modal-box.list-popup .lb-tab {
+    border-radius: 4px; padding: 9px 18px; font-family: 'Space Mono', monospace; font-weight: 600; letter-spacing: 0.3px;
+  }
 }
 
-/* Every feature popup (Formulas, Notes, Focus, Badges, Leaderboard,
-   Resolutions, Backup, mocks, etc.) opens as a full page, not a floating
-   dialog — on every screen size, sidebar or no sidebar. Only small
-   confirm/alert dialogs (no .list-popup box inside) keep the centered
-   card look. */
-.modal-backdrop:has(.modal-box.list-popup) {
-  padding: 0; align-items: stretch; justify-content: stretch;
-  background: var(--navy-deep); backdrop-filter: none; animation: none !important;
-}
-.modal-box.list-popup {
-  animation: none !important; box-shadow: none !important; border: none !important; background: transparent !important;
-  max-width: 100% !important; width: 100% !important; height: 100%; border-radius: 0 !important;
-  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-  overflow-y: auto; overflow-x: hidden;
-  box-sizing: border-box;
-  padding: 36px 40px !important;
-}
-/* FIX: rows inside full-page popups (Badges, Leaderboard, Resolutions, etc.)
-   were overflowing horizontally on narrow/docked layouts, which pushed the
-   label text off-canvas so only its tail end was visible ("...ub", "...aster").
-   Letting the row wrap and constraining the label column with min-width:0
-   keeps every row's text inside the visible popup width at any screen size. */
-.widget-row { flex-wrap: wrap; row-gap: 4px; }
-.widget-row .rank-user { min-width: 0; flex: 1 1 220px; overflow-wrap: anywhere; }
-.widget-row .rank-num { flex-shrink: 0; }
-.widget-row .score { flex-shrink: 0; margin-left: auto; }
-.modal-box.list-popup .widget-hdr h3 {
-  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.6rem;
-  color: var(--parchment); border: none; padding: 0; margin: 0;
-}
-.modal-box.list-popup .widget-hdr {
-  border: none; align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 22px;
-}
-.modal-box.list-popup .widget-hdr .popup-close {
-  position: absolute; top: 30px; right: 34px;
-}
-.modal-box.list-popup .lb-tab-row { margin-bottom: 22px; }
-.modal-box.list-popup .lb-tab {
-  border-radius: 20px; padding: 9px 18px; font-weight: 600;
-}
-@media (max-width: 950px) {
-  .modal-box.list-popup { padding: 22px 16px !important; }
-  .modal-box.list-popup .widget-hdr .popup-close { top: 18px; right: 16px; }
-}
+/* Formula sheet cards — same glass/brass/serif system as the rest of the app.
+   Slightly varied corner radii + a hairline rotation on alternating cards so
+   the stack doesn't read as a machine-generated uniform grid. */
+.fs-card { background: var(--glass); border: 1px solid var(--line); border-radius: 3px 5px 4px 6px; padding: 16px 18px; margin-bottom: 12px; transition: transform 0.15s ease; }
+.fs-card:nth-child(odd) { border-radius: 5px 3px 6px 4px; transform: rotate(-0.15deg); }
+.fs-card:nth-child(even) { transform: rotate(0.15deg); }
+.fs-card:hover { transform: rotate(0deg) translateY(-1px); border-color: var(--brass); }
 
-/* Formula sheet cards — matches the flat rounded-card reference look */
-.fs-card { background: rgba(255,255,255,0.045); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+/* ===== TOP-3 LIVE BAR CHART ===== */
+#lbTop3Chart { margin-bottom: 20px; display: flex; justify-content: center; }
+#lbTop3Chart canvas { max-width: 100%; }
+/* ===== END TOP-3 LIVE BAR CHART ===== */
 
 /* FOCUS TIMER — circular ring layout, matching the reference screenshot.
    The popup is docked full-page (via .list-popup rules above), so this
    centers the whole card both horizontally and vertically within it. */
-.modal-box.ft-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 460px !important; margin: 0 auto; height: 100%; }
+body.has-sidebar .modal-box.ft-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 460px !important; margin: 0 auto; height: 100%; }
 .ft-wrap .widget-hdr { width: 100%; max-width: 340px; margin-bottom: 28px !important; }
 .ft-ring-wrap { position: relative; width: 220px; height: 220px; margin: 0 auto 28px; }
 .ft-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .ft-ring-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 10; }
 .ft-ring-progress { fill: none; stroke: var(--brass, #4fd1c5); stroke-width: 10; stroke-linecap: round; stroke-dasharray: 628; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
-.ft-ring-time { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 2.4rem; font-weight: 700; color: var(--parchment); }
+.ft-ring-time { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Public Sans', sans-serif; font-size: 2.4rem; font-weight: 700; color: var(--parchment); }
 .ft-preset-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
 .ft-preset-btn { padding: 8px 16px; font-size: 0.8rem; font-weight: 600; border-radius: 20px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--parchment-dim); cursor: pointer; }
 .ft-preset-btn:hover { border-color: var(--brass); color: var(--parchment); }
 .ft-preset-btn.active { background: var(--brass); border-color: var(--brass); color: var(--ink); }
 .ft-start-btn { border-radius: 10px; padding: 12px 28px; font-weight: 700; }
-.fs-card-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--brass-light); margin-bottom: 8px; }
+.fs-card-label { font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--brass-light); margin-bottom: 8px; }
 .fs-card-formula { font-size: 0.95rem; line-height: 1.7; }
-.fp-subtitle { font-size: 0.85rem; color: var(--parchment-dim); display: none; }
+.fp-subtitle { font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.5px; text-transform: uppercase; color: var(--parchment-dim); display: none; }
 body.has-sidebar .fp-subtitle { display: block; }
 /* ===================== END DASHBOARD VISUAL REFRESH ===================== */
 </style>
@@ -1157,7 +1181,7 @@ body.has-sidebar .fp-subtitle { display: block; }
     </p>
     <div class="intro-form">
       <input type="text" id="explorerNameInput" class="intro-input" placeholder="Choose your Explorer Codename..." maxlength="18">
-      <div id="usernameFeedback" style="color:var(--coral); font-size:0.85rem; margin-bottom:10px; display:none; font-family:'JetBrains Mono',monospace;">Explorer Codename cannot be empty!</div>
+      <div id="usernameFeedback" style="color:var(--coral); font-size:0.85rem; margin-bottom:10px; display:none; font-family:'Space Mono',monospace;">Explorer Codename cannot be empty!</div>
       <button class="intro-btn" onclick="registerExplorer()">Start Expedition</button>
     </div>
   </div>
@@ -1165,18 +1189,20 @@ body.has-sidebar .fp-subtitle { display: block; }
 
 <div id="sidebarNav">
   <div class="sb-brand"><div class="sb-logo">11</div><span>Expedition</span></div>
-  <div class="sb-item active" data-sb="home" onclick="sbNav('home')"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></div>
-  <div class="sb-item" data-sb="subjects" onclick="sbNav('subjects')"><span class="sb-icon">📚</span><span class="sb-label">Subjects</span></div>
-  <div class="sb-item" data-sb="mocks" onclick="sbNav('mocks')"><span class="sb-icon">🏆</span><span class="sb-label">JEE mocks</span></div>
-  <div class="sb-item" data-sb="formulas" onclick="sbNav('formulas')"><span class="sb-icon">📐</span><span class="sb-label">Formulas</span></div>
-  <div class="sb-item" data-sb="notes" onclick="sbNav('notes')"><span class="sb-icon">📝</span><span class="sb-label">Notes</span></div>
-  <div class="sb-item" data-sb="focus" onclick="sbNav('focus')"><span class="sb-icon">⏱️</span><span class="sb-label">Focus</span></div>
-  <div class="sb-item" data-sb="badges" onclick="sbNav('badges')"><span class="sb-icon">🎖️</span><span class="sb-label">Badges</span></div>
-  <div class="sb-item" data-sb="leaderboard" onclick="sbNav('leaderboard')"><span class="sb-icon">📊</span><span class="sb-label">Leaderboard</span></div>
-  <div class="sb-item" data-sb="resolutions" onclick="sbNav('resolutions')"><span class="sb-icon">🔧</span><span class="sb-label">Resolutions</span></div>
-  <div class="sb-item" data-sb="invite" onclick="sbNav('invite')"><span class="sb-icon">🎉</span><span class="sb-label">Invite friends</span></div>
-  <div class="sb-item" data-sb="backup" onclick="sbNav('backup')"><span class="sb-icon">💾</span><span class="sb-label">Backup</span></div>
-  <div id="sidebarCollapseBtn" onclick="toggleSidebarCollapse()" title="Collapse sidebar"><span class="sb-icon">⇤</span><span class="sb-label">Collapse</span></div>
+  <div class="sb-item active" data-sb="home" onclick="sbNav('home')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5 8 3l6 5.5"/><path d="M3.5 7.5V13h9V7.5"/><path d="M6.5 13V9.5h3V13"/></svg></span><span class="sb-label">Home</span></div>
+  <div class="sb-item" data-sb="subjects" onclick="sbNav('subjects')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5c1.5-.8 3.3-.8 5.5 0v9c-2.2-.8-4-.8-5.5 0v-9Z"/><path d="M13.5 3.5c-1.5-.8-3.3-.8-5.5 0v9c2.2-.8 4-.8 5.5 0v-9Z"/></svg></span><span class="sb-label">Subjects</span></div>
+  <div class="sb-item" data-sb="mocks" onclick="sbNav('mocks')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h8v3.2c0 2-1.8 3.6-4 3.6s-4-1.6-4-3.6V2.5Z"/><path d="M4 3.5H2.3C2.3 5 3 5.9 4 6.1"/><path d="M12 3.5h1.7c0 1.5-.7 2.4-1.7 2.6"/><path d="M8 9.3V12"/><path d="M5.3 13.5h5.4"/><path d="M6.2 13.5c-.2-.9-.1-1.5.4-2h2.8c.5.5.6 1.1.4 2"/></svg></span><span class="sb-label">JEE mocks</span></div>
+  <div class="sb-item" data-sb="formulas" onclick="sbNav('formulas')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12.5 12.5 2.5"/><path d="M2.5 2.5h4M2.5 2.5v4"/><path d="M9 12.5h4.5"/></svg></span><span class="sb-label">Formulas</span></div>
+  <div class="sb-item" data-sb="notes" onclick="sbNav('notes')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12" rx="0.6"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg></span><span class="sb-label">Notes</span></div>
+  <div class="sb-item" data-sb="focus" onclick="sbNav('focus')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2.2 1.3"/></svg></span><span class="sb-label">Focus</span></div>
+  <div class="sb-item" data-sb="badges" onclick="sbNav('badges')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3.5"/><path d="M6 9.2 5 14l3-1.6 3 1.6-1-4.8"/></svg></span><span class="sb-label">Badges</span></div>
+  <div class="sb-item" data-sb="resolutions" onclick="sbNav('resolutions')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2.3"/><path d="M8 2.5v1.4M8 12.1v1.4M13.5 8h-1.4M3.9 8H2.5"/></svg></span><span class="sb-label">Resolutions</span></div>
+  <div class="sb-item" data-sb="leaderboard" onclick="sbNav('leaderboard')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13V8.5M8 13V3M12.5 13V6.5"/></svg></span><span class="sb-label">Leaderboard</span></div>
+  <div class="sb-item" data-sb="invite" onclick="sbNav('invite')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 12-5.5-4 11-2.7-4.3L2 8Z"/><path d="m7.3 9.2 2.7-3.7"/></svg></span><span class="sb-label">Invite friends</span></div>
+  <div class="sb-item" data-sb="backup" onclick="sbNav('backup')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.6"/><path d="M5 2.5v3h6v-3"/><path d="M5.5 9h5"/></svg></span><span class="sb-label">Backup</span></div>
+  <div class="sb-item" onclick="openSwitchPlayerModal()"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.3" r="2.3"/><path d="M3.5 13.5c.6-2.6 2.3-4 4.5-4s3.9 1.4 4.5 4"/></svg></span><span class="sb-label">Switch player</span></div>
+  <div class="sb-item" onclick="openResetModal()"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.6-3.7"/><path d="M13 2.5v2.3h-2.3"/></svg></span><span class="sb-label">Reset progress</span></div>
+  <div id="sidebarCollapseBtn" onclick="toggleSidebarCollapse()" title="Collapse sidebar"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 6 8l4 5"/></svg></span><span class="sb-label">Collapse</span></div>
 </div>
 <script>
 document.body.classList.add('has-sidebar');
@@ -1191,11 +1217,19 @@ function toggleSidebarCollapse() {
   const app = document.querySelector('.app');
   if (window.innerWidth >= 951) {
     if (nav) nav.style.width = collapsed ? '56px' : '172px';
-    if (app) app.style.marginLeft = collapsed ? '56px' : '172px';
-    document.querySelectorAll('.modal-backdrop').forEach(function(m){ m.style.left = collapsed ? '56px' : '172px'; });
+    if (app) app.style.marginLeft = sbAppMarginLeft(collapsed);
+    document.querySelectorAll('.modal-backdrop').forEach(function(m){ if (m.querySelector('.list-popup')) m.style.left = collapsed ? '56px' : '172px'; });
   }
 }
 window.toggleSidebarCollapse = toggleSidebarCollapse;
+// Keeps the main content horizontally centered in the space *next to* the
+// sidebar (not flush against it) — mirrors the CSS max(sidebarWidth, calc(...))
+// formula so JS-driven width changes never fight the stylesheet.
+function sbAppMarginLeft(collapsed) {
+  const railW = collapsed ? 56 : 172;
+  const centered = (window.innerWidth / 2) - (1100 / 2) + (railW / 2);
+  return Math.max(railW, centered) + 'px';
+}
 // Apply the persisted state on load too (not just on click).
 (function applyInitialSidebarWidth() {
   if (window.innerWidth < 951) return;
@@ -1203,22 +1237,49 @@ window.toggleSidebarCollapse = toggleSidebarCollapse;
   const nav = document.getElementById('sidebarNav');
   const app = document.querySelector('.app');
   if (nav) nav.style.width = collapsed ? '56px' : '172px';
-  if (app) app.style.marginLeft = collapsed ? '56px' : '172px';
+  if (app) app.style.marginLeft = sbAppMarginLeft(collapsed);
+  window.addEventListener('resize', function () {
+    if (window.innerWidth < 951 || !app) return;
+    app.style.marginLeft = sbAppMarginLeft(document.body.classList.contains('sidebar-collapsed'));
+  });
 })();
 function sbNav(which) {
   document.querySelectorAll('#sidebarNav .sb-item').forEach(function(el){ el.classList.toggle('active', el.dataset.sb === which); });
-  switch (which) {
-    case 'home': if (typeof renderHomeScreen === 'function') renderHomeScreen(); break;
-    case 'subjects': if (typeof goToSubjects === 'function') goToSubjects(); break;
-    case 'mocks': if (typeof openPyqMixedModal === 'function') openPyqMixedModal(); break;
-    case 'formulas': if (typeof openFormulaSheet === 'function') openFormulaSheet(); break;
-    case 'notes': if (typeof openQuickNotes === 'function') openQuickNotes(); break;
-    case 'focus': if (typeof openFocusTimer === 'function') openFocusTimer(); break;
-    case 'badges': if (typeof openBadgesPopup === 'function') openBadgesPopup(); break;
-    case 'resolutions': if (typeof openResolutionsPopup === 'function') openResolutionsPopup(); break;
-    case 'leaderboard': if (typeof openLeaderboardPopup === 'function') openLeaderboardPopup(); break;
-    case 'invite': if (typeof shareInviteLink === 'function') shareInviteLink(); break;
-    case 'backup': if (typeof openBackupPopup === 'function') openBackupPopup(); break;
+  // Close whatever popup/modal is currently open before switching — without
+  // this, e.g. opening Focus then clicking Badges just stacks a second
+  // "show" modal behind/under the first one and nothing visibly changes.
+  document.querySelectorAll('.modal-backdrop.show').forEach(function (m) {
+    m.classList.remove('show');
+  });
+  try {
+    switch (which) {
+      case 'home': if (typeof renderHomeScreen === 'function') renderHomeScreen(); break;
+      case 'subjects': if (typeof goToSubjects === 'function') goToSubjects(); break;
+      case 'mocks': if (typeof renderJeeArenaScreen === 'function') renderJeeArenaScreen(); break;
+      case 'formulas': if (typeof openFormulaSheet === 'function') openFormulaSheet(); break;
+      case 'notes': if (typeof openQuickNotes === 'function') openQuickNotes(); break;
+      case 'focus': if (typeof openFocusTimer === 'function') openFocusTimer(); break;
+      case 'badges': if (typeof openBadgesPopup === 'function') openBadgesPopup(); break;
+      case 'resolutions': if (typeof openResolutionsPopup === 'function') openResolutionsPopup(); break;
+      case 'leaderboard': if (typeof openLeaderboardPopup === 'function') openLeaderboardPopup(); break;
+      case 'invite': if (typeof shareInviteLink === 'function') shareInviteLink(); break;
+      case 'backup': if (typeof openBackupPopup === 'function') openBackupPopup(); break;
+    }
+  } catch (err) {
+    console.error('[sbNav] failed to open "' + which + '":', err);
+  }
+  // Belt-and-braces: some popups are toggled purely via the .show class.
+  // If for any reason that class didn't stick (a race with another script,
+  // a stale reference, etc.) force the corresponding modal open directly
+  // so a sidebar click can never silently do nothing.
+  const modalIdByTab = {
+    notes: 'quickNotesModal', formulas: 'formulaSheetModal', badges: 'badgesPopup',
+    leaderboard: 'leaderboardPopup', backup: 'backupPopup', focus: 'focusTimerModal'
+  };
+  const forcedId = modalIdByTab[which];
+  if (forcedId) {
+    const el = document.getElementById(forcedId);
+    if (el && !el.classList.contains('show')) el.classList.add('show');
   }
 }
 </script>
@@ -1256,7 +1317,7 @@ function sbNav(which) {
       </div>
 
       <div class="resume-hero" onclick="resumePractice()" style="margin-bottom:20px;">
-        <div class="resume-hero-icon">▶️</div>
+        <div class="resume-hero-icon"><svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="var(--brass-light)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l8 5-8 5V3z"/></svg></div>
         <div class="resume-hero-body">
           <h3>Continue Practice</h3>
           <div id="resumePanelStatus">Pick up right where you left off</div>
@@ -1278,13 +1339,34 @@ function sbNav(which) {
             </div>
           </div>
           <div id="leaderboardList"></div>
-          <div class="lb-chart-wrap">
-            <div class="lb-chart-title"><span class="live-dot" style="width:6px;height:6px;"></span> Live XP standings</div>
-            <div class="lb-chart" id="leaderboardChart" onclick="event.stopPropagation();"></div>
-          </div>
           <div class="panel-hint">Click to open full leaderboard</div>
         </div>
       </div>
+    </div>
+
+    <div class="screen" id="screen-jeearena">
+      <div class="title-wrap">
+        <h2>JEE Arena</h2>
+        <p>Full-length timed mocks · Math, Physics &amp; Chemistry</p>
+      </div>
+
+      <div class="home-stats-row" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+        <div class="stat" style="flex:1; min-width:110px;"><span class="num" id="arenaMocksTaken">0</span><span class="lbl">Mocks taken</span></div>
+        <div class="stat" style="flex:1; min-width:110px;"><span class="num" id="arenaBestScore">–</span><span class="lbl">Best score</span></div>
+        <div class="stat" style="flex:1; min-width:110px;"><span class="num" id="arenaDaysToJee">–</span><span class="lbl">Days to JEE</span></div>
+      </div>
+
+      <div class="ja-next-up" id="arenaNextUpCard" style="border:1px solid rgba(230,168,71,0.35); background:rgba(230,168,71,0.06); border-radius:16px; padding:20px; display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.7rem; letter-spacing:0.5px; text-transform:uppercase; color:var(--brass-light); font-weight:700; margin-bottom:6px;">Next up</div>
+          <div id="arenaNextUpTitle" style="font-size:1.15rem; font-weight:700; margin-bottom:4px;">Full Syllabus Test 1</div>
+          <div id="arenaNextUpMeta" style="font-size:0.82rem; color:var(--parchment-dim);">75 Qs · 3 hours · Negative marking</div>
+        </div>
+        <button class="btn primary" id="arenaStartBtn" onclick="startNextJeeMock()">Start</button>
+      </div>
+
+      <div class="widget-hdr"><h3>Past attempts</h3></div>
+      <div id="arenaPastAttempts"></div>
     </div>
 
     <div class="screen" id="screen-subjects">
@@ -1487,10 +1569,7 @@ function sbNav(which) {
         <button class="lb-tab active" id="lbTabAll" onclick="setLeaderboardMode('alltime')">🏆 All-time</button>
         <button class="lb-tab" id="lbTabWeek" onclick="setLeaderboardMode('weekly')">📅 This Week</button>
       </div>
-      <div class="lb-chart-wrap" style="margin-top:0; padding-top:0; border-top:none; margin-bottom:18px;">
-        <div class="lb-chart-title"><span class="live-dot" style="width:6px;height:6px;"></span> Live XP standings — updates automatically</div>
-        <div class="lb-chart" id="leaderboardChartPopup"></div>
-      </div>
+      <div id="lbTop3Chart"></div>
       <div id="leaderboardPopupList" class="popup-list"></div>
       <div id="leaderboardInactiveWrap" style="display:none; margin-top:10px;">
         <button class="btn ghost" style="padding:6px 14px; font-size:0.75rem; width:100%;" onclick="toggleInactiveLeaderboard()">
@@ -1552,28 +1631,6 @@ function sbNav(which) {
   </div>
 
   <!-- AI Doubt Solver — freeform Q&A, served by /api/ai-explain (mode:"doubt") -->
-  <div class="modal-backdrop" id="doubtSolverModal" onclick="if(event.target===this) closeDoubtSolver()">
-    <div class="modal-box" style="max-width: 560px; text-align: left;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3 style="margin:0;">🤖 Ask AI</h3>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--parchment-dim,#c5bba8);">Class 11 · JEE</span>
-      </div>
-      <p style="font-size:0.85rem; color: var(--parchment-dim,#c5bba8); margin-top:0;">Stuck on a concept or a question? Ask in plain words.</p>
-      <textarea id="doubtInput" rows="3" placeholder="e.g. Why does dimensional analysis fail for trig functions?"
-        style="width:100%; resize:vertical; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:inherit; font-family:inherit; font-size:0.95rem;"></textarea>
-      <div id="doubtAnswerBox" style="margin-top:14px; font-size:0.92rem; line-height:1.5; display:none; white-space:pre-wrap;"></div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
-        <button class="btn ghost" onclick="closeDoubtSolver()">Close</button>
-        <button class="btn primary" id="doubtAskBtn" onclick="sendDoubtQuestion()">Ask</button>
-      </div>
-    </div>
-  </div>
-
-  <button id="askAiFab" onclick="openDoubtSolver()" title="Ask AI"
-    style="position:fixed; right:22px; bottom:22px; z-index:1500; width:56px; height:56px; border-radius:50%;
-           background:var(--brass-light,#9df1e6); color:#05070d; border:none; font-size:24px; cursor:pointer;
-           box-shadow:0 8px 24px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">🤖</button>
-
   <div class="modal-backdrop" id="activityPopup" onclick="if(event.target===this) closeActivityPopup()">
     <div class="modal-box list-popup" style="max-width: 620px; text-align: left;">
       <div class="widget-hdr">
@@ -1693,7 +1750,7 @@ function sbNav(which) {
       </div>
       <div id="pyqViewerBody" class="popup-list"></div>
       <div id="pyqQuizPalette" style="display:none; flex-direction:column; gap:6px; padding:10px 4px 4px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12)); margin-top:10px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--text-dim,#9a94b5); padding:0 2px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; font-family:'Space Mono',monospace; font-size:0.68rem; color:var(--text-dim,#9a94b5); padding:0 2px;">
           <span>JUMP TO QUESTION</span>
           <button onclick="togglePyqPaletteCollapsed()" id="pyqPaletteToggleBtn" style="background:none; border:none; color:inherit; font-family:inherit; font-size:inherit; cursor:pointer; text-decoration:underline;">Collapse</button>
         </div>
@@ -1701,6 +1758,17 @@ function sbNav(which) {
       </div>
     </div>
   </div>
+
+  <!-- Reopens a past JEE Arena attempt's full solutions, using the same
+       report renderer (buildJeeReportHtml) as a freshly-submitted mock. -->
+  <div class="modal-backdrop" id="mockReportModal" onclick="if(event.target===this) closeMockReportModal()">
+    <div class="modal-box list-popup" style="max-width: 720px; text-align: left;">
+      <div class="widget-hdr">
+        <h3 id="mockReportModalTitle" class="pyq-modal-title">🏆 Full Syllabus Test</h3>
+        <button class="popup-close" onclick="closeMockReportModal()">✕ Close</button>
+      </div>
+      <div id="mockReportModalBody" class="popup-list" style="max-height:65vh; overflow-y:auto;"></div>
+    </div>
   </div>
 
 
@@ -1760,8 +1828,8 @@ function sbNav(which) {
     
     <div class="palette-wrap" id="jeePalette" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-        <h4 style="margin: 0; font-family: 'Playfair Display', serif; color: var(--brass-light); text-transform: uppercase;">Exam Palette</h4>
-        <div style="display: flex; gap: 15px; font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; color: var(--parchment-dim);">
+        <h4 style="margin: 0; font-family: 'Fraunces', serif; color: var(--brass-light); text-transform: uppercase;">Exam Palette</h4>
+        <div style="display: flex; gap: 15px; font-size: 0.85rem; font-family: 'Space Mono', monospace; color: var(--parchment-dim);">
           <span style="display: flex; align-items: center; gap: 6px;"><div style="width: 14px; height: 14px; background: var(--sea); border-radius: 4px;"></div> Attempted</span>
           <span style="display: flex; align-items: center; gap: 6px;"><div style="width: 14px; height: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 4px;"></div> Not Attempted</span>
           <span style="display: flex; align-items: center; gap: 6px;"><div style="width: 14px; height: 14px; background: transparent; border: 2px solid var(--brass-light); border-radius: 4px;"></div> Current</span>
@@ -1845,7 +1913,7 @@ function sbNav(which) {
 
 <div class="modal-backdrop" id="reportIssueModal">
   <div class="modal-box" style="max-width: 500px; text-align: left;">
-    <h3 style="font-family: 'Playfair Display', serif; color: var(--brass-light); text-align: center;">Flag Question Parameters</h3>
+    <h3 style="font-family: 'Fraunces', serif; color: var(--brass-light); text-align: center;">Flag Question Parameters</h3>
     <p style="color: var(--parchment-dim); font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px; text-align: center;">
       File a report directly to the teacher describing any inaccuracies or presentation errors in this question node.
     </p>
@@ -1864,7 +1932,7 @@ function sbNav(which) {
     <div class="form-group">
       <label for="reportComments">Student Remarks</label>
       <textarea id="reportComments" placeholder="Describe the error so the development dashboard can inspect..."></textarea>
-      <div id="reportFeedback" style="color:var(--coral); font-size:0.8rem; margin-top:5px; display:none; font-family:'JetBrains Mono',monospace;">Please provide comments to describe the issue.</div>
+      <div id="reportFeedback" style="color:var(--coral); font-size:0.8rem; margin-top:5px; display:none; font-family:'Space Mono',monospace;">Please provide comments to describe the issue.</div>
     </div>
 
     <div class="btn-row" style="margin-top:24px; justify-content: flex-end;">
@@ -1877,7 +1945,7 @@ function sbNav(which) {
 <div class="modal-backdrop" id="reportSuccessModal">
   <div class="modal-box" style="max-width: 420px; text-align: center;">
     <div id="reportSuccessIcon" style="font-size: 2.6rem; line-height: 1; margin-bottom: 10px;">✅</div>
-    <h3 id="reportSuccessTitle" style="font-family: 'Playfair Display', serif; color: var(--brass-light); text-align: center;">Issue Reported</h3>
+    <h3 id="reportSuccessTitle" style="font-family: 'Fraunces', serif; color: var(--brass-light); text-align: center;">Issue Reported</h3>
     <p id="reportSuccessMsg" style="color: var(--parchment-dim); font-size: 0.9rem; line-height: 1.5; margin: 10px 0 24px;">
       Thanks for flagging this — your report has been sent to the teacher's dashboard for review.
     </p>
@@ -1904,7 +1972,7 @@ function sbNav(which) {
     </div>
   </div>
 </div>
-<button id="reopenRemovedTab" onclick="openRemovedModal()" style="position:fixed; bottom: 16px; right: 16px; z-index: 3000; background: var(--brass); color:var(--ink); border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35); display:flex; align-items:center; gap:6px;">
+<button id="reopenRemovedTab" onclick="openRemovedModal()" style="position:fixed; bottom: 70px; right: 22px; z-index: 3000; background: var(--brass); color:var(--ink); border:none; border-radius: 10px; padding: 10px 16px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.35); display:flex; align-items:center; gap:6px;">
   <span id="reopenRemovedTabLabel">💬 Message your teacher</span>
   <span id="teacherReplyBadge" style="display:none; background:#2A9D8F; color:#fff; border-radius:999px; min-width:18px; height:18px; padding:0 5px; font-size:0.68rem; line-height:18px; text-align:center; font-weight:800;"></span>
 </button>
@@ -1917,7 +1985,7 @@ function sbNav(which) {
       <button class="popup-close" onclick="closeQuickNotes()">✕ Close</button>
     </div>
     <p style="font-size: 0.8rem; color: var(--parchment-dim); margin: 0 0 10px;">Saved automatically on this device — formulas, doubts, reminders, anything.</p>
-    <textarea id="quickNotesInput" placeholder="Type your notes here..." oninput="saveQuickNotes()" style="width:100%; min-height:220px; resize:vertical; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 10px; padding: 12px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none;"></textarea>
+    <textarea id="quickNotesInput" placeholder="Type your notes here..." oninput="saveQuickNotes()" style="width:100%; min-height:220px; resize:vertical; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 10px; padding: 12px; color: #fff; font-family: 'Space Mono', monospace; font-size: 0.85rem; outline: none;"></textarea>
     <div id="quickNotesSavedHint" style="font-size: 0.7rem; color: var(--parchment-dim); margin-top: 8px; text-align: right; opacity: 0.7;">&nbsp;</div>
   </div>
 </div>
@@ -2210,20 +2278,17 @@ function updateSyncBanner(status) {
   if (status !== 'local') {
     if (el) el.style.display = 'none';
     document.body.style.paddingTop = '30px';
-    document.body.style.setProperty('--banner-offset', '30px');
     return;
   }
   if (!el) {
     el = document.createElement('div');
     el.id = 'syncWarningBanner';
-    el.style.cssText = 'position:fixed; top:30px; left:0; right:0; z-index:4999; background:rgba(231,111,81,0.95); color:#fff; font-family:Inter,sans-serif; font-size:0.8rem; font-weight:600; text-align:center; padding:8px 16px; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    el.style.cssText = 'position:fixed; top:30px; left:0; right:0; z-index:4999; background:rgba(231,111,81,0.95); color:#fff; font-family:Public Sans,sans-serif; font-size:0.8rem; font-weight:600; text-align:center; padding:8px 16px; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
     el.textContent = 'Offline mode — your progress is saved on this device and will sync automatically when the connection returns.';
     document.body.appendChild(el);
   }
   el.style.display = 'block';
-  const totalOffset = 30 + el.offsetHeight;
-  document.body.style.paddingTop = totalOffset + 'px';
-  document.body.style.setProperty('--banner-offset', totalOffset + 'px');
+  document.body.style.paddingTop = (30 + el.offsetHeight) + 'px';
 }
 
 window.DB_Engine = {
@@ -2527,6 +2592,18 @@ const REVIVE_XP_COST = 40;
 const Q_PER_LEVEL = 10;
 const Q_JEE_LEVEL = 75;
 
+// Line-icon SVGs for the top-level subject cards (Subjects screen + PYQ
+// picker) — used only where we control the markup via innerHTML. `sub.icon`
+// itself stays a plain emoji because it's also read as .textContent in a
+// few places (modal titles, breadcrumbs) where raw SVG markup would show
+// up as literal tag text instead of rendering.
+const SUBJECT_ICON_SVG = {
+  math: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--brass-light)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 19 4"/><path d="M4 4h6v6"/></svg>',
+  physics: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--brass-light)" stroke-width="1.4"><circle cx="12" cy="12" r="1.6" fill="var(--brass-light)" stroke="none"/><ellipse cx="12" cy="12" rx="9" ry="3.6"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"/></svg>',
+  chemistry: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--brass-light)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5 18a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-8.5V3"/><path d="M7.5 15h9"/></svg>',
+  mixed: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--brass-light)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg>'
+};
+
 const DATA = [
   {
     id: 'math', name: 'Mathematics', icon: '📐', theme: 'theme-math',
@@ -2596,6 +2673,7 @@ const DATA = [
 let state = {
   xp: 0, streak: 0,
   progress: {}, 
+  mockHistory: [], // saved JEE mock attempts: {id, chapId, name, date, score, maxScore, accuracyPct}
   curSubj: null, curChap: null, curLvl: 1,
   qIdx: 0, currentQuestions: [], answered: false,
   qSelected: [],
@@ -2643,6 +2721,7 @@ function loadSave() {
       if(parsed.explorerName) state.explorerName = parsed.explorerName;
       if(typeof parsed.weeklyXp === 'number') state.weeklyXp = parsed.weeklyXp;
       if(parsed.weeklyXpWeekStart) state.weeklyXpWeekStart = parsed.weeklyXpWeekStart;
+      if(Array.isArray(parsed.mockHistory)) state.mockHistory = parsed.mockHistory;
     } catch(e) {}
   }
   // Roll over if the saved week is stale (app wasn't opened at all during a week boundary).
@@ -2722,7 +2801,8 @@ function doSave() {
   archiveCurrentProfile();
   localStorage.setItem('math_expedition_v9', JSON.stringify({
     xp: state.xp, progress: state.progress, streak: state.streak, explorerName: state.explorerName,
-    weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart
+    weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart,
+    mockHistory: state.mockHistory
   }));
 }
 
@@ -3523,20 +3603,23 @@ function renderLeaderboard() {
     return `<div class="widget-row ${p.isUser ? 'user-row' : ''}" style="${dim ? 'opacity:0.65;' : ''}"><div class="rank-user"><span class="rank-num">#${idx + 1}</span><span>${p.username}</span>${badgeIconsHtml(p.badges)}${inactiveNote}</div><span class="score">${scoreText}</span></div>`;
   };
 
-  const buildRows = (target) => {
+  const buildRows = (target, skipTop) => {
     target.innerHTML = "";
     if (useWeekly && !sorted.some(p => (p.weeklyXp || 0) > 0)) {
       target.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--parchment-dim,#c5bba8); font-size:0.85rem;">No XP earned yet this week — be the first!</div>`;
       return;
     }
-    target.innerHTML = sorted.map((p, idx) => rowHtml(p, idx, false)).join('');
+    const rows = skipTop
+      ? sorted.slice(skipTop).map((p, idx) => rowHtml(p, idx + skipTop, false))
+      : sorted.map((p, idx) => rowHtml(p, idx, false));
+    target.innerHTML = rows.join('');
   };
 
   buildRows(listEl);
-  if (popupEl) buildRows(popupEl);
-
-  renderLeaderboardChart('leaderboardChart', sorted, useWeekly);
-  renderLeaderboardChart('leaderboardChartPopup', sorted, useWeekly);
+  // The popup list sits directly under the top-3 chart, so it starts at
+  // rank #4 instead of repeating the same three names the chart already shows.
+  if (popupEl) buildRows(popupEl, 3);
+  renderLbTop3Chart(sorted, useWeekly);
 
   const inactiveWrap = document.getElementById('leaderboardInactiveWrap');
   const inactiveList = document.getElementById('leaderboardPopupInactiveList');
@@ -3560,42 +3643,116 @@ function renderLeaderboard() {
   if (countPopupEl) countPopupEl.textContent = countText;
 }
 
-// Renders/updates the live XP bar chart for the leaderboard. Called every
-// time renderLeaderboard() runs (i.e. every Firebase 'value' push), so the
-// bars grow/shrink live as XP changes. Existing bar elements are reused
-// (matched by uid/username) rather than rebuilt, so a live update animates
-// smoothly via the .lb-bar CSS transition instead of flashing/rebuilding.
-function renderLeaderboardChart(containerId, sorted, useWeekly) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  const top = sorted.slice(0, 3);
-  if (!top.length) { el.innerHTML = ''; return; }
-  const maxVal = Math.max(1, ...top.map(p => useWeekly ? (p.weeklyXp || 0) : p.xp));
-  const trackPx = 78;
+let _lbChartPrev = {}; // username -> { x, barH, val } from the last frame, for smooth transitions
+let _lbChartRAF = null;
 
-  top.forEach((p, idx) => {
-    const val = useWeekly ? (p.weeklyXp || 0) : p.xp;
-    const h = Math.max(4, Math.round((val / maxVal) * trackPx));
-    const rawName = (p.username || '').replace(' (You)', '');
-    const shortName = p.isUser ? 'You' : rawName;
-    const colId = 'lbcol_' + containerId + '_' + idx;
-    let col = document.getElementById(colId);
-    if (!col) {
-      col = document.createElement('div');
-      col.id = colId;
-      col.className = 'lb-bar-col';
-      col.innerHTML = `<span class="lb-bar-val"></span><div class="lb-bar-track"><div class="lb-bar" style="height:0px;"></div></div><span class="lb-bar-rank"></span><span class="lb-bar-name"></span>`;
-      el.appendChild(col);
+function renderLbTop3Chart(sorted, useWeekly) {
+  const holder = document.getElementById('lbTop3Chart');
+  if (!holder) return;
+  const top3 = sorted.slice(0, 3);
+  if (top3.length === 0) { holder.innerHTML = ''; return; }
+
+  const W = 420, H = 240;
+  let canvas = document.getElementById('lbTop3Canvas');
+  if (!canvas) {
+    holder.innerHTML = `<canvas id="lbTop3Canvas" width="${W}" height="${H}" style="width:${W}px;height:${H}px;"></canvas>`;
+    canvas = document.getElementById('lbTop3Canvas');
+  }
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== W * dpr) {
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const scoreOf = (p) => useWeekly ? (p.weeklyXp || 0) : p.xp;
+  const maxVal = Math.max(1, ...top3.map(scoreOf));
+  const scaleMax = maxVal * 1.15;
+
+  const padL = 16, padR = 16, padT = 16, padB = 40;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const barColors = ['#9df1e6', '#e8c382', '#ff8fb0'];
+  const barBase = ['#4fd1c5', '#c99c51', '#ff5d8f'];
+  const slotW = plotW / 3;
+  const barW = slotW * 0.6;
+
+  // Target layout for each player at their *current* rank slot.
+  const targets = top3.map((p, i) => ({
+    key: p.username || ('p' + i),
+    p, colorIdx: i,
+    x: padL + slotW * i + (slotW - barW) / 2,
+    barH: plotH * (scoreOf(p) / scaleMax),
+    val: scoreOf(p)
+  }));
+
+  // Seed any brand-new entrant at its own target (no "fly in from nowhere").
+  targets.forEach(t => { if (!_lbChartPrev[t.key]) _lbChartPrev[t.key] = { x: t.x, barH: t.barH, val: t.val }; });
+
+  const DURATION = 550;
+  const start = performance.now();
+  const from = {};
+  targets.forEach(t => { from[t.key] = { ...(_lbChartPrev[t.key] || t) }; });
+
+  if (_lbChartRAF) cancelAnimationFrame(_lbChartRAF);
+  function frame(now) {
+    const t = Math.min(1, (now - start) / DURATION);
+    const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic — snappy but not jarring on a rank swap
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, padT + plotH); ctx.lineTo(W - padR, padT + plotH); ctx.stroke();
+
+    targets.forEach(tg => {
+      const f = from[tg.key];
+      const x = f.x + (tg.x - f.x) * eased;
+      const barH = f.barH + (tg.barH - f.barH) * eased;
+      const val = Math.round(f.val + (tg.val - f.val) * eased);
+      const y = padT + plotH - barH;
+      const i = tg.colorIdx;
+
+      const grad = ctx.createLinearGradient(0, y, 0, padT + plotH);
+      grad.addColorStop(0, barColors[i]);
+      grad.addColorStop(1, barBase[i]);
+      ctx.fillStyle = grad;
+      const r = 4;
+      ctx.beginPath();
+      ctx.moveTo(x, y + r);
+      ctx.arcTo(x, y, x + r, y, r);
+      ctx.lineTo(x + barW - r, y);
+      ctx.arcTo(x + barW, y, x + barW, y + r, r);
+      ctx.lineTo(x + barW, padT + plotH);
+      ctx.lineTo(x, padT + plotH);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#eef2f8';
+      ctx.font = "bold 11px 'Space Mono', monospace";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(val, x + barW / 2, y - 6);
+
+      ctx.fillStyle = 'rgba(238,242,248,0.9)';
+      ctx.font = "600 11px 'Public Sans', sans-serif";
+      ctx.textBaseline = 'top';
+      let name = tg.p.username || '';
+      if (name.length > 12) name = name.slice(0, 11) + '…';
+      ctx.fillText(name, x + barW / 2, padT + plotH + 8);
+
+      ctx.fillStyle = barColors[i];
+      ctx.font = "bold 10px 'Space Mono', monospace";
+      ctx.fillText('#' + (i + 1), x + barW / 2, padT + plotH + 22);
+    });
+
+    if (t < 1) {
+      _lbChartRAF = requestAnimationFrame(frame);
+    } else {
+      const snapshot = {};
+      targets.forEach(tg => { snapshot[tg.key] = { x: tg.x, barH: tg.barH, val: tg.val }; });
+      _lbChartPrev = snapshot;
     }
-    col.title = `${rawName}: ${val} XP`;
-    col.classList.toggle('user-bar', !!p.isUser);
-    col.querySelector('.lb-bar-val').textContent = val;
-    col.querySelector('.lb-bar').style.height = h + 'px';
-    col.querySelector('.lb-bar-rank').textContent = '#' + (idx + 1);
-    col.querySelector('.lb-bar-name').textContent = shortName;
-  });
-  // Remove any leftover columns from a previous render with more players.
-  while (el.children.length > top.length) el.removeChild(el.lastChild);
+  }
+  _lbChartRAF = requestAnimationFrame(frame);
 }
 
 function toggleInactiveLeaderboard() {
@@ -4706,7 +4863,7 @@ function renderDailyQuestion() {
   body.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <h3 style="margin:0;">🗓️ Daily Challenge</h3>
-      <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">Q${dailyRun.idx + 1}/${dailyRun.questions.length}</span>
+      <span style="font-family:'Space Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">Q${dailyRun.idx + 1}/${dailyRun.questions.length}</span>
     </div>
     <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${q.__subject} · ${q.__chapter}</div>
     <div style="margin-bottom:14px; font-size:1.05rem;">${q.q}</div>
@@ -4886,7 +5043,7 @@ function renderMistakeQuestion() {
   body.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <h3 style="margin:0;">🎯 Mistake Bank</h3>
-      <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">${mistakeRun.idx + 1}/${mistakeRun.items.length}</span>
+      <span style="font-family:'Space Mono',monospace; font-size:0.8rem; color: var(--parchment-dim,#c5bba8);">${mistakeRun.idx + 1}/${mistakeRun.items.length}</span>
     </div>
     <div style="font-size:0.75rem; color: var(--parchment-dim,#c5bba8); margin-bottom:10px;">${item.subject} · ${item.chapter} · missed ${item.misses}× ${(item.nextReviewAt||0) <= Date.now() ? '· <span style="color:var(--coral);">due now</span>' : `· scheduled for ${new Date(item.nextReviewAt).toLocaleDateString()}`}</div>
     <div style="margin-bottom:14px; font-size:1.05rem;">${item.q}</div>
@@ -4972,40 +5129,6 @@ function advanceMistakeRun() {
 }
 
 /* ================= AI FEATURES (Cloudflare Workers AI via /api/ai-explain) ================= */
-
-// ---- AI Doubt Solver: freeform chat, reachable from the floating 🤖 button ----
-function openDoubtSolver() {
-  document.getElementById('doubtSolverModal').classList.add('show');
-  document.getElementById('doubtAnswerBox').style.display = 'none';
-  document.getElementById('doubtAnswerBox').textContent = '';
-  document.getElementById('doubtInput').focus();
-}
-function closeDoubtSolver() {
-  document.getElementById('doubtSolverModal').classList.remove('show');
-}
-async function sendDoubtQuestion() {
-  const input = document.getElementById('doubtInput');
-  const question = input.value.trim();
-  if (!question) return;
-  const answerBox = document.getElementById('doubtAnswerBox');
-  const askBtn = document.getElementById('doubtAskBtn');
-  answerBox.style.display = 'block';
-  answerBox.textContent = 'Thinking…';
-  askBtn.disabled = true;
-  try {
-    const res = await fetch('/api/ai-explain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'doubt', question })
-    });
-    const data = await res.json();
-    answerBox.textContent = data.answer || data.error || 'No response — try again.';
-  } catch (e) {
-    answerBox.textContent = "Couldn't reach the AI tutor right now — check your connection and try again.";
-  } finally {
-    askBtn.disabled = false;
-  }
-}
 
 // ---- AI Mistake Coach: "Explain this" on a Mistake Bank wrong answer ----
 // Called from handleMistakeAnswer()'s wrong-answer branch below.
@@ -5559,7 +5682,7 @@ async function renderPyqSubjectGrid() {
   grid.innerHTML = PYQ_SUBJECTS.map(subj => `
     <div class="card-item pyq-card" data-subj="${subj.id}">
       <div class="pyq-lock-badge" id="pyqLockBadge-${subj.id}">🔒 Locked</div>
-      <div class="ico">${subj.icon}</div>
+      <div class="ico">${SUBJECT_ICON_SVG[subj.id] || subj.icon}</div>
       <h3>${subj.name}</h3>
       <p class="pyq-years-hint" id="pyqYearsHint-${subj.id}">${PYQ_YEARS[0]}–${PYQ_YEARS[PYQ_YEARS.length - 1]} · checking…</p>
     </div>
@@ -5679,7 +5802,7 @@ async function openPyqMixedModal() {
   const wrap = document.getElementById('pyqMixedSubjectYears');
   wrap.innerHTML = PYQ_SUBJECTS.map(subj => `
     <div style="margin-bottom:18px;">
-      <div style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; font-weight:700; margin-bottom:8px; color:var(--brass-light);">${subj.icon} ${subj.name}</div>
+      <div style="font-family:'Space Mono',monospace; font-size:0.8rem; font-weight:700; margin-bottom:8px; color:var(--brass-light);">${subj.icon} ${subj.name}</div>
       <div class="pyq-year-grid" id="pyqMixedYearGrid-${subj.id}">
         ${PYQ_YEARS.map(y => `<div class="pyq-year-chip" data-year="${y}"><span class="lock-mini">…</span>${y}</div>`).join('')}
       </div>
@@ -5802,7 +5925,7 @@ function renderPyqViewer(title, pages) {
   </div>`;
   body.innerHTML = notice + pages.map(p => `
     <div class="widget-row" style="align-items:flex-start; flex-direction:column; gap:6px;">
-      <div style="font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--brass-light,#e8c382);">${p.subject || ''} · ${p.year || ''} · Page ${p.pageNumber}</div>
+      <div style="font-family:'Space Mono',monospace; font-size:0.7rem; color: var(--brass-light,#e8c382);">${p.subject || ''} · ${p.year || ''} · Page ${p.pageNumber}</div>
       <div style="font-size:0.88rem; white-space:pre-wrap; line-height:1.65;">${escapeHtml(cleanPyqPageText(p.text))}</div>
     </div>
   `).join('');
@@ -5941,7 +6064,7 @@ function renderPyqPalette() {
       wrong: 'background:rgba(255,107,107,0.18); color:#ff6b6b; border-color:rgba(255,107,107,0.5);',
       unanswered: 'background:transparent; color:var(--text-dim,#9a94b5); border-color:var(--glass-border,rgba(255,255,255,0.18));'
     };
-    return `<button data-idx="${i}" onclick="jumpToPyqQuestion(${i})" style="position:relative; width:30px; height:30px; flex-shrink:0; border-radius:7px; font-family:'JetBrains Mono',monospace; font-size:0.7rem; font-weight:700; cursor:pointer; border:1px solid; ${colors[state]}">${i + 1}${saved.has(pyqQuestionSaveKey(q)) ? '<span style="position:absolute; top:-5px; right:-5px; font-size:0.6rem;">🔖</span>' : ''}</button>`;
+    return `<button data-idx="${i}" onclick="jumpToPyqQuestion(${i})" style="position:relative; width:30px; height:30px; flex-shrink:0; border-radius:7px; font-family:'Space Mono',monospace; font-size:0.7rem; font-weight:700; cursor:pointer; border:1px solid; ${colors[state]}">${i + 1}${saved.has(pyqQuestionSaveKey(q)) ? '<span style="position:absolute; top:-5px; right:-5px; font-size:0.6rem;">🔖</span>' : ''}</button>`;
   }).join('');
   const currentBtn = wrap.querySelector(`[data-idx="${pyqQuiz.idx}"]`);
   if (currentBtn) currentBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -5971,7 +6094,7 @@ function renderPyqQuizQuestion() {
   const saved = getPyqSavedSet().has(pyqQuestionSaveKey(q));
   const body = document.getElementById('pyqViewerBody');
   body.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-family:'JetBrains Mono',monospace; font-size:0.7rem; color: var(--brass-light,#e8c382);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-family:'Space Mono',monospace; font-size:0.7rem; color: var(--brass-light,#e8c382);">
       <span>${q.subjectName || q.subject || ''} · ${q.year || ''}${q.sourcePage ? ' · p.' + q.sourcePage : ''}</span>
       <span style="display:flex; align-items:center; gap:10px;">
         <span>Q${pyqQuiz.idx + 1}/${pyqQuiz.questions.length} · ${pyqQuiz.correct} correct</span>
@@ -6038,7 +6161,7 @@ function showPyqFeedback(q, isCorrect, selIdx) {
   let explanationBlock;
   if (explanationOk) {
     explanationBlock = `<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.12));">
-        <div style="font-family:'JetBrains Mono',monospace; font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color: var(--brass-light,#e8c382); margin-bottom:8px;">📖 Explanation</div>
+        <div style="font-family:'Space Mono',monospace; font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color: var(--brass-light,#e8c382); margin-bottom:8px;">📖 Explanation</div>
         <div style="font-weight:400; text-align:left; font-size:0.9rem; line-height:1.8;">${formatPyqSolution(rawExplanation)}</div>
       </div>`;
   } else if (rawExplanation) {
@@ -6292,15 +6415,14 @@ function startApp() {
   if (window.DB_Engine) {
     window.DB_Engine.listenLeaderboard((leaders) => {
       liveLeaderboard = leaders;
-      // FIX: the leaderboard panel + chart actually live on screen-home
-      // (not screen-subjects), and the full-leaderboard popup is a modal
-      // overlay that can be open on top of ANY screen — so gate the
-      // re-render on whichever of those is currently visible, instead of
-      // a screen id the leaderboard was never on. Without this, Firebase
-      // pushes were arriving but the "live" board almost never repainted.
-      const homeActive = document.getElementById('screen-home') && document.getElementById('screen-home').classList.contains('active');
-      const popupOpen = document.getElementById('leaderboardPopup') && document.getElementById('leaderboardPopup').classList.contains('show');
-      if (homeActive || popupOpen) renderLeaderboard();
+      // Re-render whenever the leaderboard is actually visible — either the
+      // panel on the Subjects screen, OR the popup (which can be opened from
+      // the sidebar while on any other screen, e.g. Home, JEE Arena). Only
+      // checking screen-subjects here meant the popup silently went stale
+      // for anyone who opened it from elsewhere.
+      const subjectsVisible = document.getElementById('screen-subjects').classList.contains('active');
+      const popupVisible = document.getElementById('leaderboardPopup').classList.contains('show');
+      if (subjectsVisible || popupVisible) renderLeaderboard();
     });
     window.DB_Engine.listenAnnouncement((ann) => { renderAnnouncementBanner(ann); });
     window.DB_Engine.listenRemovalStatus((info) => {
@@ -6774,9 +6896,77 @@ function sendRemovalDiscussionMsg() {
 // reset. Add future cross-navigation flags here rather than back at each
 // call site, so this stays the single source of truth for it.
 function setBodyThemeClass(themeClass) {
-  const persist = ['focus-active', 'fx-glow-pulse'].filter(c => document.body.classList.contains(c));
+  // has-sidebar / sidebar-collapsed / exam-lockdown-active are structural
+  // layout classes, not per-subject theme classes — they must survive this
+  // reset or the sidebar layout and full-screen popups silently break every
+  // time a screen re-themes the body (i.e. constantly).
+  const persist = ['focus-active', 'fx-glow-pulse', 'has-sidebar', 'sidebar-collapsed', 'exam-lockdown-active']
+    .filter(c => document.body.classList.contains(c));
   document.body.className = themeClass || '';
   persist.forEach(c => document.body.classList.add(c));
+}
+
+// JEE ARENA — full mock-exam dashboard: stats, next-up card, and real
+// attempt history (each full 75-question mock, scored with negative
+// marking via submitJeeExam(), is saved to state.mockHistory there).
+function renderJeeArenaScreen(navOpts) {
+  AudioSys.startPeacefulAmbient();
+  document.getElementById('appTitleText').textContent = 'JEE Arena';
+  setBodyThemeClass('');
+
+  const hist = state.mockHistory || [];
+  const takenEl = document.getElementById('arenaMocksTaken');
+  if (takenEl) takenEl.textContent = hist.length;
+  const bestEl = document.getElementById('arenaBestScore');
+  if (bestEl) bestEl.textContent = hist.length ? Math.max(...hist.map(h => h.score)) : '–';
+
+  const daysEl = document.getElementById('arenaDaysToJee');
+  if (daysEl) {
+    const dateStr = localStorage.getItem(EXAM_DATE_STORAGE_KEY);
+    if (dateStr) {
+      const diffDays = Math.ceil((new Date(dateStr + 'T00:00:00') - new Date()) / 86400000);
+      daysEl.textContent = diffDays > 0 ? diffDays : (diffDays === 0 ? 'Today' : '–');
+    } else daysEl.textContent = '–';
+  }
+
+  const mockChapters = (DATA.find(s => s.id === 'mixed') || {}).chapters || [];
+  const nextChap = mockChapters.length ? mockChapters[hist.length % mockChapters.length] : null;
+  const testNum = hist.length + 1;
+  const titleEl = document.getElementById('arenaNextUpTitle');
+  if (titleEl) titleEl.textContent = nextChap ? `Full Syllabus Test ${testNum}` : 'No mocks configured';
+  const startBtn = document.getElementById('arenaStartBtn');
+  if (startBtn) startBtn.disabled = !nextChap;
+
+  const listEl = document.getElementById('arenaPastAttempts');
+  if (listEl) {
+    if (!hist.length) {
+      listEl.innerHTML = `<div class="side-panel" style="text-align:center; color:var(--parchment-dim); padding:24px;">No mocks attempted yet — start your first one above.</div>`;
+    } else {
+      listEl.innerHTML = hist.map(h => {
+        const days = Math.max(0, Math.floor((Date.now() - new Date(h.date).getTime()) / 86400000));
+        const whenText = days === 0 ? 'Today' : days === 1 ? '1 day ago' : `${days} days ago`;
+        return `<div class="side-panel" onclick="viewMockAttempt('${h.id}')" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:16px 18px; cursor:pointer;">
+          <div><div style="font-weight:700; margin-bottom:2px;">${h.name}</div><div style="font-size:0.78rem; color:var(--parchment-dim);">${whenText}${h.questions && h.questions.length ? ' · View solutions →' : ''}</div></div>
+          <div style="font-weight:700; color:var(--brass-light);">${h.score}/${h.maxScore}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  showScreen('screen-jeearena', navOpts);
+}
+
+function startNextJeeMock() {
+  const mockSubj = DATA.find(s => s.id === 'mixed');
+  const hist = state.mockHistory || [];
+  const nextChap = mockSubj && mockSubj.chapters.length ? mockSubj.chapters[hist.length % mockSubj.chapters.length] : null;
+  if (!mockSubj || !nextChap) return;
+  setBodyThemeClass(mockSubj.theme);
+  state.curSubj = mockSubj;
+  state.curChap = nextChap;
+  if (!state.progress[nextChap.id]) state.progress[nextChap.id] = { maxUnlocked: 1, stars: {} };
+  state.curLvl = 1;
+  startGame();
 }
 
 function goToSubjects(navOpts) {
@@ -6789,7 +6979,7 @@ function goToSubjects(navOpts) {
   DATA.forEach(sub => {
     let card = document.createElement('div');
     card.className = 'card-item';
-    card.innerHTML = `<div class="ico">${sub.icon}</div><h3>${sub.name}</h3><p>${sub.chapters.length} Chapters</p>`;
+    card.innerHTML = `<div class="ico">${SUBJECT_ICON_SVG[sub.id] || sub.icon}</div><h3>${sub.name}</h3><p>${sub.chapters.length} Chapters</p>`;
     card.onclick = () => { setBodyThemeClass(sub.theme); state.curSubj = sub; loadChapters(); };
     grid.appendChild(card);
   });
@@ -6814,6 +7004,11 @@ function renderHomeScreen(navOpts) {
 
   const progWrap = document.getElementById('homeSubjectProgress');
   if (progWrap) {
+    // Each subject gets its own accent (same colors as its in-app theme:
+    // brass=math, violet=physics, green=chemistry) instead of one flat bar
+    // color for everything — a small thing, but it's what makes this read
+    // as a hand-tuned map legend rather than a generic progress widget.
+    const subjColors = { math: 'var(--brass)', physics: '#9b8ecb', chemistry: 'var(--sea)', mixed: 'var(--brass-light)' };
     progWrap.innerHTML = DATA.map(sub => {
       let cleared = 0, total = 0;
       sub.chapters.forEach(ch => {
@@ -6822,9 +7017,10 @@ function renderHomeScreen(navOpts) {
         total += TOTAL_LEVELS;
       });
       const pct = total ? Math.round((cleared / total) * 100) : 0;
+      const color = subjColors[sub.id] || 'var(--brass)';
       return `<div style="margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;"><strong>${sub.name}</strong><span>${pct}%</span></div>
-        <div style="background:rgba(255,255,255,0.08); border-radius:8px; height:8px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:var(--brass);"></div></div>
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;"><strong>${sub.name}</strong><span style="font-family:'Space Mono',monospace; color:var(--parchment-dim); font-size:0.8rem;">${pct}%</span></div>
+        <div style="background:rgba(255,255,255,0.06); border-radius:2px; height:4px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${color};"></div></div>
       </div>`;
     }).join('');
   }
@@ -7019,6 +7215,7 @@ function enterExamLockdown() {
   clearTimeout(lockdownStrikeBatchTimer);
   lockdownStrikeBatchTimer = null;
   lockdownStrikeBatch = [];
+  document.body.classList.add('exam-lockdown-active'); // hides the left sidebar during a JEE mock — see CSS
   document.addEventListener('fullscreenchange', onLockdownFullscreenChange);
   document.addEventListener('visibilitychange', onLockdownVisibilityChange);
   window.addEventListener('blur', onLockdownWindowBlur);
@@ -7027,6 +7224,7 @@ function enterExamLockdown() {
 
 function exitExamLockdown() {
   examLockdown.active = false;
+  document.body.classList.remove('exam-lockdown-active');
   AudioSys.enableAfterExam();
   document.removeEventListener('fullscreenchange', onLockdownFullscreenChange);
   document.removeEventListener('visibilitychange', onLockdownVisibilityChange);
@@ -7501,6 +7699,80 @@ function confirmSubmitJee() {
 function closeSubmitJeeModal() { document.getElementById('submitJeeModal').classList.remove('show'); }
 function doSubmitJeeExam() { closeSubmitJeeModal(); submitJeeExam(); }
 
+// Builds the "Detailed Exam Analysis & Solutions" HTML — the summary pill
+// bar plus one solution card per question. Shared by the live post-exam
+// report (submitJeeExam, below) AND by viewMockAttempt() for reopening a
+// past JEE Arena attempt from history, so both always render identically.
+function buildJeeReportHtml(correctCount, incorrectCount, qCount, accuracyPct, questionReports) {
+  let html = `
+    <h4 style="text-align:center; color:var(--sea); margin-bottom:14px; font-family:'Fraunces',serif;">Detailed Exam Analysis &amp; Solutions</h4>
+    <div class="jee-report-summary-bar">
+      <span class="srb-pill" style="color:var(--sea);">✓ ${correctCount} Correct</span>
+      <span class="srb-pill" style="color:var(--coral);">✗ ${incorrectCount} Incorrect</span>
+      <span class="srb-pill" style="color:var(--parchment-dim);">— ${qCount - correctCount - incorrectCount} Skipped</span>
+      <span class="srb-pill" style="color:var(--brass-light);">🎯 ${accuracyPct}% Accuracy</span>
+    </div>
+  `;
+
+  (questionReports || []).forEach((r) => {
+    let statusColor = r.isUnattempted ? "var(--parchment-dim)" : (r.isCorrect ? "var(--sea)" : "var(--coral)");
+    let statusLabel = r.isUnattempted ? "SKIPPED" : (r.isCorrect ? "CORRECT" : "INCORRECT");
+    let tags = [r.subject, r.difficulty].filter(Boolean).map(t => `<span class="jsc-tag">${t}</span>`).join('');
+
+    html += `
+      <div class="jee-solution-card" style="border-left-color:${statusColor};">
+        <div class="jsc-head">
+          <span class="jsc-qnum">Question ${r.idx + 1}</span>
+          <div class="jsc-tags">${tags}<span class="jsc-status" style="color:${statusColor}; background:rgba(255,255,255,0.06);">${statusLabel}</span></div>
+        </div>
+        <div class="jsc-q">${r.q}${r.ocrStem ? `<div style="margin-top:8px;">${r.ocrStem}</div>` : ''}</div>
+        <div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Your Answer:</span> <b style="color:${statusColor};">${r.uAnsText}</b></div>
+        ${!r.isCorrect ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Correct Answer:</span> <b style="color:var(--sea);">${r.cAnsText}</b></div>` : ''}
+        <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}<br><em>In short: the correct answer is ${r.cAnsText}.</em></div>
+        <div class="jsc-footer">
+          <button class="jsc-share-btn" onclick="shareJeeSolution(${r.idx}, this)">🔗 Share Solution</button>
+        </div>
+      </div>
+    `;
+  });
+  return html;
+}
+
+// Reopens a past JEE Arena attempt's full solutions in a standalone modal
+// (mockReportModal) — separate from the live post-exam completeOv overlay
+// since that one lives inside the in-progress game screen. Older attempts
+// saved before solution-storage was added won't have `questions`, so this
+// degrades gracefully instead of breaking.
+function viewMockAttempt(mockId) {
+  const entry = (state.mockHistory || []).find(h => h.id === mockId);
+  if (!entry) return;
+  const titleEl = document.getElementById('mockReportModalTitle');
+  const bodyEl = document.getElementById('mockReportModalBody');
+  if (titleEl) titleEl.textContent = `🏆 ${entry.name}`;
+  if (!bodyEl) return;
+
+  if (!entry.questions || !entry.questions.length) {
+    bodyEl.innerHTML = `
+      <div class="jee-report-summary-bar" style="margin-bottom:14px;">
+        <span class="srb-pill" style="color:var(--sea);">✓ ${entry.correctCount} Correct</span>
+        <span class="srb-pill" style="color:var(--coral);">✗ ${entry.incorrectCount} Incorrect</span>
+        <span class="srb-pill" style="color:var(--parchment-dim);">— ${entry.unattempted} Skipped</span>
+        <span class="srb-pill" style="color:var(--brass-light);">🎯 ${entry.accuracyPct}% Accuracy</span>
+      </div>
+      <div class="side-panel" style="text-align:center; color:var(--parchment-dim); padding:20px;">
+        Solutions weren't saved for this older attempt — every mock from now on saves full solutions here.
+      </div>`;
+  } else {
+    bodyEl.innerHTML = buildJeeReportHtml(entry.correctCount, entry.incorrectCount,
+      entry.correctCount + entry.incorrectCount + entry.unattempted, entry.accuracyPct, entry.questions);
+  }
+  document.getElementById('mockReportModal').classList.add('show');
+  typesetMath(bodyEl);
+}
+function closeMockReportModal() {
+  document.getElementById('mockReportModal').classList.remove('show');
+}
+
 function submitJeeExam() {
   state.examSubmitted = true;
   let submitBtn = document.getElementById('submitExamBtn');
@@ -7555,41 +7827,29 @@ function submitJeeExam() {
     questions: questionReports
   };
 
-  let reportHtml = `
-    <h4 style="text-align:center; color:var(--sea); margin-bottom:14px; font-family:'Playfair Display',serif;">Detailed Exam Analysis &amp; Solutions</h4>
-    <div class="jee-report-summary-bar">
-      <span class="srb-pill" style="color:var(--sea);">✓ ${correctCount} Correct</span>
-      <span class="srb-pill" style="color:var(--coral);">✗ ${incorrectCount} Incorrect</span>
-      <span class="srb-pill" style="color:var(--parchment-dim);">— ${qCount - correctCount - incorrectCount} Skipped</span>
-      <span class="srb-pill" style="color:var(--brass-light);">🎯 ${accuracyPct}% Accuracy</span>
-    </div>
-  `;
-
-  questionReports.forEach((r) => {
-    let statusColor = r.isUnattempted ? "var(--parchment-dim)" : (r.isCorrect ? "var(--sea)" : "var(--coral)");
-    let statusLabel = r.isUnattempted ? "SKIPPED" : (r.isCorrect ? "CORRECT" : "INCORRECT");
-    let tags = [r.subject, r.difficulty].filter(Boolean).map(t => `<span class="jsc-tag">${t}</span>`).join('');
-
-    reportHtml += `
-      <div class="jee-solution-card" style="border-left-color:${statusColor};">
-        <div class="jsc-head">
-          <span class="jsc-qnum">Question ${r.idx + 1}</span>
-          <div class="jsc-tags">${tags}<span class="jsc-status" style="color:${statusColor}; background:rgba(255,255,255,0.06);">${statusLabel}</span></div>
-        </div>
-        <div class="jsc-q">${r.q}${r.ocrStem ? `<div style="margin-top:8px;">${r.ocrStem}</div>` : ''}</div>
-        <div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Your Answer:</span> <b style="color:${statusColor};">${r.uAnsText}</b></div>
-        ${!r.isCorrect ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Correct Answer:</span> <b style="color:var(--sea);">${r.cAnsText}</b></div>` : ''}
-        <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}<br><em>In short: the correct answer is ${r.cAnsText}.</em></div>
-        <div class="jsc-footer">
-          <button class="jsc-share-btn" onclick="shareJeeSolution(${r.idx}, this)">🔗 Share Solution</button>
-        </div>
-      </div>
-    `;
-  });
+  let reportHtml = buildJeeReportHtml(correctCount, incorrectCount, qCount, accuracyPct, questionReports);
 
   AudioSys.win();
   let prog = state.progress[state.curChap.id];
   if(state.curLvl === prog.maxUnlocked && prog.maxUnlocked <= TOTAL_LEVELS) { prog.maxUnlocked++; doSave(); }
+
+  // Record this attempt into JEE mock history for the JEE Arena screen —
+  // only for the "Combined Arena" mock chapters (mix_1/mix_2/mix_3), not
+  // regular single-chapter exams which share this same submit function.
+  if (state.curSubj && state.curSubj.id === 'mixed') {
+    state.mockHistory.unshift({
+      id: 'mock_' + Date.now(),
+      chapId: state.curChap.id,
+      name: state.curChap.name,
+      date: new Date().toISOString(),
+      score, maxScore, accuracyPct,
+      correctCount, incorrectCount, unattempted: qCount - correctCount - incorrectCount,
+      // Full per-question data so this attempt's solutions can be reopened
+      // later from the JEE Arena "Past attempts" list (viewMockAttempt()).
+      questions: questionReports
+    });
+    doSave();
+  }
   
   let compOv = document.getElementById('completeOv');
   let title = document.getElementById('compTitle');
@@ -8443,7 +8703,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const btn = document.createElement('button');
   btn.id = 'diagBtn';
   btn.textContent = 'Copy diagnostic info';
-  btn.style.cssText = 'position:fixed; bottom:12px; right:12px; z-index:5001; padding:8px 12px; font-family:Inter,sans-serif; font-size:0.75rem; font-weight:600; background:rgba(11,19,32,0.85); color:#e8c382; border:1px solid rgba(201,156,81,0.5); border-radius:8px; cursor:pointer; backdrop-filter:blur(8px); display:none;';
+  btn.style.cssText = 'position:fixed; bottom:12px; right:12px; z-index:5001; padding:8px 12px; font-family:Public Sans,sans-serif; font-size:0.75rem; font-weight:600; background:rgba(11,19,32,0.85); color:#e8c382; border:1px solid rgba(201,156,81,0.5); border-radius:8px; cursor:pointer; backdrop-filter:blur(8px); display:none;';
   btn.onclick = function () { if (window.copyExpeditionDiagnostics) window.copyExpeditionDiagnostics(); };
   document.body.appendChild(btn);
   setInterval(function () {
