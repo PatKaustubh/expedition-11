@@ -30,6 +30,35 @@
   --glass-border: rgba(244, 239, 228, 0.12);
 }
 * { box-sizing: border-box; }
+
+/* JEE question content comes from a scraped/OCR'd external dataset whose
+   LaTeX is inconsistent — short fragments that should read inline (a single
+   variable, a short fraction, "α", "ΔT") are frequently wrapped in DISPLAY
+   math delimiters ($$...$$ / \[...\]) instead of inline ones. MathJax
+   renders any display-math block as centered on its own line by design —
+   which is exactly right for a genuine multi-line equation, but for a lone
+   "α" or "ΔT" it means the question/option text fractures into one
+   fragment per line ("K", "r²", "α", "Δ", "T" each stacked separately)
+   instead of reading as one sentence. Rather than trying to rewrite the
+   source LaTeX (fragile, dataset-specific, would need constant upkeep as
+   the data changes), render ALL MathJax output inline-flow here — display
+   equations still get a bit of breathing room via margin, but no longer
+   force a hard line-break, so short fragments rejoin the surrounding
+   sentence instead of stacking.  This only affects question/option text,
+   not literal <br> usage elsewhere in the app (explanations, dialogs).
+*/
+mjx-container[display="true"] {
+  display: inline-block !important;
+  margin: 0 3px !important;
+  text-align: left !important;
+}
+#qText mjx-container, .opt mjx-container, .jee-solution-card mjx-container {
+  vertical-align: middle;
+}
+#qText, .opt {
+  line-height: 1.65;
+}
+
 html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Public Sans', sans-serif; min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
 /* THEMES — each subject keeps a distinct accent (the way a cartographer
