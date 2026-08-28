@@ -4308,23 +4308,45 @@ const Factory = {
     }
   },
 
-  // Some rows in this dataset have explanation text where a font-encoding
-  // mismatch happened somewhere upstream (likely when the original PDF/page
-  // was scraped): math symbols like Σ (summation), x̄ (x-bar), and σ (sigma)
-  // come through as unrelated characters — "£", "±", "²" — used as if they
-  // were ordinary variables (e.g. "£_(i=1)^(10)" instead of "Σ", or "±=1"
-  // instead of "x̄=1"). There's no reliable way to map these back to the
-  // right symbol after the fact, so rather than guess (and risk silently
-  // showing WRONG math), we detect this pattern and suppress the
-  // explanation entirely in favor of the normal "not available" fallback.
+  // Some rows in this dataset have text where a font-encoding mismatch
+  // happened somewhere upstream (likely when the original PDF/page was
+  // scraped): math symbols like Σ (summation), x̄ (x-bar), σ, θ, π and √
+  // come through as unrelated characters — "£", "±", "²", "¸", "À", and a
+  // stray straight quote — used as if they were ordinary variables (e.g.
+  // "for ±, ², ³ ∈ N" instead of "for α, β, γ ∈ N", or "3À/6" instead of
+  // "3π/6", or "e="(1-b²/a²)" instead of "e=√(1-b²/a²)"). There's no
+  // reliable way to map these back to the right symbol after the fact, so
+  // rather than guess (and risk silently showing WRONG math), we detect
+  // this pattern and reject the row entirely.
+  //
+  // This check runs against the QUESTION and OPTIONS too, not just the
+  // explanation — a corrupted question stem or answer choices are not
+  // "missing an explanation", they're actively wrong/unusable and must
+  // not be shown to a student at all.
   looksLikeCorruptedMathText(text) {
     if (!text) return false;
-    // £ used as a function/summation with a subscript is never legitimate —
-    // it's specifically what a mis-decoded Σ looks like here. ±= and ²=
-    // are similarly never real usages (± and ² don't stand alone before an
-    // equals sign in genuine notation), and are the telltale sign of a
-    // mis-decoded x̄ or σ being used as a plain variable.
-    return /£_[\(\{]/.test(text) || /(^|\s)±\s*=/.test(text) || /(^|\s)²\s*=/.test(text);
+    // À and ¸ have no legitimate standalone use in JEE question text at
+    // all — every real occurrence we've seen is a mis-decoded π or θ.
+    if (/À|¸/.test(text)) return true;
+    // £ used as a function/summation (with or without a space before the
+    // subscript) is never legitimate — it's what a mis-decoded Σ looks
+    // like here.
+    if (/£\s*[_]?\s*[\(\{]/.test(text)) return true;
+    // A straight quote directly before a parenthesis is the telltale sign
+    // of a mis-decoded √ (e.g. "(129) instead of √(129)).
+    if (/"\s*\(/.test(text)) return true;
+    // ±, ², ³ standing in for ordinary variable names: immediately before
+    // "=", immediately before "^" (as if squared), used like a function
+    // argument e.g. "y(±)", or listed like variable names e.g. "±, ², ³".
+    if (/[±²³]\s*=/.test(text)) return true;
+    if (/[±²³]\s*\^/.test(text)) return true;
+    if (/\^\s*\d*\s*[±²³]/.test(text)) return true;
+    if (/\(\s*[±²³]\s*\)/.test(text)) return true;
+    if (/[±²³]\s*,\s*[±²³]/.test(text)) return true;
+    // A trig/log-family function immediately followed by ±/²/³ as if it
+    // were the function's argument (e.g. "cos ±" standing in for "cos θ").
+    if (/\b(sin|cos|tan|cot|sec|cosec|csc|log|ln)\s*[±²³]/.test(text)) return true;
+    return false;
   },
 
   // Cleans up junk artifacts that leak through from the original scraped
@@ -4392,6 +4414,19 @@ const Factory = {
       // the same way the fallback branch below already skips blank rows.
       const qBody = String(row.question || '').trim();
       if (!qBody) return null;
+
+      // Reject the WHOLE row if the corrupted-math-symbol pattern shows up
+      // anywhere in it — question, any option, or the explanation. This
+      // used to only check the explanation and only blank that one field,
+      // which meant a row with a garbled QUESTION or garbled OPTIONS (the
+      // actually-ungradable case) still got shown to the student with
+      // nonsense like "±, ², ³" standing in for real variable names. A
+      // missing explanation is fine to hide gracefully; a corrupted
+      // question or option is not something we can present at all.
+      if (this.looksLikeCorruptedMathText(qBody) || opts.some(o => this.looksLikeCorruptedMathText(o))) {
+        return null;
+      }
+
       const qHtml = `<div>${qBody}</div>`;
       let explanation = String(row.explanation || row.solution || '').trim();
       explanation = this.cleanScrapedExplanation(explanation);
@@ -7985,6 +8020,19 @@ function latexToPlain(input) {
   if (!input) return '';
   let s = String(input);
 
+  // Decode HTML entities BEFORE stripping tags — this dataset's explanation
+  // text frequently contains literal &nbsp;/&amp; (used upstream as manual
+  // spacing/alignment), which browsers render invisibly as normal spaces
+  // but which jsPDF's plain-text writer has no way to interpret — without
+  // this they show up as the literal 6-character string "&nbsp;" in the
+  // exported PDF. A tiny offscreen element is the simplest reliable way to
+  // decode arbitrary named/numeric entities without hand-listing them.
+  if (/&[a-zA-Z#0-9]+;/.test(s)) {
+    const decoder = document.createElement('textarea');
+    decoder.innerHTML = s;
+    s = decoder.value;
+  }
+
   // Strip any leftover HTML first (e.g. question images).
   s = s.replace(/<img[^>]*>/gi, '[image — view in-app]').replace(/<[^>]+>/g, ' ');
 
@@ -8134,7 +8182,7 @@ function latexToPlain(input) {
   // (e.g. would otherwise split "cosec" into "co sec").
   s = s.replace(/(?<![A-Za-z])([A-Za-z0-9])(sin|cos|tan|cot|sec|csc|cosec|log|ln|sinh|cosh|tanh) /g, '$1 $2 ');
 
-  s = s.split('\n').map(line => line.replace(/[ \t]+/g, ' ').trim()).filter(Boolean).join('\n');
+  s = s.split('\n').map(line => line.replace(/[ \t\u00a0]+/g, ' ').trim()).filter(Boolean).join('\n');
   s = s.trim();
 
   return s;
