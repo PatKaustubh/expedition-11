@@ -17,6 +17,45 @@
 </script>
 
 <style>
+/* ===== LIGHT THEME ===== */
+body.theme-light {
+  --navy: #f4efe4; --navy-deep: #e8e2d6;
+  --parchment: #1a2138; --parchment-dim: #4a5568;
+  --ink: #f4efe4; --brass: #b07d20; --brass-light: #8a6010;
+  --sea: #2a7d6f; --coral: #c0392b; --line: rgba(26,33,56,0.18); --violet: #6b5b95;
+  --glass: rgba(255,255,255,0.88);
+  --glass-border: rgba(26,33,56,0.15);
+}
+body.theme-light { background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); }
+body.theme-light .card, body.theme-light .card-item, body.theme-light .side-panel,
+body.theme-light .modal-box, body.theme-light .widget-panel, body.theme-light .hud-chip,
+body.theme-light .level-btn, body.theme-light .opt, body.theme-light .palette-wrap {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+body.theme-light .opt { color: #1a2138 !important; text-shadow: none; }
+body.theme-light .back-btn { color: var(--parchment); }
+body.theme-light input, body.theme-light textarea, body.theme-light select {
+  background: #fff !important; color: #1a2138 !important;
+}
+body.theme-light .dev-banner { background: rgba(192,57,43,0.10); }
+body.theme-light .intro-modal { background: var(--navy-deep); }
+body.theme-light #bgCanvas { opacity: 0.08; }
+
+/* Theme toggle button */
+#themeToggleBtn {
+  position: fixed; bottom: 16px; left: 16px; z-index: 4990;
+  background: var(--glass); border: 1px solid var(--line); border-radius: 20px;
+  padding: 7px 13px; font-family: 'Space Mono', monospace; font-size: 0.72rem;
+  font-weight: 600; color: var(--parchment-dim); cursor: pointer;
+  backdrop-filter: blur(8px); transition: border-color 0.2s, left 0.2s;
+}
+#themeToggleBtn:hover { border-color: var(--brass); color: var(--brass-light); }
+/* Push past the sidebar on desktop so it doesn't hide behind it */
+@media (min-width: 951px) {
+  #themeToggleBtn { left: 186px; }
+  body.sidebar-collapsed #themeToggleBtn { left: 70px; }
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Public+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Caveat:wght@500;600&display=swap');
 
 :root {
@@ -1037,6 +1076,55 @@ body.has-sidebar .modal-box.ft-wrap { display: flex; flex-direction: column; ali
 .fp-subtitle { font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.5px; text-transform: uppercase; color: var(--parchment-dim); display: none; }
 body.has-sidebar .fp-subtitle { display: block; }
 /* ===================== END DASHBOARD VISUAL REFRESH ===================== */
+
+/* ===== FLASHCARD MODE ===== */
+.flashcard-scene { perspective: 1000px; width: 100%; max-width: 520px; margin: 0 auto 28px; cursor: pointer; }
+.flashcard-inner { position: relative; width: 100%; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1); display: grid; }
+.flashcard-scene.flipped .flashcard-inner { transform: rotateY(180deg); }
+/* Both faces sit in the same grid cell so they overlap; front sets the height */
+.flashcard-face { grid-area: 1/1; border-radius: 16px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; min-height: 200px; box-sizing: border-box; overflow: hidden; }
+.flashcard-front { background: var(--glass); border: 1px solid var(--brass); color: var(--parchment); }
+.flashcard-back { background: rgba(42,157,143,0.12); border: 1px solid var(--sea); color: var(--parchment); transform: rotateY(180deg); overflow-y: auto; justify-content: flex-start; padding-top: 28px; }
+.flashcard-label { font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; opacity: 0.7; flex-shrink: 0; }
+.flashcard-text { font-size: 0.9rem; line-height: 1.7; word-break: break-word; overflow-wrap: anywhere; max-width: 100%; }
+.flashcard-hint { font-size: 0.72rem; font-family: 'Space Mono', monospace; color: var(--parchment-dim); margin-top: 10px; opacity: 0.6; flex-shrink: 0; }
+.flashcard-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 10px; }
+.flashcard-counter { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--parchment-dim); }
+.flashcard-progress-bar { width: 100%; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
+.flashcard-progress-fill { height: 100%; background: linear-gradient(90deg, var(--sea), var(--brass-light)); border-radius: 2px; transition: width 0.3s; }
+
+/* ===== ANALYTICS DASHBOARD ===== */
+.analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+@media (max-width: 540px) { .analytics-grid { grid-template-columns: 1fr; } }
+.analytics-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px 20px; }
+.analytics-card .ac-label { font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--parchment-dim); margin-bottom: 8px; }
+.analytics-card .ac-value { font-family: 'Space Mono', monospace; font-size: 1.6rem; font-weight: 700; color: var(--brass-light); }
+.analytics-card .ac-sub { font-size: 0.78rem; color: var(--parchment-dim); margin-top: 4px; }
+.analytics-chapter-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--glass-border); font-size: 0.82rem; }
+.analytics-chapter-row:last-child { border-bottom: none; }
+.analytics-chapter-row .acr-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.analytics-chapter-row .acr-bar-wrap { flex: 0 0 90px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.analytics-chapter-row .acr-bar-fill { height: 100%; border-radius: 3px; }
+.analytics-chapter-row .acr-pct { font-family: 'Space Mono', monospace; font-size: 0.72rem; flex: 0 0 36px; text-align: right; }
+
+/* ===== TIMED CHAPTER QUIZ ===== */
+.tcq-timer-ring { display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.tcq-timer-text { font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; color: var(--brass-light); }
+.tcq-timer-text.danger { color: var(--coral); animation: pulseRed 1s infinite; }
+
+/* ===== STUDY PLAN ===== */
+.study-plan-day { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.study-plan-day .spd-head { font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--brass-light); margin-bottom: 6px; }
+.study-plan-day .spd-tasks { font-size: 0.82rem; color: var(--parchment); line-height: 1.55; }
+.study-plan-day .spd-tasks li { padding: 2px 0; }
+
+/* ===== OCR UPLOAD ===== */
+.ocr-drop-zone { border: 2px dashed var(--line); border-radius: 14px; padding: 32px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; font-size: 0.9rem; color: var(--parchment-dim); }
+.ocr-drop-zone:hover, .ocr-drop-zone.drag-over { border-color: var(--brass); color: var(--parchment); }
+.ocr-result-block { background: rgba(42,157,143,0.08); border: 1px solid rgba(42,157,143,0.3); border-radius: 10px; padding: 14px; margin-top: 0; font-size: 0.88rem; line-height: 1.75; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow-y: auto; }
+.ocr-action-bar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.ocr-action-bar .btn { font-size: 0.8rem; padding: 7px 14px; }
+.ocr-section-label { font-size: 0.68rem; font-family: 'Space Mono', monospace; color: var(--parchment-dim); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; margin-top: 16px; }
 </style>
 
 
@@ -1251,6 +1339,12 @@ body.has-sidebar .fp-subtitle { display: block; }
   <div class="sb-item" data-sb="leaderboard" onclick="sbNav('leaderboard')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13V8.5M8 13V3M12.5 13V6.5"/></svg></span><span class="sb-label">Leaderboard</span></div>
   <div class="sb-item" data-sb="invite" onclick="sbNav('invite')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 12-5.5-4 11-2.7-4.3L2 8Z"/><path d="m7.3 9.2 2.7-3.7"/></svg></span><span class="sb-label">Invite friends</span></div>
   <div class="sb-item" data-sb="backup" onclick="sbNav('backup')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.6"/><path d="M5 2.5v3h6v-3"/><path d="M5.5 9h5"/></svg></span><span class="sb-label">Backup</span></div>
+  <div class="sb-item" data-sb="analytics" onclick="sbNav('analytics')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12V7M6 12V4M10 12V9M14 12V5"/></svg></span><span class="sb-label">Analytics</span></div>
+  <div class="sb-item" data-sb="flashcards" onclick="sbNav('flashcards')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="9" rx="1"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8 8v2M7 9h2"/></svg></span><span class="sb-label">Flashcards</span></div>
+  <div class="sb-item" data-sb="timedquiz" onclick="sbNav('timedquiz')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="5.5"/><path d="M8 6.5v3l2 1.2"/><path d="M6 1.5h4"/></svg></span><span class="sb-label">Quick Quiz</span></div>
+  <div class="sb-item" data-sb="ocrscan" onclick="sbNav('ocrscan')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5"/><rect x="9" y="2" width="5" height="5"/><rect x="2" y="9" width="5" height="5"/><path d="M9 11.5h4M11 9.5v4"/></svg></span><span class="sb-label">Scan Q</span></div>
+  <div class="sb-item" data-sb="studyplan" onclick="sbNav('studyplan')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="0.6"/><path d="M5 2.5V1M11 2.5V1M2 6h12"/><path d="M5.5 9l1.5 1.5 3-3"/></svg></span><span class="sb-label">Study Plan</span></div>
+  <div class="sb-item" data-sb="parentdash" onclick="sbNav('parentdash')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.5" r="2.5"/><path d="M1.5 13.5c.5-2.5 2.3-3.8 4.5-3.8"/><path d="M11 9.5l1.5 1.5 3-3"/></svg></span><span class="sb-label">Share View</span></div>
   <div class="sb-item" onclick="openSwitchPlayerModal()"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.3" r="2.3"/><path d="M3.5 13.5c.6-2.6 2.3-4 4.5-4s3.9 1.4 4.5 4"/></svg></span><span class="sb-label">Switch player</span></div>
   <div class="sb-item" onclick="openResetModal()"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.6-3.7"/><path d="M13 2.5v2.3h-2.3"/></svg></span><span class="sb-label">Reset progress</span></div>
   <div id="sidebarCollapseBtn" onclick="toggleSidebarCollapse()" title="Collapse sidebar"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 6 8l4 5"/></svg></span><span class="sb-label">Collapse</span></div>
@@ -1315,6 +1409,12 @@ function sbNav(which) {
       case 'leaderboard': if (typeof openLeaderboardPopup === 'function') openLeaderboardPopup(); break;
       case 'invite': if (typeof shareInviteLink === 'function') shareInviteLink(); break;
       case 'backup': if (typeof openBackupPopup === 'function') openBackupPopup(); break;
+      case 'analytics': if (typeof openAnalyticsModal === 'function') openAnalyticsModal(); break;
+      case 'flashcards': if (typeof openFlashcardModal === 'function') openFlashcardModal(); break;
+      case 'timedquiz': if (typeof openTimedQuizSetup === 'function') openTimedQuizSetup(); break;
+      case 'ocrscan': if (typeof openOcrUpload === 'function') openOcrUpload(); break;
+      case 'studyplan': if (typeof openStudyPlan === 'function') openStudyPlan(); break;
+      case 'parentdash': if (typeof openParentDash === 'function') openParentDash(); break;
     }
   } catch (err) {
     console.error('[sbNav] failed to open "' + which + '":', err);
@@ -1325,7 +1425,9 @@ function sbNav(which) {
   // so a sidebar click can never silently do nothing.
   const modalIdByTab = {
     notes: 'quickNotesModal', formulas: 'formulaSheetModal', badges: 'badgesPopup',
-    leaderboard: 'leaderboardPopup', backup: 'backupPopup', focus: 'focusTimerModal'
+    leaderboard: 'leaderboardPopup', backup: 'backupPopup', focus: 'focusTimerModal',
+    analytics: 'analyticsModal', flashcards: 'flashcardModal', timedquiz: 'timedQuizSetupModal',
+    ocrscan: 'ocrUploadModal', studyplan: 'studyPlanModal', parentdash: 'parentDashModal'
   };
   const forcedId = modalIdByTab[which];
   if (forcedId) {
@@ -5132,7 +5234,34 @@ function clearMistakeIfPresent(subjId, chapId, qText) {
   if (bank[key]) { delete bank[key]; setMistakeBank(bank); }
 }
 
-const SR_INTERVALS_DAYS = [1, 3, 7]; // days until next review, indexed by correctStreak
+/* ================= SM-2 SPACED REPETITION (upgraded) =================
+   Replaces the fixed [1,3,7] day intervals with a real SM-2 ease-factor
+   algorithm. Each card tracks `easeFactor` (default 2.5, min 1.3) and
+   `interval` (days). On a correct answer the interval grows geometrically;
+   on a wrong answer the card resets to interval=1 and ease factor drops. */
+function sm2Next(rec, quality) {
+  // quality: 5=perfect, 4=correct, 3=correct-hesitant, <3=wrong
+  const ef = rec.easeFactor || 2.5;
+  const n = rec.sm2n || 0;
+  let nextInterval, nextEf, nextN;
+
+  if (quality >= 3) {
+    // Correct answer
+    if (n === 0) nextInterval = 1;
+    else if (n === 1) nextInterval = 3;
+    else nextInterval = Math.round((rec.sm2Interval || 1) * ef);
+    nextN = n + 1;
+    nextEf = Math.max(1.3, ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
+  } else {
+    // Wrong answer — reset
+    nextInterval = 1;
+    nextN = 0;
+    nextEf = Math.max(1.3, ef - 0.2);
+  }
+  return { sm2Interval: nextInterval, sm2n: nextN, easeFactor: nextEf };
+}
+
+const SR_INTERVALS_DAYS = [1, 3, 7]; // kept for backwards compat with existing bank entries
 
 function renderMistakePanel() {
   const el = document.getElementById('mistakePanelStatus');
@@ -5215,23 +5344,25 @@ function handleMistakeAnswer(selIdx) {
   fb.style.display = 'block';
   if (isCorrect) {
     const bank = getMistakeBank();
-    const rec = bank[item.key];
-    const streak = (rec?.correctStreak || 0) + 1;
-    if (streak >= SR_INTERVALS_DAYS.length) {
-      // Mastered after enough correct revisions in a row — clear it out.
+    const rec = bank[item.key] || {};
+    // SM-2: quality 4 (correct answer on revision)
+    const sm2 = sm2Next(rec, 4);
+    // Mastered = reached interval ≥ 21 days (≈ 3 successful repetitions growing geometrically)
+    if (sm2.sm2n >= 3 && sm2.sm2Interval >= 7) {
       delete bank[item.key];
-      fb.innerHTML = '✓ Correct! Mastered — cleared from your mistake bank.';
+      fb.innerHTML = `✓ Correct! Mastered — removed from your bank. (Ease: ${sm2.easeFactor.toFixed(1)})`;
       mistakeRun.cleared++;
     } else {
-      const days = SR_INTERVALS_DAYS[streak - 1];
-      bank[item.key] = { ...rec, correctStreak: streak, nextReviewAt: Date.now() + days * 86400000 };
-      fb.innerHTML = `✓ Correct! You'll see this again in ${days} day${days === 1 ? '' : 's'} to lock it in.`;
+      bank[item.key] = { ...rec, ...sm2, correctStreak: (rec.correctStreak || 0) + 1, nextReviewAt: Date.now() + sm2.sm2Interval * 86400000 };
+      fb.innerHTML = `✓ Correct! Next review in ${sm2.sm2Interval} day${sm2.sm2Interval === 1 ? '' : 's'} (interval growing with SM-2).`;
     }
     setMistakeBank(bank);
   } else {
     const bank = getMistakeBank();
-    const rec = bank[item.key];
-    if (rec) bank[item.key] = { ...rec, correctStreak: 0, nextReviewAt: Date.now() };
+    const rec = bank[item.key] || {};
+    // SM-2: quality 2 (wrong) — resets interval and reduces ease factor
+    const sm2 = sm2Next(rec, 2);
+    if (rec) bank[item.key] = { ...rec, ...sm2, correctStreak: 0, nextReviewAt: Date.now() };
     setMistakeBank(bank);
     fb.innerHTML = `✗ Still not quite. The correct answer is <b>${item.opts[item.ans]}</b> — it'll stay in your bank.
       <div style="margin-top:10px;">
@@ -9357,7 +9488,963 @@ window.onload = function() {
   loadSave();
   if (state.explorerName && state.explorerName !== "Explorer") startApp();
 };
+
+/* ============================================================
+   LIGHT THEME TOGGLE
+   ============================================================ */
+function toggleLightTheme() {
+  const isLight = document.body.classList.toggle('theme-light');
+  try { localStorage.setItem('expedition11_lightTheme', isLight ? '1' : '0'); } catch (e) {}
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isLight ? '🌙 Dark' : '☀️ Light';
+}
+// Restore theme preference on load
+(function applyThemePref() {
+  try {
+    if (localStorage.getItem('expedition11_lightTheme') === '1') {
+      document.body.classList.add('theme-light');
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) btn.textContent = '🌙 Dark';
+    }
+  } catch (e) {}
+})();
+
+/* ============================================================
+   FLASHCARD MODE
+   ============================================================ */
+// Build a flat list of {topic, formula} cards from the FORMULA_SHEET
+function buildFlashcardDeck(subjKey) {
+  const subj = FORMULA_SHEET[subjKey];
+  if (!subj) return [];
+  const deck = [];
+  subj.groups.forEach(g => {
+    g.items.forEach(item => {
+      deck.push({ topic: g.title, formula: item });
+    });
+  });
+  return deck;
+}
+
+let fcDeck = [];
+let fcIdx = 0;
+let fcFlipped = false;
+
+function openFlashcardModal() {
+  // Populate subject selector
+  const sel = document.getElementById('flashcardSubjSelect');
+  if (sel && sel.options.length === 0) {
+    Object.keys(FORMULA_SHEET).forEach(k => {
+      const opt = document.createElement('option');
+      opt.value = k;
+      opt.textContent = FORMULA_SHEET[k].label;
+      sel.appendChild(opt);
+    });
+  }
+  loadFlashcards();
+  document.getElementById('flashcardModal').classList.add('show');
+}
+function closeFlashcardModal() {
+  document.getElementById('flashcardModal').classList.remove('show');
+  document.removeEventListener('keydown', _fcKeyHandler);
+}
+
+function loadFlashcards() {
+  const sel = document.getElementById('flashcardSubjSelect');
+  const key = sel ? sel.value : 'math';
+  fcDeck = buildFlashcardDeck(key);
+  fcIdx = 0;
+  fcFlipped = false;
+  renderFlashcard();
+  document.removeEventListener('keydown', _fcKeyHandler);
+  document.addEventListener('keydown', _fcKeyHandler);
+}
+
+function _fcKeyHandler(e) {
+  if (!document.getElementById('flashcardModal').classList.contains('show')) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); nextFlashcard(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); prevFlashcard(); }
+  else if (e.key === ' ') { e.preventDefault(); flipFlashcard(); }
+}
+
+function renderFlashcard() {
+  if (!fcDeck.length) return;
+  const card = fcDeck[fcIdx];
+  const scene = document.getElementById('flashcardScene');
+  const front = document.getElementById('fcFront');
+  const back = document.getElementById('fcBack');
+  const counter = document.getElementById('fcCounter');
+  const fill = document.getElementById('fcProgressFill');
+
+  if (scene) scene.classList.toggle('flipped', fcFlipped);
+  if (front) { front.innerHTML = escapeHtml(card.topic); }
+  if (back) { back.innerHTML = card.formula; }
+  if (counter) counter.textContent = `${fcIdx + 1} / ${fcDeck.length}`;
+  if (fill) fill.style.width = ((fcIdx + 1) / fcDeck.length * 100) + '%';
+
+  // Re-typeset for the back face
+  typesetMath(document.getElementById('flashcardModal'));
+}
+
+function flipFlashcard() {
+  fcFlipped = !fcFlipped;
+  const scene = document.getElementById('flashcardScene');
+  if (scene) scene.classList.toggle('flipped', fcFlipped);
+}
+
+function nextFlashcard() {
+  if (!fcDeck.length) return;
+  fcIdx = (fcIdx + 1) % fcDeck.length;
+  fcFlipped = false;
+  renderFlashcard();
+}
+
+function prevFlashcard() {
+  if (!fcDeck.length) return;
+  fcIdx = (fcIdx - 1 + fcDeck.length) % fcDeck.length;
+  fcFlipped = false;
+  renderFlashcard();
+}
+
+/* ============================================================
+   PERFORMANCE ANALYTICS DASHBOARD
+   ============================================================ */
+function openAnalyticsModal() {
+  renderAnalyticsDashboard();
+  document.getElementById('analyticsModal').classList.add('show');
+}
+function closeAnalyticsModal() {
+  document.getElementById('analyticsModal').classList.remove('show');
+}
+
+function renderAnalyticsDashboard() {
+  const body = document.getElementById('analyticsBody');
+  if (!body) return;
+
+  // --- Summary stats ---
+  const log = getActivityLog();
+  const allDays = Object.values(log);
+  const totalXp = state.xp || 0;
+  const streak = computeActivityStreak();
+  const bank = getMistakeBank();
+  const mistakeCount = Object.keys(bank).length;
+  const dueCount = Object.values(bank).filter(v => (v.nextReviewAt || 0) <= Date.now()).length;
+
+  // Total questions answered (proxy: XP / 15 per correct, rough)
+  const approxCorrect = Math.round(totalXp / 15);
+  const activeDays = allDays.filter(x => x > 0).length;
+
+  // --- Chapter accuracy breakdown ---
+  // Use stars as a proxy: 3★ = ~90-100%, 2★ = ~60-85%, 1★ = ~30-55%
+  const starToAccuracy = s => s === 3 ? 92 : s === 2 ? 72 : s === 1 ? 42 : null;
+  const subjColors = { math: '#c99c51', physics: '#9b8ecb', chemistry: '#7fa06f', mixed: '#e8c382' };
+
+  let chapterRows = '';
+  let bestChap = null, worstChap = null;
+  DATA.forEach(sub => {
+    if (sub.id === 'mixed') return;
+    sub.chapters.forEach(ch => {
+      const p = state.progress[ch.id];
+      if (!p || !p.stars) return;
+      const attempted = Object.keys(p.stars).length;
+      if (!attempted) return;
+      const avgStars = Object.values(p.stars).reduce((a,b) => a + (b||0), 0) / attempted;
+      const acc = Math.round(starToAccuracy(Math.round(avgStars)) || (avgStars / 3 * 100));
+      const cleared = Math.max(0, (p.maxUnlocked || 1) - 1);
+      const color = subjColors[sub.id] || '#c99c51';
+      if (!bestChap || acc > bestChap.acc) bestChap = { name: ch.name, acc, sub: sub.name };
+      if (!worstChap || acc < worstChap.acc) worstChap = { name: ch.name, acc, sub: sub.name };
+      chapterRows += `
+        <div class="analytics-chapter-row">
+          <div class="acr-name" title="${ch.name} (${sub.name})">${ch.name}</div>
+          <div class="acr-bar-wrap"><div class="acr-bar-fill" style="width:${acc}%; background:${color};"></div></div>
+          <div class="acr-pct" style="color:${color};">${acc}%</div>
+          <div style="font-size:0.7rem; color:var(--parchment-dim); flex:0 0 60px; text-align:right;">${cleared}/${TOTAL_LEVELS} lvls</div>
+        </div>`;
+    });
+  });
+
+  // --- XP last 7 days chart (simple bars) ---
+  let xpBarHtml = '';
+  const days7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    days7.push({ label: d.toLocaleDateString(undefined,{weekday:'short'}), xp: log[k] || 0 });
+  }
+  const maxXp7 = Math.max(1, ...days7.map(d => d.xp));
+  xpBarHtml = `<div style="display:flex; align-items:flex-end; gap:4px; height:60px; margin-bottom:6px;">` +
+    days7.map(d => {
+      const h = Math.round((d.xp / maxXp7) * 54);
+      return `<div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+        <div style="width:100%; height:${h}px; background:var(--brass); border-radius:3px 3px 0 0; min-height:${d.xp ? 3 : 0}px;" title="${d.xp} XP"></div>
+        <div style="font-size:0.55rem; font-family:'Space Mono',monospace; color:var(--parchment-dim);">${d.label}</div>
+      </div>`;
+    }).join('') + `</div>`;
+
+  body.innerHTML = `
+    <div class="analytics-grid">
+      <div class="analytics-card"><div class="ac-label">Total XP</div><div class="ac-value">${totalXp.toLocaleString()}</div><div class="ac-sub">≈ ${approxCorrect} correct answers</div></div>
+      <div class="analytics-card"><div class="ac-label">Active Streak</div><div class="ac-value">${streak}</div><div class="ac-sub">${activeDays} total active days</div></div>
+      <div class="analytics-card"><div class="ac-label">Mistake Bank</div><div class="ac-value">${mistakeCount}</div><div class="ac-sub">${dueCount} due for review now</div></div>
+      <div class="analytics-card"><div class="ac-label">Best Chapter</div><div class="ac-value" style="font-size:1rem;">${bestChap ? bestChap.name : '–'}</div><div class="ac-sub">${bestChap ? bestChap.acc + '% accuracy' : 'Practice more chapters'}</div></div>
+    </div>
+    <div style="margin-bottom:22px;">
+      <div style="font-family:'Space Mono',monospace; font-size:0.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:12px;">XP — Last 7 Days</div>
+      ${xpBarHtml}
+    </div>
+    ${worstChap ? `<div style="margin-bottom:14px; padding:10px 14px; background:rgba(231,111,81,0.08); border:1px solid rgba(231,111,81,0.25); border-radius:10px; font-size:0.82rem;">🎯 <strong>Focus suggestion:</strong> <b>${worstChap.name}</b> (${worstChap.sub}) has your lowest accuracy at ~${worstChap.acc}%.</div>` : ''}
+    <div style="font-family:'Space Mono',monospace; font-size:0.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:10px;">Accuracy by Chapter <span style="font-weight:400; text-transform:none;">(★ stars → estimated %)</span></div>
+    <div>${chapterRows || '<div style="color:var(--parchment-dim); font-size:0.85rem;">Complete a few levels to see per-chapter accuracy.</div>'}</div>
+  `;
+}
+
+/* ============================================================
+   TIMED CHAPTER QUIZ
+   ============================================================ */
+let tcqState = null; // { questions, idx, correct, answered, timerInt, totalSecs, remaining, qCount }
+
+function openTimedQuizSetup() {
+  // Populate subject select
+  const subjSel = document.getElementById('tcqSubjSelect');
+  if (subjSel && subjSel.options.length === 0) {
+    DATA.filter(s => s.id !== 'mixed').forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.name;
+      subjSel.appendChild(opt);
+    });
+  }
+  populateTcqChapters();
+  // Pre-fill exam date if already set
+  const existing = localStorage.getItem(EXAM_DATE_STORAGE_KEY);
+  document.getElementById('timedQuizSetupModal').classList.add('show');
+}
+function closeTimedQuizSetup() {
+  document.getElementById('timedQuizSetupModal').classList.remove('show');
+}
+function populateTcqChapters() {
+  const subjSel = document.getElementById('tcqSubjSelect');
+  const chapSel = document.getElementById('tcqChapSelect');
+  if (!subjSel || !chapSel) return;
+  const sub = DATA.find(s => s.id === subjSel.value);
+  chapSel.innerHTML = '';
+  if (!sub) return;
+  sub.chapters.forEach(ch => {
+    const opt = document.createElement('option');
+    opt.value = ch.id;
+    opt.textContent = ch.name;
+    chapSel.appendChild(opt);
+  });
+}
+async function startTimedChapterQuiz() {
+  const subjId = document.getElementById('tcqSubjSelect').value;
+  const chapId = document.getElementById('tcqChapSelect').value;
+  const qCount = parseInt(document.getElementById('tcqQCount').value, 10);
+  const timeMins = parseInt(document.getElementById('tcqTimeMins').value, 10);
+  const subj = DATA.find(s => s.id === subjId);
+  const chap = subj && subj.chapters.find(c => c.id === chapId);
+  if (!subj || !chap) return;
+
+  closeTimedQuizSetup();
+  document.getElementById('timedQuizModal').classList.add('show');
+  document.getElementById('tcqTitle').textContent = `⏱️ ${chap.name}`;
+  document.getElementById('tcqBody').innerHTML = '<div style="text-align:center; padding:20px; color:var(--parchment-dim);">Loading questions…</div>';
+
+  const questions = await Factory.generate(subjId, chapId, 5, qCount);
+  if (!questions || !questions.length) {
+    document.getElementById('tcqBody').innerHTML = '<div style="text-align:center; padding:20px; color:var(--coral);">Could not load questions — check your connection.</div>';
+    return;
+  }
+
+  tcqState = { questions, idx: 0, correct: 0, answered: false, timerInt: null,
+    totalSecs: timeMins > 0 ? timeMins * 60 : 0, remaining: timeMins > 0 ? timeMins * 60 : 0,
+    qCount, chapName: chap.name, subjName: subj.name, subjId, chapId };
+
+  if (timeMins > 0) {
+    renderTcqTimer();
+    tcqState.timerInt = setInterval(() => {
+      tcqState.remaining--;
+      renderTcqTimer();
+      if (tcqState.remaining <= 0) finishTimedQuiz();
+    }, 1000);
+  } else {
+    const timerEl = document.getElementById('tcqTimerDisplay');
+    if (timerEl) timerEl.textContent = '∞';
+  }
+
+  renderTcqQuestion();
+}
+
+function renderTcqTimer() {
+  if (!tcqState) return;
+  const el = document.getElementById('tcqTimerDisplay');
+  if (!el) return;
+  const m = Math.floor(tcqState.remaining / 60);
+  const s = tcqState.remaining % 60;
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.className = 'tcq-timer-text' + (tcqState.remaining <= 30 ? ' danger' : '');
+}
+
+function renderTcqQuestion() {
+  if (!tcqState) return;
+  const q = tcqState.questions[tcqState.idx];
+  tcqState.answered = false;
+  const body = document.getElementById('tcqBody');
+  body.innerHTML = `
+    <div style="font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--parchment-dim); margin-bottom:10px;">
+      Q${tcqState.idx + 1}/${tcqState.qCount} · ${tcqState.correct} correct
+    </div>
+    <div style="font-size:1rem; margin-bottom:14px; line-height:1.55;">${q.q}</div>
+    <div id="tcqOptGrid" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div id="tcqFeedback" style="display:none; margin-top:12px; font-size:0.9rem;"></div>
+    <div id="tcqNextRow" style="display:flex; justify-content:flex-end; margin-top:16px; gap:8px;"></div>`;
+  const grid = document.getElementById('tcqOptGrid');
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = opt;
+    btn.onclick = () => handleTcqAnswer(i, btn);
+    grid.appendChild(btn);
+  });
+  typesetMath(body);
+}
+
+function handleTcqAnswer(selIdx, btnNode) {
+  if (!tcqState || tcqState.answered) return;
+  tcqState.answered = true;
+  const q = tcqState.questions[tcqState.idx];
+  const isCorrect = selIdx === q.ans;
+  if (isCorrect) tcqState.correct++;
+  const grid = document.getElementById('tcqOptGrid');
+  Array.from(grid.children).forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.ans) b.classList.add('correct');
+    else if (i === selIdx) b.classList.add('wrong');
+  });
+  const fb = document.getElementById('tcqFeedback');
+  fb.style.display = 'block';
+  fb.innerHTML = isCorrect
+    ? `<span style="color:var(--sea);">✓ Correct!</span>`
+    : `<span style="color:var(--coral);">✗ Incorrect. Correct: <b>${q.opts[q.ans]}</b></span>`;
+  if (q.exp) fb.innerHTML += `<div style="margin-top:8px; font-size:0.82rem; color:var(--parchment-dim);">${q.exp}</div>`;
+  typesetMath(fb);
+
+  const nextRow = document.getElementById('tcqNextRow');
+  const isLast = tcqState.idx >= tcqState.qCount - 1;
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn primary';
+  nextBtn.textContent = isLast ? 'Finish' : 'Next →';
+  nextBtn.onclick = isLast ? finishTimedQuiz : advanceTcq;
+  nextRow.appendChild(nextBtn);
+}
+
+function advanceTcq() {
+  if (!tcqState) return;
+  tcqState.idx++;
+  if (tcqState.idx >= tcqState.qCount) finishTimedQuiz();
+  else renderTcqQuestion();
+}
+
+function finishTimedQuiz() {
+  if (!tcqState) return;
+  if (tcqState.timerInt) clearInterval(tcqState.timerInt);
+  const { correct, qCount, chapName, subjName } = tcqState;
+  const acc = qCount > 0 ? Math.round((correct / qCount) * 100) : 0;
+  // Award XP
+  const xpGain = correct * 12;
+  if (xpGain > 0) {
+    state.xp += xpGain;
+    addWeeklyXp(xpGain);
+    doSave();
+    updateStats();
+    if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+  }
+  document.getElementById('tcqBody').innerHTML = `
+    <div style="text-align:center; padding:16px 0;">
+      <div style="font-size:2rem; margin-bottom:10px;">${acc >= 80 ? '🏆' : acc >= 50 ? '📈' : '💪'}</div>
+      <h3 style="margin:0 0 8px; font-family:'Fraunces',serif;">${chapName} — Quiz Complete</h3>
+      <p>You got <b>${correct}/${qCount}</b> correct — <b>${acc}%</b> accuracy.</p>
+      ${xpGain > 0 ? `<p style="color:var(--brass-light); font-weight:700;">+${xpGain} XP earned!</p>` : ''}
+      <div style="display:flex; justify-content:center; gap:10px; margin-top:16px;">
+        <button class="btn ghost" onclick="abortTimedQuiz()">Close</button>
+        <button class="btn primary" onclick="abortTimedQuiz(); openTimedQuizSetup();">Try Another →</button>
+      </div>
+    </div>`;
+  tcqState = null;
+}
+
+function abortTimedQuiz() {
+  if (tcqState && tcqState.timerInt) clearInterval(tcqState.timerInt);
+  tcqState = null;
+  document.getElementById('timedQuizModal').classList.remove('show');
+}
+
+/* ============================================================
+   OCR QUESTION UPLOAD
+   ============================================================ */
+function openOcrUpload() {
+  document.getElementById('ocrUploadModal').classList.add('show');
+  clearOcrResult();
+}
+function closeOcrUpload() {
+  document.getElementById('ocrUploadModal').classList.remove('show');
+  clearOcrResult();
+}
+function clearOcrResult() {
+  document.getElementById('ocrResult').style.display = 'none';
+  document.getElementById('ocrExtractedText').textContent = '';
+  document.getElementById('ocrStatus').style.display = 'none';
+  document.getElementById('ocrFileInput').value = '';
+  document.getElementById('ocrFileName').textContent = '';
+  document.getElementById('ocrAiResult').style.display = 'none';
+  document.getElementById('ocrAiText').textContent = '';
+}
+function handleOcrDrop(e) {
+  e.preventDefault();
+  document.getElementById('ocrDropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleOcrFileSelect(file);
+}
+function cleanOcrText(raw) {
+  let t = raw;
+  // 1. Normalise line endings
+  t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // 2. Remove stray pipe characters used as column separators by Tesseract
+  t = t.replace(/\s*\|\s*/g, ' ');
+  // 3. Remove stray lone brackets that are OCR noise (not part of option numbers)
+  t = t.replace(/(?<!\w)\[(?!\d)/g, '').replace(/(?<!\d)\](?!\w)/g, '');
+  // 4. Collapse runs of spaces/tabs to a single space per line
+  t = t.split('\n').map(l => l.replace(/[ \t]{2,}/g, ' ').trim()).join('\n');
+  // 5. Remove lines that are pure noise: only symbols, numbers, dashes, or very short (< 3 chars)
+  t = t.split('\n').filter(l => l.length >= 3 || /^\d+\./.test(l)).join('\n');
+  // 6. Collapse 3+ consecutive blank lines to 2
+  t = t.replace(/\n{3,}/g, '\n\n');
+  // 7. Detect numbered questions (1. / 2. / Q1. / Q.1 etc.) and ensure each starts on its own line
+  t = t.replace(/([^\n])(\n?)(\s*(?:Q\.?\s*)?\d{1,2}\.\s+[A-Z(])/g, '$1\n\n$3');
+  // 8. Detect option lines like (1) (2) (3) (4) or (A) (B) and put each on its own line
+  t = t.replace(/\s+(\([1-4A-Da-d]\)\s)/g, '\n  $1');
+  // 9. Final trim
+  return t.trim();
+}
+
+async function handleOcrFileSelect(file) {
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showOcrStatus('File too large — please use an image under 10MB.', true);
+    return;
+  }
+  if (!window.Tesseract) {
+    showOcrStatus('OCR library not loaded — check your internet connection.', true);
+    return;
+  }
+  showOcrStatus('🔎 Reading text from image… this may take 5–15 seconds.', false);
+
+  try {
+    const { data } = await Tesseract.recognize(file, 'eng');
+    const raw = data && data.text ? data.text : '';
+    if (!raw.trim()) {
+      showOcrStatus('No text found — try a clearer image with good lighting.', true);
+      return;
+    }
+    const cleaned = cleanOcrText(raw);
+    document.getElementById('ocrStatus').style.display = 'none';
+    document.getElementById('ocrExtractedText').textContent = cleaned;
+    document.getElementById('ocrResult').style.display = 'block';
+  } catch (err) {
+    showOcrStatus('OCR failed — ' + (err.message || 'unknown error. Try a different image.'), true);
+  }
+}
+function showOcrStatus(msg, isError) {
+  const el = document.getElementById('ocrStatus');
+  el.style.display = 'block';
+  el.style.color = isError ? 'var(--coral)' : 'var(--sea)';
+  el.textContent = msg;
+}
+function copyOcrText() {
+  const text = document.getElementById('ocrExtractedText').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showOcrStatus('✓ Text copied to clipboard!', false);
+      setTimeout(() => { document.getElementById('ocrStatus').style.display = 'none'; }, 2000);
+    }).catch(() => showOcrStatus('Could not copy — select the text manually.', true));
+  }
+}
+
+async function solveOcrQuestion(btn) {
+  const question = document.getElementById('ocrExtractedText').textContent.trim();
+  if (!question) return;
+
+  const aiResult = document.getElementById('ocrAiResult');
+  const aiText = document.getElementById('ocrAiText');
+  aiResult.style.display = 'none';
+  aiText.textContent = '';
+
+  // Button loading state
+  const origLabel = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Thinking…'; }
+  showOcrStatus('🤖 Sending to AI tutor…', false);
+
+  try {
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'doubt', question })
+    });
+    const data = await res.json();
+    document.getElementById('ocrStatus').style.display = 'none';
+    if (data.answer) {
+      aiText.textContent = data.answer;
+      aiResult.style.display = 'block';
+    } else {
+      showOcrStatus(data.error || 'AI returned no answer — try again.', true);
+    }
+  } catch (e) {
+    showOcrStatus('Could not reach the AI tutor — check your connection.', true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origLabel; }
+  }
+}
+
+function copyOcrAiText() {
+  const text = document.getElementById('ocrAiText').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showOcrStatus('✓ Solution copied!', false);
+      setTimeout(() => { document.getElementById('ocrStatus').style.display = 'none'; }, 2000);
+    }).catch(() => showOcrStatus('Could not copy — select the text manually.', true));
+  }
+}
+
+/* ============================================================
+   CUSTOM STUDY PLAN GENERATOR
+   ============================================================ */
+function openStudyPlan() {
+  // Restore the form view (in case a previous generate replaced innerHTML)
+  const body = document.getElementById('studyPlanBody');
+  body.innerHTML = `
+    <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--parchment-dim);">Exam / Target Date</label>
+    <input type="date" id="studyPlanExamDate" class="input-field" style="width:100%;margin-bottom:16px;">
+    <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--parchment-dim);">Subjects to include</label>
+    <div id="studyPlanSubjPills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;"></div>
+    <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--parchment-dim);">Available study hours per day</label>
+    <select id="studyPlanHours" class="input-field" style="width:100%;margin-bottom:20px;">
+      <option value="1">1 hour</option>
+      <option value="2" selected>2 hours</option>
+      <option value="3">3 hours</option>
+      <option value="4">4 hours</option>
+      <option value="5">5 hours</option>
+      <option value="6">6 hours</option>
+    </select>
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn ghost" onclick="closeStudyPlan()">Cancel</button>
+      <button class="btn primary" onclick="generateStudyPlan()">Generate Plan →</button>
+    </div>`;
+
+  // Populate subject pills
+  const pillsEl = document.getElementById('studyPlanSubjPills');
+  DATA.filter(s => s.id !== 'mixed').forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'pyq-chip active';
+    btn.dataset.subjId = s.id;
+    btn.textContent = s.name;
+    btn.onclick = () => btn.classList.toggle('active');
+    pillsEl.appendChild(btn);
+  });
+
+  // Pre-fill existing exam date
+  const existingDate = localStorage.getItem(EXAM_DATE_STORAGE_KEY);
+  if (existingDate) document.getElementById('studyPlanExamDate').value = existingDate;
+
+  document.getElementById('studyPlanModal').classList.add('show');
+}
+function closeStudyPlan() {
+  document.getElementById('studyPlanModal').classList.remove('show');
+}
+
+function generateStudyPlan() {
+  const examDate = document.getElementById('studyPlanExamDate').value;
+  const hours = parseInt(document.getElementById('studyPlanHours').value, 10);
+  const selectedSubjs = Array.from(document.querySelectorAll('#studyPlanSubjPills .pyq-chip.active'))
+    .map(btn => btn.dataset.subjId);
+
+  if (!examDate) {
+    alert('Please set your exam date first.');
+    return;
+  }
+  if (!selectedSubjs.length) {
+    alert('Select at least one subject.');
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(examDate + 'T00:00:00');
+  const daysLeft = Math.max(1, Math.ceil((target - today) / 86400000));
+
+  // Save exam date
+  localStorage.setItem(EXAM_DATE_STORAGE_KEY, examDate);
+  renderExamCountdownChip();
+
+  // Collect chapters for selected subjects, prioritising weak ones
+  const chapList = [];
+  selectedSubjs.forEach(subjId => {
+    const subj = DATA.find(s => s.id === subjId);
+    if (!subj) return;
+    subj.chapters.forEach(ch => {
+      const p = state.progress[ch.id];
+      const cleared = p ? Math.max(0, (p.maxUnlocked || 1) - 1) : 0;
+      const stars = p && p.stars ? Object.values(p.stars).reduce((a,b) => a + (b||0), 0) : 0;
+      const maxStars = cleared * 3;
+      const weakness = maxStars > 0 ? 1 - (stars / maxStars) : 1; // 1.0 = unstarted/weakest
+      chapList.push({ subj: subj.name, ch: ch.name, cleared, weakness });
+    });
+  });
+  // Sort: weakest first
+  chapList.sort((a, b) => b.weakness - a.weakness);
+
+  // Build plan: allocate ~1 chapter per day (with more for high-hours)
+  const chapsPerDay = Math.max(1, Math.floor(hours / 1.5));
+  const plan = [];
+  let chapIdx = 0;
+  const planDays = Math.min(daysLeft, 60); // cap at 60 days in the view
+
+  for (let d = 0; d < planDays; d++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() + d);
+    const label = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    const tasks = [];
+    for (let i = 0; i < chapsPerDay; i++) {
+      if (chapIdx >= chapList.length) chapIdx = 0; // cycle through
+      const c = chapList[chapIdx];
+      tasks.push(`${c.subj}: <b>${c.ch}</b>${c.cleared > 0 ? ` — resume at Level ${c.cleared + 1}` : ' — start from Level 1'}`);
+      chapIdx++;
+    }
+    tasks.push(`Review Mistake Bank (due cards)`);
+    plan.push({ label, tasks, isToday: d === 0 });
+  }
+
+  // Render
+  const body = document.getElementById('studyPlanBody');
+  const planHtml = plan.map(day => `
+    <div class="study-plan-day" style="${day.isToday ? 'border-color:var(--brass);' : ''}">
+      <div class="spd-head">${day.isToday ? '🎯 Today — ' : ''}${day.label}</div>
+      <ul class="spd-tasks" style="margin:0; padding-left:18px;">
+        ${day.tasks.map(t => `<li>${t}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+      <div>
+        <div style="font-family:'Fraunces',serif; font-size:1.1rem; color:var(--brass-light);">Your ${daysLeft}-Day Study Plan</div>
+        <div style="font-size:0.78rem; color:var(--parchment-dim);">${hours}h/day · ${selectedSubjs.length} subject${selectedSubjs.length > 1 ? 's' : ''} · ${chapList.length} chapters</div>
+      </div>
+      <button class="btn ghost" style="font-size:0.8rem;" onclick="openStudyPlan()">← Regenerate</button>
+    </div>
+    <div class="popup-list" style="max-height:55vh; overflow-y:auto;">${planHtml}</div>
+    <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+      <button class="btn ghost" onclick="closeStudyPlan()">Close</button>
+    </div>`;
+}
+
+/* ============================================================
+   TEACHER / PARENT READ-ONLY DASHBOARD
+   ============================================================ */
+function openParentDash() {
+  renderParentDash();
+  document.getElementById('parentDashModal').classList.add('show');
+}
+function closeParentDash() {
+  document.getElementById('parentDashModal').classList.remove('show');
+}
+
+function renderParentDash() {
+  const body = document.getElementById('parentDashBody');
+  if (!body) return;
+
+  // Build a shareable URL with progress encoded as query params (read-only, no credentials)
+  const subjColors = { math: '#c99c51', physics: '#9b8ecb', chemistry: '#7fa06f' };
+
+  let subjRows = '';
+  let totalCleared = 0, totalLevels = 0;
+  DATA.forEach(sub => {
+    if (sub.id === 'mixed') return;
+    let cleared = 0;
+    sub.chapters.forEach(ch => {
+      const p = state.progress[ch.id];
+      cleared += p ? Math.max(0, (p.maxUnlocked || 1) - 1) : 0;
+      totalLevels += TOTAL_LEVELS;
+    });
+    totalCleared += cleared;
+    const chapTotal = sub.chapters.length * TOTAL_LEVELS;
+    const pct = chapTotal ? Math.round((cleared / chapTotal) * 100) : 0;
+    const color = subjColors[sub.id] || '#c99c51';
+    subjRows += `
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--glass-border);">
+        <div style="width:90px; font-size:0.88rem;">${sub.name}</div>
+        <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:3px; height:8px; overflow:hidden;">
+          <div style="height:100%; width:${pct}%; background:${color};"></div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-size:0.75rem; width:44px; text-align:right; color:${color};">${pct}%</div>
+        <div style="font-size:0.72rem; color:var(--parchment-dim); width:70px; text-align:right;">${cleared}/${chapTotal} lvls</div>
+      </div>`;
+  });
+
+  const overallPct = totalLevels ? Math.round((totalCleared / totalLevels) * 100) : 0;
+  const streak = computeActivityStreak();
+  const bank = getMistakeBank();
+
+  // Build a compact shareable text summary
+  const summaryText = `📊 ${state.explorerName}'s Expedition 11 Progress\n` +
+    `Overall: ${overallPct}% (${totalCleared}/${totalLevels} levels)\n` +
+    `XP: ${state.xp} · Streak: ${streak} days · Mistake Bank: ${Object.keys(bank).length} items\n` +
+    `Generated: ${new Date().toLocaleDateString()}`;
+
+  body.innerHTML = `
+    <div style="margin-bottom:18px; padding:14px 16px; background:var(--glass); border:1px solid var(--line); border-radius:10px;">
+      <div style="font-family:'Fraunces',serif; font-size:1.2rem; margin-bottom:4px;">👤 ${escapeHtml(state.explorerName)}</div>
+      <div style="font-size:0.82rem; color:var(--parchment-dim);">Overall progress: <b style="color:var(--brass-light);">${overallPct}%</b> · XP: <b>${state.xp}</b> · Streak: <b>${streak} days</b></div>
+    </div>
+    <div style="margin-bottom:20px;">${subjRows}</div>
+    <div style="background:var(--glass); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:16px;">
+      <div style="font-family:'Space Mono',monospace; font-size:0.68rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:8px;">Shareable Summary</div>
+      <textarea readonly rows="5" onclick="this.select()" style="width:100%; resize:none; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:6px; padding:10px; color:var(--parchment); font-family:'Space Mono',monospace; font-size:0.78rem; outline:none;">${summaryText}</textarea>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn ghost" style="font-size:0.8rem;" onclick="
+          const ta = this.closest('.modal-box').querySelector('textarea');
+          if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(()=>{this.textContent='✓ Copied'; setTimeout(()=>this.textContent='📋 Copy summary',1500)}).catch(()=>{});
+          else { ta.select(); document.execCommand('copy'); }
+        ">📋 Copy summary</button>
+        <button class="btn ghost" style="font-size:0.8rem;" onclick="
+          const ta = this.closest('.modal-box').querySelector('textarea');
+          const text = ta.value;
+          if (navigator.share) navigator.share({title:'Expedition 11 Progress', text}).catch(()=>{});
+          else openShareTextModal(text);
+        ">📤 Share</button>
+      </div>
+    </div>
+    <p style="font-size:0.75rem; color:var(--parchment-dim); line-height:1.5;">
+      This view shows the currently-loaded profile's progress. Progress is stored locally in this browser — share the text summary above with a teacher or parent.
+    </p>`;
+}
+
+/* ============================================================
+   OFFLINE CACHING — notify if newly installed from SW
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (window.showToast) window.showToast('App updated — reload for the latest version.');
+  });
+}
 </script>
+
+<!-- ===== THEME TOGGLE BUTTON ===== -->
+<button id="themeToggleBtn" onclick="toggleLightTheme()" title="Toggle light/dark theme">☀️ Light</button>
+
+<!-- ===== FLASHCARD MODAL ===== -->
+<div class="modal-backdrop" id="flashcardModal" onclick="if(event.target===this) closeFlashcardModal()">
+  <div class="modal-box list-popup" style="max-width: 600px; text-align: center;">
+    <div class="widget-hdr" style="margin-bottom:18px;">
+      <h3 style="margin:0;">🃏 Flashcards</h3>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <select id="flashcardSubjSelect" class="lb-tab" style="padding:6px 10px; border-radius:8px; background:var(--glass); border:1px solid var(--line); color:var(--parchment); font-family:'Space Mono',monospace; font-size:0.72rem;" onchange="loadFlashcards()"></select>
+        <button class="popup-close" onclick="closeFlashcardModal()">✕ Close</button>
+      </div>
+    </div>
+    <div class="flashcard-progress-bar"><div class="flashcard-progress-fill" id="fcProgressFill" style="width:0%"></div></div>
+    <div class="flashcard-scene" id="flashcardScene" onclick="flipFlashcard()">
+      <div class="flashcard-inner" id="flashcardInner">
+        <div class="flashcard-face flashcard-front">
+          <div class="flashcard-label">Topic</div>
+          <div class="flashcard-text" id="fcFront">Select a subject above to begin</div>
+          <div class="flashcard-hint">Tap to flip ↩</div>
+        </div>
+        <div class="flashcard-face flashcard-back">
+          <div class="flashcard-label">Formula</div>
+          <div class="flashcard-text" id="fcBack"></div>
+        </div>
+      </div>
+    </div>
+    <div class="flashcard-nav">
+      <button class="btn ghost" style="padding:8px 18px;" onclick="prevFlashcard()">← Prev</button>
+      <span class="flashcard-counter" id="fcCounter">0 / 0</span>
+      <button class="btn primary" style="padding:8px 18px;" onclick="nextFlashcard()">Next →</button>
+    </div>
+    <div style="font-size:0.75rem; color:var(--parchment-dim); font-family:'Space Mono',monospace;">
+      Keyboard: ← → to navigate, Space to flip
+    </div>
+  </div>
+</div>
+
+<!-- ===== ANALYTICS MODAL ===== -->
+<div class="modal-backdrop" id="analyticsModal" onclick="if(event.target===this) closeAnalyticsModal()">
+  <div class="modal-box list-popup" style="max-width: 700px; text-align: left;">
+    <div class="widget-hdr">
+      <h3>📊 Performance Analytics</h3>
+      <button class="popup-close" onclick="closeAnalyticsModal()">✕ Close</button>
+    </div>
+    <div id="analyticsBody" class="popup-list"></div>
+  </div>
+</div>
+
+<!-- ===== TIMED CHAPTER QUIZ MODAL ===== -->
+<div class="modal-backdrop" id="timedQuizSetupModal" onclick="if(event.target===this) closeTimedQuizSetup()">
+  <div class="modal-box" style="max-width:420px; text-align:left;">
+    <h3 style="margin-top:0; font-family:'Fraunces',serif; color:var(--brass-light);">⏱️ Timed Chapter Quiz</h3>
+    <p style="font-size:0.85rem; color:var(--parchment-dim); margin-top:0;">A focused mini-mock — pick a chapter and set a time limit.</p>
+    <div class="form-group">
+      <label>Subject</label>
+      <select id="tcqSubjSelect" onchange="populateTcqChapters()"></select>
+    </div>
+    <div class="form-group">
+      <label>Chapter</label>
+      <select id="tcqChapSelect"></select>
+    </div>
+    <div class="form-group">
+      <label>Questions</label>
+      <select id="tcqQCount">
+        <option value="5">5 questions — quick drill</option>
+        <option value="10">10 questions — short test</option>
+        <option value="15" selected>15 questions — standard</option>
+        <option value="20">20 questions — extended</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Time Limit</label>
+      <select id="tcqTimeMins">
+        <option value="5">5 minutes</option>
+        <option value="10">10 minutes</option>
+        <option value="15" selected>15 minutes</option>
+        <option value="20">20 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="0">No time limit</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn ghost" onclick="closeTimedQuizSetup()">Cancel</button>
+      <button class="btn primary" onclick="startTimedChapterQuiz()">Start Quiz →</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="timedQuizModal" onclick="">
+  <div class="modal-box list-popup" style="max-width:600px; text-align:left;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+      <h3 style="margin:0; font-family:'Fraunces',serif; color:var(--brass-light);" id="tcqTitle">Chapter Quiz</h3>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="tcq-timer-ring"><span class="tcq-timer-text" id="tcqTimerDisplay">15:00</span></div>
+        <button class="popup-close" onclick="abortTimedQuiz()">✕ Quit</button>
+      </div>
+    </div>
+    <div id="tcqBody"></div>
+  </div>
+</div>
+
+<!-- ===== OCR QUESTION UPLOAD MODAL ===== -->
+<div class="modal-backdrop" id="ocrUploadModal" onclick="if(event.target===this) closeOcrUpload()">
+  <div class="modal-box list-popup" style="max-width:540px; text-align:left;">
+
+    <!-- Header -->
+    <div class="widget-hdr">
+      <h3 style="margin:0;">🔎 Scan &amp; Solve</h3>
+      <button class="popup-close" onclick="closeOcrUpload()">✕ Close</button>
+    </div>
+    <p style="font-size:0.83rem; color:var(--parchment-dim); margin:0 0 14px;">
+      Upload a photo of any question — we extract the text and let AI solve it for you.
+    </p>
+
+    <!-- Drop zone -->
+    <div class="ocr-drop-zone" id="ocrDropZone"
+         onclick="document.getElementById('ocrFileInput').click()"
+         ondragover="event.preventDefault(); this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="handleOcrDrop(event)">
+      <div style="font-size:2rem; margin-bottom:8px;">📷</div>
+      <div style="font-weight:600;">Click to upload, or drag &amp; drop</div>
+      <div style="font-size:0.75rem; margin-top:4px; opacity:0.6;">JPG · PNG · WEBP · max 10 MB</div>
+      <input type="file" id="ocrFileInput" accept="image/*" style="display:none"
+             onchange="document.getElementById('ocrFileName').textContent=this.files[0]?.name||''; handleOcrFileSelect(this.files[0])">
+    </div>
+    <div id="ocrFileName" style="font-size:0.75rem; color:var(--parchment-dim); font-family:'Space Mono',monospace; margin-top:6px; min-height:1em;"></div>
+
+    <!-- Status line (loading / errors) -->
+    <div id="ocrStatus" style="font-size:0.8rem; margin-top:8px; font-family:'Space Mono',monospace; display:none;"></div>
+
+    <!-- Results (hidden until text is extracted) -->
+    <div id="ocrResult" style="display:none;">
+
+      <!-- Extracted text -->
+      <div class="ocr-section-label">Extracted text</div>
+      <div class="ocr-result-block" id="ocrExtractedText"></div>
+
+      <!-- Action bar -->
+      <div class="ocr-action-bar">
+        <button class="btn primary" onclick="solveOcrQuestion(this)">
+          🤖 Solve with AI
+        </button>
+        <button class="btn ghost" onclick="copyOcrText()">📋 Copy</button>
+        <button class="btn ghost" onclick="clearOcrResult()" style="margin-left:auto; color:var(--parchment-dim);">✕ Clear</button>
+      </div>
+
+      <!-- AI answer (hidden until solve is clicked) -->
+      <div id="ocrAiResult" style="display:none;">
+        <div class="ocr-section-label">AI solution</div>
+        <div class="ocr-result-block" id="ocrAiText"
+             style="border-color:rgba(201,156,81,0.45); background:rgba(201,156,81,0.07); max-height:300px;"></div>
+        <div class="ocr-action-bar" style="margin-top:8px;">
+          <button class="btn ghost" onclick="copyOcrAiText()">📋 Copy solution</button>
+        </div>
+      </div>
+
+    </div><!-- /ocrResult -->
+  </div>
+</div>
+
+<!-- ===== STUDY PLAN MODAL ===== -->
+<div class="modal-backdrop" id="studyPlanModal" onclick="if(event.target===this) closeStudyPlan()">
+  <div class="modal-box list-popup" style="max-width:600px; text-align:left;">
+    <div class="widget-hdr">
+      <h3>📅 Study Plan Generator</h3>
+      <button class="popup-close" onclick="closeStudyPlan()">✕ Close</button>
+    </div>
+    <div id="studyPlanBody">
+      <p style="font-size:0.85rem; color:var(--parchment-dim); margin-top:0;">Tell us your exam date and your weakest chapters — we'll build a day-by-day plan.</p>
+      <div class="form-group">
+        <label>Exam date</label>
+        <input type="date" id="studyPlanExamDate">
+      </div>
+      <div class="form-group">
+        <label>Focus on (subjects)</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="studyPlanSubjPills"></div>
+      </div>
+      <div class="form-group">
+        <label>Daily study hours</label>
+        <select id="studyPlanHours">
+          <option value="1">1 hour</option>
+          <option value="2" selected>2 hours</option>
+          <option value="3">3 hours</option>
+          <option value="4">4+ hours</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button class="btn ghost" onclick="closeStudyPlan()">Cancel</button>
+        <button class="btn primary" onclick="generateStudyPlan()">Generate Plan →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PARENT/TEACHER DASHBOARD MODAL ===== -->
+<div class="modal-backdrop" id="parentDashModal" onclick="if(event.target===this) closeParentDash()">
+  <div class="modal-box list-popup" style="max-width:560px; text-align:left;">
+    <div class="widget-hdr">
+      <h3>👁️ Share Progress</h3>
+      <button class="popup-close" onclick="closeParentDash()">✕ Close</button>
+    </div>
+    <div id="parentDashBody"></div>
+  </div>
+</div>
 
 <script>
 // Small unobtrusive corner button — only shows if we're offline.
