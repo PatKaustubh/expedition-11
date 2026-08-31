@@ -1376,6 +1376,15 @@ function sbNav(which) {
         <div class="resume-hero-arrow" id="resumePanelHint">→</div>
       </div>
 
+      <div class="side-panel" onclick="openBattleModal()" style="margin-bottom:20px; display:flex; align-items:center; gap:16px; cursor:pointer;">
+        <div style="flex-shrink:0; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(201,154,75,0.12); font-size:1.3rem;">⚔️</div>
+        <div style="flex:1;">
+          <div style="font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; margin-bottom:2px;">Battle Arena</div>
+          <div style="font-size:0.82rem; color:var(--parchment-dim);">Race a friend head-to-head — create a room or join one with a code</div>
+        </div>
+        <div style="flex-shrink:0; color:var(--parchment-dim);">→</div>
+      </div>
+
       <div style="display:flex; gap:20px; flex-wrap:wrap;">
         <div class="side-panel" style="flex:1; min-width:260px;">
           <div class="widget-hdr"><h3>Subject progress</h3></div>
@@ -1831,6 +1840,17 @@ function sbNav(which) {
         <button class="btn ghost" onclick="closeShareTextModal()">Close</button>
         <button class="btn primary" id="shareTextModalCopyBtn" onclick="copyShareModalText()">Copy</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Battle Arena — live head-to-head races, see the code block starting
+       "BATTLE ARENA" in the script for the room state machine. -->
+  <div class="modal-backdrop" id="battleModal" onclick="if(event.target===this) closeBattleModal()">
+    <div class="modal-box" style="max-width: 480px; text-align: left;">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:-10px;">
+        <button class="popup-close" onclick="closeBattleModal()">✕ Close</button>
+      </div>
+      <div id="battleModalBody"></div>
     </div>
   </div>
 
@@ -7123,6 +7143,286 @@ function jumpToChapterFromHome(subjId, chapId) {
   loadLevels();
 }
 
+/* ================= BATTLE ARENA (live 1v1 / small-group head-to-head) =================
+   Two (or a few) candidates race through the same short question set in real
+   time. Rooms are code-gated, not publicly listed anywhere — knowing the
+   5-character code is the only way in, the same model as most casual
+   party-game rooms (Kahoot, Jackbox, etc). This is NOT server-enforced
+   privacy (this app has no per-room Firebase security rules to lean on),
+   just obscurity — worth being upfront about rather than overpromising.
+   Requires a live shared backend (won't work in local/offline mode, since
+   the whole point is syncing with another real device). */
+const BATTLE_MAX_PLAYERS = 6;
+const BATTLE_QUESTION_COUNT = 5;
+const BATTLE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — easy to read aloud
+
+let battleRoomCode = null;
+let battleRoomRef = null;
+let battleRoomListener = null;
+let battleRoomState = null; // last-known room snapshot
+let battleMyIdx = 0;        // which question I'm currently on (local progress)
+let battleMyCorrect = 0;
+
+function generateBattleCode() {
+  let code = '';
+  for (let i = 0; i < 5; i++) code += BATTLE_CODE_ALPHABET[Math.floor(Math.random() * BATTLE_CODE_ALPHABET.length)];
+  return code;
+}
+
+function openBattleModal() {
+  if (window.explorerBackendStatus !== 'live') {
+    renderBattleModalBody(`
+      <div style="text-align:center; padding:20px 10px;">
+        <div style="font-size:1.8rem; margin-bottom:10px;">📡</div>
+        <h3 style="margin:0 0 8px;">Needs a live connection</h3>
+        <p style="color:var(--parchment-dim); font-size:0.88rem;">Battle Arena syncs two devices in real time, so it only works when you're connected to the shared server — you're currently in offline/local mode.</p>
+      </div>`);
+  } else {
+    renderBattleSetup();
+  }
+  document.getElementById('battleModal').classList.add('show');
+}
+
+function closeBattleModal() {
+  leaveBattleRoom();
+  document.getElementById('battleModal').classList.remove('show');
+}
+
+function renderBattleModalBody(html) {
+  const body = document.getElementById('battleModalBody');
+  if (body) body.innerHTML = html;
+}
+
+function renderBattleSetup() {
+  const subjectButtons = DATA.filter(s => s.id !== 'mixed').map(s =>
+    `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px;" onclick="battlePickSubject('${s.id}')">${s.name}</button>`
+  ).join('');
+  renderBattleModalBody(`
+    <div id="battleSetupSubjectStep">
+      <h3 style="margin:0 0 4px;">⚔️ Battle Arena</h3>
+      <p style="color:var(--parchment-dim); font-size:0.85rem; margin-top:0;">Race a friend through ${BATTLE_QUESTION_COUNT} quick questions — whoever gets the most right, fastest, wins.</p>
+      <div style="margin:16px 0;">
+        <div style="font-family:'Space Mono',monospace; font-size:0.7rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:8px;">Create a room — pick a subject</div>
+        ${subjectButtons}
+      </div>
+      <div style="border-top:1px solid var(--line); margin:16px 0; padding-top:16px;">
+        <div style="font-family:'Space Mono',monospace; font-size:0.7rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:8px;">Or join with a code</div>
+        <div style="display:flex; gap:8px;">
+          <input id="battleJoinCodeInput" maxlength="5" placeholder="ABCDE" style="flex:1; text-transform:uppercase; font-family:'Space Mono',monospace; letter-spacing:3px; text-align:center; padding:10px; border-radius:6px; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:inherit;">
+          <button class="btn primary" onclick="joinBattleRoom(document.getElementById('battleJoinCodeInput').value)">Join</button>
+        </div>
+      </div>
+    </div>`);
+}
+
+function battlePickSubject(subjId) {
+  const subj = DATA.find(s => s.id === subjId);
+  if (!subj) return;
+  const chapButtons = subj.chapters.map(ch =>
+    `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:6px;" onclick="createBattleRoom('${subjId}','${ch.id}')">${ch.name}</button>`
+  ).join('');
+  renderBattleModalBody(`
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderBattleSetup()">&larr; Back</button>
+    <h3 style="margin:0 0 10px;">${subj.name} — pick a chapter</h3>
+    <div style="max-height:320px; overflow-y:auto;">${chapButtons}</div>`);
+}
+
+async function createBattleRoom(subjId, chapId) {
+  const subj = DATA.find(s => s.id === subjId);
+  const chap = subj && subj.chapters.find(c => c.id === chapId);
+  if (!subj || !chap) return;
+  renderBattleModalBody(`<div style="text-align:center; padding:30px;">Setting up the room…</div>`);
+
+  const rawQs = Factory.fallbackGenerate(subjId, chapId, 5, BATTLE_QUESTION_COUNT);
+  // Strip explanations/extra fields — the room payload only needs enough to
+  // ask the question and grade the answer, not the full solution writeup.
+  const questions = rawQs.map(q => ({ q: q.q, opts: q.opts, ans: q.ans }));
+
+  const uid = await ensureAnonymousAuth() || getPlayerUid();
+  const code = generateBattleCode();
+  const me = { name: state.explorerName || 'Explorer', joinedAt: firebase.database.ServerValue.TIMESTAMP, correct: 0, idx: 0, finishedAt: null };
+
+  try {
+    await db.ref('battleRooms/' + code).set({
+      hostUid: uid, hostName: state.explorerName || 'Explorer',
+      status: 'waiting', createdAt: firebase.database.ServerValue.TIMESTAMP,
+      subjId, chapId, chapName: chap.name,
+      questions,
+      players: { [uid]: me }
+    });
+    attachBattleRoomListener(code, uid, true);
+  } catch (e) {
+    renderBattleModalBody(`<div style="text-align:center; padding:20px;">Couldn't create the room — check your connection and try again.</div>`);
+  }
+}
+
+async function joinBattleRoom(codeInput) {
+  const code = String(codeInput || '').trim().toUpperCase();
+  if (code.length !== 5) { renderBattleJoinError('Enter the 5-character code your friend shared.'); return; }
+  renderBattleModalBody(`<div style="text-align:center; padding:30px;">Joining room ${code}…</div>`);
+
+  try {
+    const snap = await db.ref('battleRooms/' + code).once('value');
+    const room = snap.val();
+    if (!room) { renderBattleSetup(); renderBattleJoinError('No room found with that code.'); return; }
+    if (room.status !== 'waiting') { renderBattleSetup(); renderBattleJoinError('That battle has already started or finished.'); return; }
+    const playerCount = room.players ? Object.keys(room.players).length : 0;
+    if (playerCount >= BATTLE_MAX_PLAYERS) { renderBattleSetup(); renderBattleJoinError('That room is full.'); return; }
+
+    const uid = await ensureAnonymousAuth() || getPlayerUid();
+    const me = { name: state.explorerName || 'Explorer', joinedAt: firebase.database.ServerValue.TIMESTAMP, correct: 0, idx: 0, finishedAt: null };
+    await db.ref(`battleRooms/${code}/players/${uid}`).set(me);
+    attachBattleRoomListener(code, uid, false);
+  } catch (e) {
+    renderBattleSetup();
+    renderBattleJoinError("Couldn't join — check the code and your connection.");
+  }
+}
+function renderBattleJoinError(msg) {
+  const existing = document.getElementById('battleJoinError');
+  if (existing) { existing.textContent = msg; return; }
+  const body = document.getElementById('battleModalBody');
+  if (body) body.insertAdjacentHTML('beforeend', `<div id="battleJoinError" style="color:var(--coral); font-size:0.82rem; margin-top:10px;">${msg}</div>`);
+}
+
+function attachBattleRoomListener(code, myUid, isHost) {
+  battleRoomCode = code;
+  battleRoomRef = db.ref('battleRooms/' + code);
+  window._battleMyUid = myUid;
+  window._battleIsHost = isHost;
+  battleMyIdx = 0;
+  battleMyCorrect = 0;
+  battleRoomListener = battleRoomRef.on('value', (snap) => {
+    const room = snap.val();
+    if (!room) { closeBattleModal(); return; } // room was deleted (host left)
+    battleRoomState = room;
+    if (room.status === 'waiting') renderBattleLobby(room);
+    else if (room.status === 'active') renderBattleQuestionIfNeeded(room);
+    else if (room.status === 'finished') renderBattleResults(room);
+  });
+}
+
+function leaveBattleRoom() {
+  if (battleRoomRef && battleRoomListener) battleRoomRef.off('value', battleRoomListener);
+  // If I was the host and the room never started, clean it up rather than
+  // leaving an orphaned room sitting in the database forever.
+  if (window._battleIsHost && battleRoomState && battleRoomState.status === 'waiting' && battleRoomCode) {
+    db.ref('battleRooms/' + battleRoomCode).remove().catch(() => {});
+  } else if (window._battleMyUid && battleRoomCode && battleRoomState && battleRoomState.status !== 'finished') {
+    db.ref(`battleRooms/${battleRoomCode}/players/${window._battleMyUid}`).remove().catch(() => {});
+  }
+  battleRoomCode = null; battleRoomRef = null; battleRoomListener = null; battleRoomState = null;
+}
+
+function renderBattleLobby(room) {
+  const players = Object.values(room.players || {});
+  const rows = players.map(p => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line);"><span>${p.name}</span>${p.joinedAt ? '' : '<span style="color:var(--parchment-dim); font-size:0.75rem;">joining…</span>'}</div>`).join('');
+  const canStart = window._battleIsHost && players.length >= 2;
+  renderBattleModalBody(`
+    <h3 style="margin:0 0 4px;">${room.chapName}</h3>
+    <p style="color:var(--parchment-dim); font-size:0.85rem; margin-top:0;">Share this code with a friend:</p>
+    <div style="font-family:'Space Mono',monospace; font-size:2rem; letter-spacing:8px; text-align:center; font-weight:700; color:var(--brass-light); background:rgba(201,154,75,0.1); border-radius:6px; padding:14px; margin-bottom:16px;">${battleRoomCode}</div>
+    <div style="font-size:0.7rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px;">Players (${players.length}/${BATTLE_MAX_PLAYERS})</div>
+    ${rows}
+    <div style="margin-top:16px;">
+      ${window._battleIsHost
+        ? `<button class="btn primary" style="width:100%;" ${canStart ? '' : 'disabled'} onclick="startBattleRoom()">${canStart ? 'Start Battle →' : 'Waiting for at least 1 more player…'}</button>`
+        : `<div style="text-align:center; color:var(--parchment-dim); font-size:0.85rem;">Waiting for the host to start…</div>`}
+    </div>
+    <div style="margin-top:10px; font-size:0.72rem; color:var(--parchment-dim); text-align:center;">Anyone with this code can join — don't post it publicly.</div>
+  `);
+}
+
+async function startBattleRoom() {
+  if (!window._battleIsHost || !battleRoomCode) return;
+  await db.ref('battleRooms/' + battleRoomCode).update({ status: 'active', startedAt: firebase.database.ServerValue.TIMESTAMP });
+}
+
+function renderBattleQuestionIfNeeded(room) {
+  // Only re-render when we don't already have this exact question on
+  // screen — the room updates on every player's every answer, which would
+  // otherwise reset my own in-progress view each time someone else moves.
+  if (document.getElementById('battleQCard') && document.getElementById('battleQCard').dataset.idx == battleMyIdx) {
+    renderBattleLiveStandings(room);
+    return;
+  }
+  if (battleMyIdx >= room.questions.length) { renderBattleWaitingForOthers(room); return; }
+  const q = room.questions[battleMyIdx];
+  const optsHtml = q.opts.map((opt, i) =>
+    `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px;" onclick="submitBattleAnswer(${i})">${String.fromCharCode(65 + i)}. ${opt}</button>`
+  ).join('');
+  renderBattleModalBody(`
+    <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:6px;">Question ${battleMyIdx + 1} of ${room.questions.length}</div>
+    <div id="battleQCard" data-idx="${battleMyIdx}">
+      <div style="margin-bottom:14px; font-weight:600;">${q.q}</div>
+      ${optsHtml}
+    </div>
+    <div id="battleLiveStandings" style="margin-top:16px; padding-top:12px; border-top:1px solid var(--line);"></div>
+  `);
+  typesetMath(document.getElementById('battleModalBody'));
+  renderBattleLiveStandings(room);
+}
+
+function renderBattleLiveStandings(room) {
+  const el = document.getElementById('battleLiveStandings');
+  if (!el) return;
+  const players = Object.values(room.players || {}).sort((a, b) => (b.correct - a.correct) || (a.idx - b.idx));
+  el.innerHTML = `<div style="font-size:0.7rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px;">Live standings</div>` +
+    players.map(p => `<div style="display:flex; justify-content:space-between; font-size:0.82rem; padding:4px 0;"><span>${p.name}${p.finishedAt ? ' ✓' : ''}</span><span style="font-family:'Space Mono',monospace;">${p.correct}/${room.questions.length}</span></div>`).join('');
+}
+
+async function submitBattleAnswer(selectedIdx) {
+  const room = battleRoomState;
+  if (!room) return;
+  const q = room.questions[battleMyIdx];
+  const correct = selectedIdx === q.ans;
+  if (correct) battleMyCorrect++;
+  battleMyIdx++;
+  const uid = window._battleMyUid;
+  const updates = { idx: battleMyIdx, correct: battleMyCorrect };
+  if (battleMyIdx >= room.questions.length) updates.finishedAt = firebase.database.ServerValue.TIMESTAMP;
+  await db.ref(`battleRooms/${battleRoomCode}/players/${uid}`).update(updates);
+
+  if (battleMyIdx >= room.questions.length) {
+    renderBattleWaitingForOthers(room);
+    // Whichever client (any player, not just host) notices everyone has
+    // finished flips the room to 'finished' — simple and fine since it's
+    // an idempotent status write, not a race that corrupts data either way.
+    const freshSnap = await db.ref('battleRooms/' + battleRoomCode).once('value');
+    const freshRoom = freshSnap.val();
+    const allDone = freshRoom && Object.values(freshRoom.players || {}).every(p => p.finishedAt);
+    if (allDone) db.ref('battleRooms/' + battleRoomCode).update({ status: 'finished' }).catch(() => {});
+  } else {
+    renderBattleQuestionIfNeeded(room);
+  }
+}
+
+function renderBattleWaitingForOthers(room) {
+  renderBattleModalBody(`
+    <div style="text-align:center; padding:20px 10px;">
+      <div style="font-size:1.8rem; margin-bottom:10px;">🏁</div>
+      <h3 style="margin:0 0 8px;">You finished! ${battleMyCorrect}/${room.questions.length}</h3>
+      <p style="color:var(--parchment-dim); font-size:0.85rem;">Waiting for everyone else to finish…</p>
+      <div id="battleLiveStandings" style="margin-top:16px; padding-top:12px; border-top:1px solid var(--line); text-align:left;"></div>
+    </div>`);
+  renderBattleLiveStandings(room);
+}
+
+function renderBattleResults(room) {
+  const players = Object.values(room.players || {}).sort((a, b) => (b.correct - a.correct) || ((a.finishedAt || Infinity) - (b.finishedAt || Infinity)));
+  const medals = ['🥇', '🥈', '🥉'];
+  const rows = players.map((p, i) => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line);">
+      <span>${medals[i] || `#${i + 1}`} ${p.name}</span>
+      <span style="font-family:'Space Mono',monospace; font-weight:700;">${p.correct}/${room.questions.length}</span>
+    </div>`).join('');
+  renderBattleModalBody(`
+    <h3 style="margin:0 0 4px;">🏆 Results — ${room.chapName}</h3>
+    ${rows}
+    <button class="btn primary" style="width:100%; margin-top:16px;" onclick="closeBattleModal()">Done</button>
+  `);
+}
+
 function renderHomeScreen(navOpts) {
   AudioSys.startPeacefulAmbient();
   document.getElementById('appTitleText').textContent = 'Expedition Hub';
@@ -8326,17 +8626,30 @@ async function buildJeeReportDoc(rep, btn, renderScale, jpegQuality) {
     </div>`;
   }
 
-  // Renders EVERY question's card in one batch: build all the HTML up
-  // front, run ONE MathJax.typesetPromise over each CHUNK (not the whole
-  // 75-question set at once). Batching helped MathJax a lot — its per-call
-  // overhead dominated the cost, not the actual typesetting work — but
-  // batching ALL 75 cards into the DOM at once created a worse problem:
-  // html2canvas got progressively slower with every card left sitting in
-  // the DOM (measured ~1.3s for card 1 growing past 12s by card 12, which
-  // would make a 75-question report take 15+ minutes). Small chunks keep
-  // MathJax's one-call-per-batch speedup while keeping the DOM light
-  // enough that html2canvas stays fast for every single card.
-  const PDF_RENDER_CHUNK_SIZE = 8;
+  // Renders each question's card, typeset through MathJax and rasterized
+  // individually (PDF_RENDER_CHUNK_SIZE=1 — see below for why "batching
+  // more per typeset call" turned out to be the wrong optimization).
+  //
+  // What actually made this slow originally wasn't the number of MathJax
+  // typeset calls — it was that every single question re-awaited
+  // document.fonts.ready with its own timeout, even though fonts finish
+  // loading once and stay loaded for the page's lifetime. Batching many
+  // questions into one typeset call "fixed" that by amortizing the wait
+  // over more content, but introduced a worse problem: html2canvas got
+  // progressively slower the more heavy MathJax-rendered cards were left
+  // sitting in the DOM at once (measured ~1.3s for card 1 growing past
+  // 12s by card 12 with all 75 batched together — a 75-question report
+  // would have taken 15+ minutes). Medium-sized chunks (8, then 15) were
+  // tried and still showed the same degradation mid-chunk, just delayed.
+  //
+  // The actual fix: keep the DOM light (one card at a time, immediately
+  // cleared after capture) AND only wait on document.fonts.ready ONCE for
+  // the whole report, not per question. That combination benchmarked
+  // fastest of everything tried — a full 75-question report in ~25s,
+  // versus ~2 minutes with 8-question chunks and 15+ minutes unbatched
+  // with the redundant per-question fonts wait.
+  const PDF_RENDER_CHUNK_SIZE = 1;
+  let fontsAlreadyConfirmedReady = false;
 
   async function typesetChunk(holder, cardsHtml) {
     holder.innerHTML = cardsHtml.join('');
@@ -8349,10 +8662,15 @@ async function buildJeeReportDoc(rep, btn, renderScale, jpegQuality) {
       if (window.MathJax && MathJax.typesetPromise) {
         await withTimeout(MathJax.typesetPromise([holder]), Math.max(4000, cardsHtml.length * 800));
       }
-      if (document.fonts && document.fonts.ready) {
+      // Fonts only need to be confirmed ready once per report — it's a
+      // page-lifetime promise that stays resolved, so re-awaiting it (with
+      // its own timeout guard) on every single chunk was pure wasted time
+      // after the first chunk.
+      if (!fontsAlreadyConfirmedReady && document.fonts && document.fonts.ready) {
         await withTimeout(document.fonts.ready, 2500).catch(() => {});
+        fontsAlreadyConfirmedReady = true;
       }
-      await new Promise(res => setTimeout(res, 80));
+      await new Promise(res => setTimeout(res, 40));
       return cards;
     } catch (err) {
       console.warn(`Chunk MathJax typeset failed or timed out (falling back to plain text for this chunk): ${err.message}`);
