@@ -9608,6 +9608,9 @@ function renderFlashcard() {
   if (counter) counter.textContent = `${fcIdx + 1} / ${fcDeck.length}`;
   if (fill) fill.style.width = ((fcIdx + 1) / fcDeck.length * 100) + '%';
   if (aiExplain) { aiExplain.style.display = 'none'; aiExplain.textContent = ''; }
+  // Restore the explain button for the new card
+  const explainBtn = document.querySelector('#flashcardInner .flashcard-back .btn');
+  if (explainBtn) { explainBtn.style.display = ''; explainBtn.disabled = false; explainBtn.textContent = '🤖 Explain this'; }
 
   // Re-typeset for the back face
   typesetMath(document.getElementById('flashcardModal'));
@@ -9761,6 +9764,14 @@ async function fetchAnalyticsSummary(btn) {
    ============================================================ */
 async function explainFlashcardFormula(btn) {
   if (!fcDeck.length) return;
+
+  // Ensure the back face is visible before showing the explanation
+  if (!fcFlipped) {
+    fcFlipped = true;
+    const scene = document.getElementById('flashcardScene');
+    if (scene) scene.classList.add('flipped');
+  }
+
   const card = fcDeck[fcIdx];
   const origText = btn.textContent;
   btn.disabled = true; btn.textContent = 'Asking AI…';
@@ -9772,9 +9783,16 @@ async function explainFlashcardFormula(btn) {
       body: JSON.stringify({ mode: 'doubt', question: `Explain this formula intuitively in 2-3 sentences for a Class 11 student: "${card.topic}" — ${card.formula}. Focus on the physical/mathematical meaning and a real-world example, not just the symbols.` })
     });
     const data = await res.json();
-    if (el && data.answer) { el.textContent = data.answer; el.style.display = 'block'; }
-  } catch (_) {}
-  btn.disabled = false; btn.textContent = origText;
+    if (el && data.answer) {
+      el.textContent = data.answer;
+      el.style.display = 'block';
+      btn.style.display = 'none'; // hide button — explanation already shown for this card
+    } else {
+      btn.disabled = false; btn.textContent = origText; // restore on empty response
+    }
+  } catch (_) {
+    btn.disabled = false; btn.textContent = origText; // restore on error so they can retry
+  }
 }
 
 /* ============================================================
@@ -10475,7 +10493,7 @@ if ('serviceWorker' in navigator) {
           <div class="flashcard-label">Formula</div>
           <div class="flashcard-text" id="fcBack"></div>
           <div id="fcAiExplain" style="display:none; margin-top:10px; font-size:0.78rem; line-height:1.6; color:var(--parchment-dim); font-style:italic; text-align:left; width:100%;"></div>
-          <button class="btn ghost" style="font-size:0.72rem; margin-top:10px; padding:5px 12px; flex-shrink:0;" onclick="explainFlashcardFormula(this)">🤖 Explain this</button>
+          <button class="btn ghost" style="font-size:0.72rem; margin-top:10px; padding:5px 12px; flex-shrink:0;" onclick="event.stopPropagation(); explainFlashcardFormula(this)">🤖 Explain this</button>
         </div>
       </div>
     </div>
