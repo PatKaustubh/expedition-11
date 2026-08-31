@@ -2,16 +2,16 @@
 //
 // Powers two in-app AI features for Expedition 11:
 //   mode "mistake" -> AI Mistake Coach (explains a wrong Mistake Bank answer)
-//   mode "doubt"   -> AI Doubt Solver (freeform question chat)
+//   mode "doubt"   -> AI Doubt Solver (freeform question chat + OCR solve)
 //
-// Runs on Cloudflare Workers AI, which is free-tier and requires no
-// externally-managed API key — just the "AI" binding enabled on this
-// Pages project (see README-AI-SETUP.md for the one-time setup step).
+// Requires the "AI" binding enabled on this Cloudflare Pages project.
+// Variable name must be exactly:  AI
 //
-// A static site can never safely hold a real OpenAI/Anthropic key in its
-// client-side JS (anyone can read it from view-source), so routing every
-// AI call through this server-side function is what keeps this safe to
-// ship publicly.
+// Deploy steps:
+//   1. Push this file to your repo under functions/api/ai-explain.js
+//   2. Cloudflare Pages dashboard → Settings → Functions → Workers AI Bindings
+//      → Add binding → Variable name: AI
+//   3. Trigger a new deployment (push a commit or click Retry deploy)
 
 const MODEL = '@cf/meta/llama-3.1-8b-instruct';
 
@@ -24,10 +24,16 @@ const TUTOR_VOICE =
 export async function onRequestPost(context) {
   const { request, env } = context;
 
+  // CORS headers so the browser fetch from index.html is allowed
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  };
+
   if (!env.AI) {
-    return json(
-      { error: 'AI binding not configured on this Pages project yet.' },
-      500
+    return new Response(
+      JSON.stringify({ error: 'AI binding not configured on this Pages project yet. See functions/api/ai-explain.js for setup steps.' }),
+      { status: 500, headers: corsHeaders }
     );
   }
 
@@ -35,7 +41,7 @@ export async function onRequestPost(context) {
   try {
     body = await request.json();
   } catch (e) {
-    return json({ error: 'Malformed request.' }, 400);
+    return new Response(JSON.stringify({ error: 'Malformed request.' }), { status: 400, headers: corsHeaders });
   }
 
   const mode = body.mode === 'mistake' ? 'mistake' : 'doubt';
@@ -44,7 +50,7 @@ export async function onRequestPost(context) {
   if (mode === 'mistake') {
     const { question, options, correctAnswer, userAnswer, subject, chapter } = body;
     if (!question || !Array.isArray(options)) {
-      return json({ error: 'Missing question/options for mistake explanation.' }, 400);
+      return new Response(JSON.stringify({ error: 'Missing question/options for mistake explanation.' }), { status: 400, headers: corsHeaders });
     }
     const optsList = options.map((o, i) => `${i}: ${o}`).join('\n');
     messages = [
@@ -61,9 +67,10 @@ export async function onRequestPost(context) {
       }
     ];
   } else {
+    // mode === 'doubt'  (also used by OCR Scan & Solve)
     const { question } = body;
     if (!question || !question.trim()) {
-      return json({ error: 'No question provided.' }, 400);
+      return new Response(JSON.stringify({ error: 'No question provided.' }), { status: 400, headers: corsHeaders });
     }
     messages = [
       { role: 'system', content: TUTOR_VOICE + ' Keep the answer under 150 words unless a worked example genuinely needs more room.' },
@@ -74,16 +81,14 @@ export async function onRequestPost(context) {
   try {
     const aiResp = await env.AI.run(MODEL, { messages });
     const answer = aiResp?.response || aiResp?.result?.response || '';
-    if (!answer) return json({ error: 'AI returned an empty response — try rephrasing.' }, 502);
-    return json({ answer });
+    if (!answer) {
+      return new Response(JSON.stringify({ error: 'AI returned an empty response — try rephrasing.' }), { status: 502, headers: corsHeaders });
+    }
+    return new Response(JSON.stringify({ answer }), { status: 200, headers: corsHeaders });
   } catch (e) {
-    return json({ error: 'AI request failed. Please try again in a moment.' }, 502);
+    return new Response(
+      JSON.stringify({ error: 'AI request failed — ' + (e?.message || 'unknown error') }),
+      { status: 502, headers: corsHeaders }
+    );
   }
-}
-
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  });
 }
