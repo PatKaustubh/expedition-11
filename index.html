@@ -7162,6 +7162,7 @@ let battleRoomListener = null;
 let battleRoomState = null; // last-known room snapshot
 let battleMyIdx = 0;        // which question I'm currently on (local progress)
 let battleMyCorrect = 0;
+let battleXpAwarded = false; // guards against double-awarding if the room updates again after finishing
 
 function generateBattleCode() {
   let code = '';
@@ -7219,7 +7220,7 @@ function battlePickSubject(subjId) {
   const subj = DATA.find(s => s.id === subjId);
   if (!subj) return;
   const chapButtons = subj.chapters.map(ch =>
-    `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:6px;" onclick="createBattleRoom('${subjId}','${ch.id}')">${ch.name}</button>`
+    `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:6px;" onclick="battlePickChapter('${subjId}','${ch.id}')">${ch.name}</button>`
   ).join('');
   renderBattleModalBody(`
     <button class="btn ghost" style="margin-bottom:12px;" onclick="renderBattleSetup()">&larr; Back</button>
@@ -7227,10 +7228,30 @@ function battlePickSubject(subjId) {
     <div style="max-height:320px; overflow-y:auto;">${chapButtons}</div>`);
 }
 
-async function createBattleRoom(subjId, chapId) {
+function battlePickChapter(subjId, chapId) {
+  const sizes = [
+    { max: 2, label: '1v1', desc: 'Just you and one friend' },
+    { max: 4, label: 'Up to 4', desc: 'Small group' },
+    { max: 6, label: 'Up to 6', desc: 'Full squad' }
+  ];
+  const sizeButtons = sizes.map(s => `
+    <button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;" onclick="createBattleRoom('${subjId}','${chapId}',${s.max})">
+      <span><strong>${s.label}</strong> <span style="color:var(--parchment-dim); font-weight:400;"> — ${s.desc}</span></span>
+    </button>`).join('');
+  renderBattleModalBody(`
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="battlePickSubject('${subjId}')">&larr; Back</button>
+    <h3 style="margin:0 0 10px;">Room size</h3>
+    <p style="color:var(--parchment-dim); font-size:0.85rem; margin-top:0;">This caps how many people can join — you can always start once at least 2 are in.</p>
+    ${sizeButtons}`);
+}
+
+async function createBattleRoom(subjId, chapId, maxPlayers) {
   const subj = DATA.find(s => s.id === subjId);
   const chap = subj && subj.chapters.find(c => c.id === chapId);
   if (!subj || !chap) return;
+  // Clamp defensively regardless of caller — 2 is the minimum a "battle"
+  // can mean, BATTLE_MAX_PLAYERS is the app-wide hard ceiling.
+  maxPlayers = Math.max(2, Math.min(BATTLE_MAX_PLAYERS, Number(maxPlayers) || BATTLE_MAX_PLAYERS));
   renderBattleModalBody(`<div style="text-align:center; padding:30px;">Setting up the room…</div>`);
 
   const rawQs = Factory.fallbackGenerate(subjId, chapId, 5, BATTLE_QUESTION_COUNT);
@@ -7246,7 +7267,7 @@ async function createBattleRoom(subjId, chapId) {
     await db.ref('battleRooms/' + code).set({
       hostUid: uid, hostName: state.explorerName || 'Explorer',
       status: 'waiting', createdAt: firebase.database.ServerValue.TIMESTAMP,
-      subjId, chapId, chapName: chap.name,
+      subjId, chapId, chapName: chap.name, maxPlayers,
       questions,
       players: { [uid]: me }
     });
@@ -7267,7 +7288,8 @@ async function joinBattleRoom(codeInput) {
     if (!room) { renderBattleSetup(); renderBattleJoinError('No room found with that code.'); return; }
     if (room.status !== 'waiting') { renderBattleSetup(); renderBattleJoinError('That battle has already started or finished.'); return; }
     const playerCount = room.players ? Object.keys(room.players).length : 0;
-    if (playerCount >= BATTLE_MAX_PLAYERS) { renderBattleSetup(); renderBattleJoinError('That room is full.'); return; }
+    const cap = room.maxPlayers || BATTLE_MAX_PLAYERS;
+    if (playerCount >= cap) { renderBattleSetup(); renderBattleJoinError('That room is full.'); return; }
 
     const uid = await ensureAnonymousAuth() || getPlayerUid();
     const me = { name: state.explorerName || 'Explorer', joinedAt: firebase.database.ServerValue.TIMESTAMP, correct: 0, idx: 0, finishedAt: null };
@@ -7292,6 +7314,7 @@ function attachBattleRoomListener(code, myUid, isHost) {
   window._battleIsHost = isHost;
   battleMyIdx = 0;
   battleMyCorrect = 0;
+  battleXpAwarded = false;
   battleRoomListener = battleRoomRef.on('value', (snap) => {
     const room = snap.val();
     if (!room) { closeBattleModal(); return; } // room was deleted (host left)
@@ -7316,13 +7339,14 @@ function leaveBattleRoom() {
 
 function renderBattleLobby(room) {
   const players = Object.values(room.players || {});
+  const cap = room.maxPlayers || BATTLE_MAX_PLAYERS;
   const rows = players.map(p => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line);"><span>${p.name}</span>${p.joinedAt ? '' : '<span style="color:var(--parchment-dim); font-size:0.75rem;">joining…</span>'}</div>`).join('');
   const canStart = window._battleIsHost && players.length >= 2;
   renderBattleModalBody(`
     <h3 style="margin:0 0 4px;">${room.chapName}</h3>
     <p style="color:var(--parchment-dim); font-size:0.85rem; margin-top:0;">Share this code with a friend:</p>
     <div style="font-family:'Space Mono',monospace; font-size:2rem; letter-spacing:8px; text-align:center; font-weight:700; color:var(--brass-light); background:rgba(201,154,75,0.1); border-radius:6px; padding:14px; margin-bottom:16px;">${battleRoomCode}</div>
-    <div style="font-size:0.7rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px;">Players (${players.length}/${BATTLE_MAX_PLAYERS})</div>
+    <div style="font-size:0.7rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px;">Players (${players.length}/${cap})</div>
     ${rows}
     <div style="margin-top:16px;">
       ${window._battleIsHost
@@ -7408,7 +7432,33 @@ function renderBattleWaitingForOthers(room) {
   renderBattleLiveStandings(room);
 }
 
+// XP for a battle: 20 per correct answer, +30 if you came out on top (ties
+// all count as a win — nobody feels cheated by a shared first place). Uses
+// the exact same pipeline a normal level-clear does (state.xp, weekly
+// tracking, syncing to the shared leaderboard, local save) so a battle
+// result shows up everywhere XP normally does instead of being its own
+// disconnected side system.
+function awardBattleXp(room) {
+  if (battleXpAwarded) return 0;
+  battleXpAwarded = true;
+  const players = Object.values(room.players || {});
+  const me = room.players ? room.players[window._battleMyUid] : null;
+  if (!me) return 0;
+  const maxCorrect = Math.max(0, ...players.map(p => p.correct || 0));
+  const won = maxCorrect > 0 && (me.correct || 0) === maxCorrect;
+  const xpGain = (me.correct || 0) * 20 + (won ? 30 : 0);
+  if (xpGain > 0) {
+    state.xp += xpGain;
+    addWeeklyXp(xpGain);
+    if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+    updateStats();
+    doSave();
+  }
+  return xpGain;
+}
+
 function renderBattleResults(room) {
+  const xpGain = awardBattleXp(room);
   const players = Object.values(room.players || {}).sort((a, b) => (b.correct - a.correct) || ((a.finishedAt || Infinity) - (b.finishedAt || Infinity)));
   const medals = ['🥇', '🥈', '🥉'];
   const rows = players.map((p, i) => `
@@ -7418,6 +7468,7 @@ function renderBattleResults(room) {
     </div>`).join('');
   renderBattleModalBody(`
     <h3 style="margin:0 0 4px;">🏆 Results — ${room.chapName}</h3>
+    ${xpGain > 0 ? `<div style="color:var(--brass-light); font-weight:700; font-size:0.9rem; margin-bottom:12px;">+${xpGain} XP earned</div>` : ''}
     ${rows}
     <button class="btn primary" style="width:100%; margin-top:16px;" onclick="closeBattleModal()">Done</button>
   `);
