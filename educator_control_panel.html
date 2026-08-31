@@ -78,6 +78,14 @@ body { padding-top: 30px; }
 @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
 .shaking { animation: shake 0.35s ease both; }
 .border-error { border-color: var(--coral) !important; box-shadow: 0 0 12px rgba(231, 111, 81, 0.4) !important; }
+/* Idle countdown bar */
+.idle-bar { height: 3px; background: var(--brass); border-radius: 2px; transition: width 1s linear; }
+/* Bulk-select checkbox */
+.report-select-cb { width: 16px; height: 16px; accent-color: var(--sea); cursor: pointer; }
+/* PYQ preview table */
+.pyq-preview-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+.pyq-preview-table th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); color: var(--parchment-dim); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; text-transform: uppercase; }
+.pyq-preview-table td { padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--parchment); }
 </style>
 </head>
 
@@ -132,6 +140,8 @@ Messages
 <div id="reportsToolbar" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
 <input id="reportSearchInput" type="text" placeholder="Search by student, subject, or chapter..." class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-size:0.85rem;" oninput="renderReports()">
 <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportReportsCsv()">Export CSV</button>
+<button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" id="bulkSelectToggle" onclick="toggleBulkSelect()">☑ Select</button>
+<button class="btn primary" style="padding:8px 16px; font-size:0.8rem; display:none;" id="bulkResolveBtn" onclick="openBulkResolveModal()">Resolve Selected (<span id="bulkCount">0</span>)</button>
 </div>
 <div class="report-list" id="reportCardsList"></div>
 <div class="report-list" id="insightsPanel" style="display:none; flex-direction:column;"></div>
@@ -146,7 +156,7 @@ Paste questions you have legitimate rights to use (official papers you've source
 <textarea id="pyqImportInput" class="reply-textarea" style="min-height:120px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;" placeholder='[{"year":2023,"exam":"JEE Main","subject":"math","chapter":"Sets","q":"...","opts":["a","b","c","d"],"ans":0,"sol":"..."}]'></textarea>
 <div style="display:flex; justify-content:flex-end; gap:10px; margin:10px 0 18px;">
 <span id="pyqImportError" style="display:none; color:var(--coral); font-size:0.75rem; align-self:center;"></span>
-<button class="btn primary" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromTextarea()">Import to shared bank</button>
+<button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="previewPyqFromTextarea()">Preview &amp; import</button>
 </div>
 <div style="border-top:1px solid var(--glass-border); margin:4px 0 16px; padding-top:16px;">
 <div style="font-size:0.8rem; font-weight:600; margin-bottom:6px;">Or import from a URL</div>
@@ -169,6 +179,21 @@ Paste a link to a JSON file in the same format as above (a raw GitHub file, a Gi
 <h3 style="text-align:center;">📢 Broadcast Announcement</h3>
 <p style="text-align:center; font-size:0.85rem; color:var(--parchment-dim);">Shows as a dismissible banner to every student the next time they open the app. Only one announcement is live at a time — sending a new one replaces the last.</p>
 <textarea id="announcementText" class="reply-textarea" style="min-height:90px; margin-bottom:10px;" placeholder="e.g. Tomorrow's mock exam has been moved to 4 PM..."></textarea>
+<!-- Audience targeting -->
+<div style="margin-bottom:10px;">
+  <div style="font-size:0.75rem; font-weight:600; color:var(--parchment-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Send to</div>
+  <div style="display:flex; gap:14px; flex-wrap:wrap;">
+    <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;"><input type="radio" name="announcementAudience" value="all" checked style="accent-color:var(--sea);"> All students</label>
+    <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;"><input type="radio" name="announcementAudience" value="math" style="accent-color:var(--brass);"> Math only</label>
+    <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;"><input type="radio" name="announcementAudience" value="physics" style="accent-color:#9b8ecb;"> Physics only</label>
+    <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;"><input type="radio" name="announcementAudience" value="chemistry" style="accent-color:var(--coral);"> Chemistry only</label>
+  </div>
+</div>
+<!-- Scheduled send -->
+<div style="margin-bottom:12px;">
+  <div style="font-size:0.75rem; font-weight:600; color:var(--parchment-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Schedule (optional — leave blank to send now)</div>
+  <input type="datetime-local" id="announcementSchedule" class="reply-textarea" style="min-height:unset; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem;">
+</div>
 <div id="announcementError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please write a message before sending.</div>
 <div id="announcementCurrentStatus" style="font-size:0.75rem; color:var(--parchment-dim); margin-bottom:10px;"></div>
 <div style="display:flex; justify-content:center; gap:12px; margin-top:6px;">
@@ -211,6 +236,59 @@ Paste a link to a JSON file in the same format as above (a raw GitHub file, a Gi
 </div>
 </div>
 </div>
+<!-- ── IDLE SESSION WARNING MODAL ── -->
+<div class="modal-backdrop" id="idleWarningModal">
+  <div class="modal-box" style="max-width:420px;">
+    <h3 style="color:var(--brass-light);">⏱ Session Expiring</h3>
+    <p>You've been inactive for a while. You'll be signed out automatically in <strong id="idleCountdown">60</strong> seconds to keep this panel secure.</p>
+    <div style="background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; margin-bottom:24px;">
+      <div class="idle-bar" id="idleCountdownBar" style="width:100%;"></div>
+    </div>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="btn danger" onclick="forceSignOut()">Sign Out Now</button>
+      <button class="btn primary" onclick="resetIdleTimer()">Stay Signed In</button>
+    </div>
+  </div>
+</div>
+<!-- ── BULK RESOLVE MODAL ── -->
+<div class="modal-backdrop" id="bulkResolveModal">
+  <div class="modal-box" style="max-width:460px; text-align:left;">
+    <h3 style="text-align:center; color:var(--sea);">Bulk Resolve Reports</h3>
+    <p style="text-align:center; font-size:0.85rem;" id="bulkResolveBody">Resolve selected reports with a standard reply.</p>
+    <label style="display:block; font-size:0.8rem; color:var(--parchment-dim); margin-bottom:8px;">Reply sent to all selected students:</label>
+    <textarea id="bulkReplyText" class="reply-textarea" style="min-height:80px; margin-bottom:6px;" placeholder="e.g. Thank you for flagging — we've reviewed this question and confirmed the answer. Please refer to your study notes for further clarification."></textarea>
+    <div id="bulkReplyError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please write a reply before resolving.</div>
+    <div style="display:flex; justify-content:center; gap:12px; margin-top:14px;">
+      <button class="btn ghost" onclick="closeBulkResolveModal()">Cancel</button>
+      <button class="btn primary" onclick="confirmBulkResolve()">Resolve All Selected</button>
+    </div>
+  </div>
+</div>
+<!-- ── PYQ IMPORT PREVIEW MODAL ── -->
+<div class="modal-backdrop" id="pyqPreviewModal">
+  <div class="modal-box" style="max-width:560px; text-align:left; max-height:80vh; overflow-y:auto;">
+    <h3 style="text-align:center; color:var(--brass-light);">Preview Import</h3>
+    <div id="pyqPreviewSummary" style="font-size:0.85rem; margin-bottom:12px; color:var(--parchment-dim);"></div>
+    <div id="pyqPreviewTable"></div>
+    <div style="display:flex; justify-content:center; gap:12px; margin-top:18px;">
+      <button class="btn ghost" onclick="closePyqPreviewModal()">Cancel</button>
+      <button class="btn primary" id="pyqPreviewConfirmBtn" onclick="confirmPyqImport()">Import to Bank</button>
+    </div>
+  </div>
+</div>
+<!-- ── XP EDIT MODAL ── -->
+<div class="modal-backdrop" id="xpEditModal">
+  <div class="modal-box" style="max-width:380px; text-align:left;">
+    <h3 style="text-align:center; color:var(--brass-light);">Edit XP</h3>
+    <p id="xpEditLabel" style="text-align:center; font-size:0.9rem; color:var(--parchment-dim);"></p>
+    <input type="number" id="xpEditValue" class="reply-textarea" style="min-height:unset; padding:12px; font-size:1.2rem; font-family:'JetBrains Mono',monospace; text-align:center; margin-bottom:8px;" min="0" placeholder="New XP value">
+    <div id="xpEditError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Enter a valid non-negative number.</div>
+    <div style="display:flex; justify-content:center; gap:12px; margin-top:10px;">
+      <button class="btn ghost" onclick="closeXpEditModal()">Cancel</button>
+      <button class="btn primary" onclick="confirmXpEdit()">Save XP</button>
+    </div>
+  </div>
+</div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -243,8 +321,11 @@ let db = null;
     });
     try {
       db.ref('.info/connected').on('value', (snap) => {
-        if (snap.val() === true) { try { setAdminBackendStatus('live'); } catch(_) {} }
-        else { try { setAdminBackendStatus('local', 'Reconnecting to shared server...'); } catch(_) {} }
+        if (snap.val() === true) {
+          try { setAdminBackendStatus('live'); } catch(_) {}
+          // Flush any writes buffered while offline
+          if (window.Admin_DB) window.Admin_DB.flushOfflineQueue().catch(() => {});
+        } else { try { setAdminBackendStatus('local', 'Reconnecting to shared server...'); } catch(_) {} }
       });
     } catch(_) {}
   } catch (e) {
@@ -307,11 +388,13 @@ async function ensureAdminAuth() {
 }
 
 window.Admin_DB = {
-  async sendAnnouncement(message, audience) {
+  async sendAnnouncement(message, audience, scheduledFor) {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.' };
     try {
-      await db.ref('announcement').set({ id: 'a_' + Date.now(), message, audience: audience || 'all', timestamp: Date.now() });
+      const payload = { id: 'a_' + Date.now(), message, audience: audience || 'all', timestamp: Date.now() };
+      if (scheduledFor) payload.scheduledFor = scheduledFor;
+      await db.ref('announcement').set(payload);
       return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; }
   },
@@ -348,8 +431,30 @@ window.Admin_DB = {
   },
   async updateReport(id, updateData) {
     await ensureAdminAuth();
+    // Auto-stamp resolvedAt when resolving so resolution-time analytics work
+    if (updateData.status === 'Resolved' && !updateData.resolvedAt) {
+      updateData = { ...updateData, resolvedAt: Date.now() };
+    }
     if (dbReady) {
-      try { await db.ref('reports/' + id).update(updateData); setAdminBackendStatus('live'); return; }
+      try {
+        await db.ref('reports/' + id).update(updateData);
+        // Write student notification if resolving with a reply
+        if (updateData.status === 'Resolved' && updateData.reply) {
+          try {
+            const reportSnap = await db.ref('reports/' + id).once('value');
+            const report = reportSnap.val();
+            if (report && report.studentUid) {
+              const notifId = 'n_' + Date.now();
+              await db.ref('notifications/' + report.studentUid + '/' + notifId).set({
+                type: 'report_resolved', message: updateData.reply,
+                subject: report.subject || '', chapter: report.chapter || '',
+                at: Date.now(), read: false
+              });
+            }
+          } catch (_) { /* notification write is best-effort */ }
+        }
+        setAdminBackendStatus('live'); return;
+      }
       catch (e) { console.error("[Admin] Firebase update failed, falling back locally.", e); setAdminBackendStatus('local', 'Update failed: ' + e.message); }
     }
     this.updateReportLocal(id, updateData);
@@ -358,6 +463,12 @@ window.Admin_DB = {
     let list = this.getReportsLocal();
     let idx = list.findIndex(r => r.id === id);
     if (idx !== -1) { list[idx] = { ...list[idx], ...updateData }; localStorage.setItem('explorer_reported_issues', JSON.stringify(list)); }
+    // Queue for later sync when connectivity returns
+    try {
+      const q = JSON.parse(localStorage.getItem('explorer_offline_queue_v1') || '[]');
+      q.push({ type: 'updateReport', id, data: updateData, at: Date.now() });
+      localStorage.setItem('explorer_offline_queue_v1', JSON.stringify(q));
+    } catch (_) {}
     if (window.onReportsUpdate) window.onReportsUpdate();
   },
   async clearAll() {
@@ -499,6 +610,29 @@ window.Admin_DB = {
     if (!dbReady) return { ok: false };
     try { await db.ref('pyqBank/' + id).remove(); return { ok: true }; }
     catch (e) { return { ok: false, error: e.message }; }
+  },
+  async setLeaderboardXp(uid, xp) {
+    await ensureAdminAuth();
+    if (!dbReady) return { ok: false, error: 'Not connected.' };
+    try { await db.ref('leaderboard/' + uid + '/xp').set(Number(xp)); return { ok: true }; }
+    catch (e) { return { ok: false, error: e.message }; }
+  },
+  // Flush offline queue — writes buffered updateReport calls back to Firebase
+  async flushOfflineQueue() {
+    if (!dbReady) return;
+    let queue = [];
+    try { queue = JSON.parse(localStorage.getItem('explorer_offline_queue_v1') || '[]'); } catch (_) {}
+    if (!queue.length) return;
+    const remaining = [];
+    for (const item of queue) {
+      try {
+        if (item.type === 'updateReport') {
+          await db.ref('reports/' + item.id).update(item.data);
+        }
+      } catch (_) { remaining.push(item); }
+    }
+    try { localStorage.setItem('explorer_offline_queue_v1', JSON.stringify(remaining)); } catch (_) {}
+    if (!remaining.length) console.log('[Admin] Offline queue fully flushed.');
   }
 };
 </script>
@@ -549,9 +683,51 @@ firebase.auth().onAuthStateChanged(async (user) => {
 document.getElementById('gateField').addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyGatePasscode(); });
 document.getElementById('gateEmailField').addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyGatePasscode(); });
 
+// ── IDLE SESSION TIMER ────────────────────────────────────────────────────
+const IDLE_TIMEOUT_MS  = 30 * 60 * 1000; // 30 min before warning
+const IDLE_COUNTDOWN_S = 60;              // 60 s countdown then sign-out
+let idleTimer = null, idleCountdownInterval = null, idleCountdownLeft = IDLE_COUNTDOWN_S;
+
+function resetIdleTimer() {
+  document.getElementById('idleWarningModal').classList.remove('show');
+  clearInterval(idleCountdownInterval);
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(showIdleWarning, IDLE_TIMEOUT_MS);
+}
+function showIdleWarning() {
+  idleCountdownLeft = IDLE_COUNTDOWN_S;
+  const countEl = document.getElementById('idleCountdown');
+  const barEl   = document.getElementById('idleCountdownBar');
+  document.getElementById('idleWarningModal').classList.add('show');
+  if (countEl) countEl.textContent = idleCountdownLeft;
+  if (barEl) { requestAnimationFrame(() => { barEl.style.width = '100%'; }); }
+  idleCountdownInterval = setInterval(() => {
+    idleCountdownLeft--;
+    if (countEl) countEl.textContent = idleCountdownLeft;
+    if (barEl) barEl.style.width = (idleCountdownLeft / IDLE_COUNTDOWN_S * 100) + '%';
+    if (idleCountdownLeft <= 0) { clearInterval(idleCountdownInterval); forceSignOut(); }
+  }, 1000);
+}
+function forceSignOut() {
+  document.getElementById('idleWarningModal').classList.remove('show');
+  clearInterval(idleCountdownInterval);
+  clearTimeout(idleTimer);
+  firebase.auth().signOut().then(() => { location.reload(); });
+}
+window.resetIdleTimer = resetIdleTimer;
+window.forceSignOut   = forceSignOut;
+['click','keydown','mousemove','touchstart'].forEach(evt =>
+  document.addEventListener(evt, () => { if (idleTimer) resetIdleTimer(); }, { passive: true })
+);
+
 function startAdminEngine() {
+  resetIdleTimer();
   if (window.Admin_DB) {
-    window.Admin_DB.listenReports((reports) => { activeReports = reports; renderReports(); });
+    window.Admin_DB.listenReports((reports) => {
+      activeReports = reports;
+      renderReports();
+      if (activeTab === 'Analytics') renderAnalyticsPanel();
+    });
     window.Admin_DB.listenAllDiscussions((result) => {
       allDiscussions = result.byUid || {};
       updateMessagesTabBadge();
@@ -583,14 +759,27 @@ function updateMessagesTabBadge() {
   document.title = n > 0 ? `(${n > 99 ? '99+' : n}) ${baseTitle}` : baseTitle;
 }
 let openInboxUid = null;
+function markAllMessagesRead() {
+  const map = getAdminLastSeenMap();
+  Object.keys(allDiscussions).forEach(uid => { map[uid] = Date.now(); });
+  try { localStorage.setItem(ADMIN_LAST_SEEN_KEY, JSON.stringify(map)); } catch (_) {}
+  updateMessagesTabBadge();
+  renderInbox();
+}
+window.markAllMessagesRead = markAllMessagesRead;
+
 function renderInbox() {
   const container = document.getElementById('inboxList');
   if (!container) return;
   if (!currentLeaderboard || !currentLeaderboard.length) loadLeaderboard();
   const uids = Object.keys(allDiscussions).filter(uid => (allDiscussions[uid] || []).length > 0);
   if (!uids.length) { container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">No messages yet — candidate messages will show up here.</div>`; return; }
+  const totalUnread = totalUnreadMessages();
   const rows = uids.map(uid => { const msgs = allDiscussions[uid]; const last = msgs[msgs.length - 1]; const unread = unreadCountFor(uid, msgs); return { uid, last, unread }; }).sort((a, b) => (b.last.at || 0) - (a.last.at || 0));
-  container.innerHTML = rows.map(row => `
+  const markAllBtn = totalUnread > 0
+    ? `<div style="display:flex; justify-content:flex-end; margin-bottom:10px;"><button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="markAllMessagesRead()">✓ Mark all read (${totalUnread})</button></div>`
+    : '';
+  const rowsHtml = rows.map(row => `
     <div class="report-card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; cursor:pointer;" onclick="openInboxThread('${row.uid}')">
         <div style="min-width:0;">
@@ -613,7 +802,16 @@ function renderInbox() {
           </div>
         </div>` : ''}
     </div>`).join('');
-  if (openInboxUid) renderInboxThreadMessages(openInboxUid, allDiscussions[openInboxUid] || []);
+  container.innerHTML = markAllBtn + rowsHtml;
+  if (openInboxUid) {
+    renderInboxThreadMessages(openInboxUid, allDiscussions[openInboxUid] || []);
+    // Auto-scroll to the first unread thread
+    const firstUnread = rows.find(r => r.unread > 0);
+    if (firstUnread && !openInboxUid) {
+      const el = container.querySelector(`[onclick*="${firstUnread.uid}"]`);
+      if (el) el.closest('.report-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 }
 function escapeHtmlAdmin(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function renderInboxThreadMessages(uid, messages) {
@@ -685,9 +883,19 @@ function renderReports() {
     card.className = "report-card" + (r.status === 'Resolved' ? ' resolved' : '');
     let interactionMarkup = '';
     if (r.status === 'Pending') {
+      const templateOpts = REPLY_TEMPLATES.map((t, i) => `<option value="${i}">${t.label}</option>`).join('');
+      const bulkCheckbox = bulkSelectMode
+        ? `<label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; color:var(--parchment-dim); margin-bottom:8px; cursor:pointer;"><input type="checkbox" class="report-select-cb" ${bulkSelectedIds.has(r.id) ? 'checked' : ''} onchange="toggleBulkSelection('${r.id}', this)"> Select for bulk resolve</label>`
+        : '';
       interactionMarkup = `
         <div class="reply-area">
+          ${bulkCheckbox}
           <div style="font-size:0.78rem; font-weight:600; color:var(--parchment-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.6px;">Your reply to student</div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <select onchange="applyReplyTemplate('${r.id}', parseInt(this.value)); this.selectedIndex=0;" style="background:#0b1320; border:1px solid var(--line); color:var(--parchment-dim); border-radius:8px; padding:6px 10px; font-size:0.78rem; cursor:pointer; flex:0 0 auto;">
+              <option value="">📋 Use template…</option>${templateOpts}
+            </select>
+          </div>
           <div class="ai-suggest-row">
             <button class="btn ai-btn" onclick="suggestAiReply('${r.id}', this)">🤖 Draft with AI</button>
             <span style="font-size:0.72rem; color:var(--parchment-dim); opacity:0.75; line-height:1.4;">AI drafts an explanation of the correct answer — review &amp; edit before sending.</span>
@@ -842,6 +1050,22 @@ function renderAnalyticsPanel() {
   });
   const maxDay = Math.max(...dayCounts, 1);
 
+  // ── category breakdown ──
+  const byCategory = {};
+  reports.forEach(r => { const c = r.category || 'Unknown'; byCategory[c] = (byCategory[c] || 0) + 1; });
+  const categoryRows = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+  const maxCategory = categoryRows.length ? categoryRows[0][1] : 1;
+  const categoryColors = ['var(--coral)','var(--brass)','var(--sea)','#9b8ecb','#7fa06f','#c47a3f'];
+
+  // ── resolution time histogram (buckets: <1h, 1-6h, 6-24h, >24h) ──
+  const resBuckets = ['< 1 h', '1 – 6 h', '6 – 24 h', '> 24 h'];
+  const resCounts  = [0, 0, 0, 0];
+  resolvedWithTime.forEach(r => {
+    const hrs = (new Date(r.resolvedAt) - new Date(r.timestamp)) / 36e5;
+    if (hrs < 1) resCounts[0]++; else if (hrs < 6) resCounts[1]++; else if (hrs < 24) resCounts[2]++; else resCounts[3]++;
+  });
+  const maxResBucket = Math.max(...resCounts, 1);
+
   // ── top reporters (top 6) ──
   const byStudent = {};
   reports.forEach(r => { const s = r.studentName || 'Unknown'; byStudent[s] = (byStudent[s] || 0) + 1; });
@@ -909,6 +1133,34 @@ function renderAnalyticsPanel() {
             </div>
             <div style="flex:0 0 22px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.75rem;">${count}</div>
           </div>`).join('') : '<div style="font-size:0.85rem; color:var(--parchment-dim); opacity:0.6;">No data.</div>'}
+      </div>
+    </div>
+
+    <!-- Category breakdown + Resolution histogram side by side -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+      <!-- Category breakdown -->
+      <div style="background:rgba(201,156,81,0.05); border:1px solid var(--line); border-radius:16px; padding:18px 20px; min-width:0;">
+        <div style="font-size:0.82rem; font-weight:700; color:var(--parchment-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px;">By error category</div>
+        ${categoryRows.length ? categoryRows.map(([cat, count], idx) => `
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <div style="flex:1; font-size:0.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat}</div>
+            <div style="flex:0 0 80px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:12px;">
+              <div style="width:${Math.max(4,(count/maxCategory)*100)}%; background:${categoryColors[idx % categoryColors.length]}; height:100%;"></div>
+            </div>
+            <div style="flex:0 0 22px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.75rem;">${count}</div>
+          </div>`).join('') : '<div style="font-size:0.85rem; color:var(--parchment-dim); opacity:0.6;">No data.</div>'}
+      </div>
+      <!-- Resolution time histogram -->
+      <div style="background:rgba(201,156,81,0.05); border:1px solid var(--line); border-radius:16px; padding:18px 20px; min-width:0;">
+        <div style="font-size:0.82rem; font-weight:700; color:var(--parchment-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px;">Resolution time</div>
+        ${resolvedWithTime.length ? resBuckets.map((label, idx) => `
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <div style="flex:0 0 54px; font-size:0.75rem; color:var(--parchment-dim);">${label}</div>
+            <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:12px;">
+              <div style="width:${Math.max(resCounts[idx]?4:0,(resCounts[idx]/maxResBucket)*100)}%; background:var(--sea); height:100%;"></div>
+            </div>
+            <div style="flex:0 0 22px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.75rem;">${resCounts[idx]}</div>
+          </div>`).join('') : '<div style="font-size:0.85rem; color:var(--parchment-dim); opacity:0.6;">No resolved reports with timing data yet.<br><span style="font-size:0.72rem;">Data populates automatically as you resolve reports.</span></div>'}
       </div>
     </div>
 
@@ -988,7 +1240,12 @@ async function sendAnnouncementNow() {
   const msg = document.getElementById('announcementText').value.trim();
   if (!msg) { document.getElementById('announcementError').style.display = 'block'; return; }
   document.getElementById('announcementError').style.display = 'none';
-  const result = window.Admin_DB ? await window.Admin_DB.sendAnnouncement(msg) : { ok: false, error: 'Not initialized.' };
+  const audienceRadio = document.querySelector('input[name="announcementAudience"]:checked');
+  const audience = audienceRadio ? audienceRadio.value : 'all';
+  const scheduleVal = document.getElementById('announcementSchedule').value;
+  const scheduledFor = scheduleVal ? new Date(scheduleVal).getTime() : null;
+  const payload = scheduledFor ? { msg, audience, scheduledFor } : { msg, audience };
+  const result = window.Admin_DB ? await window.Admin_DB.sendAnnouncement(msg, audience, scheduledFor) : { ok: false, error: 'Not initialized.' };
   if (result.ok) { closeAnnouncementModal(); }
   else { document.getElementById('announcementCurrentStatus').textContent = 'Failed to send: ' + (result.error || 'unknown error'); }
 }
@@ -1051,7 +1308,7 @@ function renderLeaderboard() {
     }).join('');
   }
   const exportBar = `<div style="display:flex; justify-content:flex-end; margin-bottom:10px;"><button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportLeaderboardCsv()">Export CSV</button></div>`;
-  const rowHtml = (r) => `<div class="report-card" style="padding:16px 20px; display:flex; flex-direction:column; gap:10px;"><div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;"><div><div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div><div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}', 'lb')">${openDiscussionUid === r.uid ? 'Hide' : '💬 Message'}</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', true)">Mark Inactive</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button></div></div><div id="discBox-${r.uid}"></div></div>`;
+  const rowHtml = (r) => `<div class="report-card" style="padding:16px 20px; display:flex; flex-direction:column; gap:10px;"><div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;"><div><div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div><div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}', 'lb')">${openDiscussionUid === r.uid ? 'Hide' : '💬 Message'}</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openXpEditModal('${r.uid}', '${(r.username||r.uid).replace(/'/g,"\\'")}', ${r.xp ?? 0})">Edit XP</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', true)">Mark Inactive</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button></div></div><div id="discBox-${r.uid}"></div></div>`;
   const rows = activeEntries.map(rowHtml).join('') || `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);"><p style="font-size:0.9rem; opacity:0.7;">No active candidates in the last 3 days.</p></div>`;
   let inactiveSection = '';
   if (inactiveEntries.length) {
@@ -1190,18 +1447,47 @@ function validatePyqItems(parsed) {
   });
   return { valid, errors };
 }
-async function importPyqFromTextarea() {
-  const input = document.getElementById('pyqImportInput'); const errEl = document.getElementById('pyqImportError'); errEl.style.display = 'none';
+let pyqPendingImport = [];
+function previewPyqFromTextarea() {
+  const input = document.getElementById('pyqImportInput');
+  const errEl = document.getElementById('pyqImportError');
+  errEl.style.display = 'none';
   let parsed;
   try { parsed = JSON.parse(input.value); if (!Array.isArray(parsed)) throw new Error('Expected a JSON array.'); }
   catch (e) { errEl.textContent = 'Invalid JSON: ' + e.message; errEl.style.display = 'inline'; return; }
   const { valid, errors } = validatePyqItems(parsed);
-  if (errors.length) { errEl.textContent = errors.slice(0, 3).join(' '); errEl.style.display = 'inline'; if (!valid.length) return; }
-  if (!window.Admin_DB) return;
-  const result = await window.Admin_DB.importPyqBatch(valid);
-  if (!result.ok) { alert('Import failed: ' + (result.error || 'unknown error')); return; }
-  input.value = ''; await loadPyqAdmin();
+  if (!valid.length) { errEl.textContent = errors.length ? errors.slice(0, 3).join(' ') : 'No valid items found.'; errEl.style.display = 'inline'; return; }
+  pyqPendingImport = valid;
+  // Build preview
+  const bySubject = {}; valid.forEach(q => { bySubject[q.subject] = (bySubject[q.subject]||0)+1; });
+  const years = valid.map(q=>q.year).filter(Boolean); const minY = Math.min(...years); const maxY = Math.max(...years);
+  document.getElementById('pyqPreviewSummary').innerHTML =
+    `<strong style="color:var(--brass-light)">${valid.length}</strong> questions ready to import` +
+    (errors.length ? ` (<span style="color:var(--coral)">${errors.length} skipped — bad shape</span>)` : '') +
+    `<br>Subjects: ${Object.entries(bySubject).map(([s,n])=>`${s} (${n})`).join(', ')}` +
+    (years.length ? `<br>Year range: ${minY}–${maxY}` : '');
+  document.getElementById('pyqPreviewTable').innerHTML = `
+    <table class="pyq-preview-table">
+      <thead><tr><th>#</th><th>Exam / Year</th><th>Subject</th><th>Chapter</th><th>Question (preview)</th></tr></thead>
+      <tbody>${valid.slice(0,5).map((q,i)=>`<tr><td>${i+1}</td><td>${q.exam||'PYQ'} ${q.year||''}</td><td>${q.subject}</td><td>${q.chapter||'—'}</td><td>${(q.q||'').slice(0,60)}…</td></tr>`).join('')}
+        ${valid.length>5?`<tr><td colspan="5" style="color:var(--parchment-dim); font-size:0.75rem;">…and ${valid.length-5} more</td></tr>`:''}
+      </tbody></table>`;
+  document.getElementById('pyqPreviewModal').classList.add('show');
 }
+async function confirmPyqImport() {
+  if (!pyqPendingImport.length || !window.Admin_DB) return;
+  const btn = document.getElementById('pyqPreviewConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Importing…';
+  const result = await window.Admin_DB.importPyqBatch(pyqPendingImport);
+  btn.disabled = false; btn.textContent = 'Import to Bank';
+  if (!result.ok) { alert('Import failed: ' + (result.error || 'unknown error')); return; }
+  closePyqPreviewModal();
+  document.getElementById('pyqImportInput').value = '';
+  pyqPendingImport = [];
+  await loadPyqAdmin();
+}
+function closePyqPreviewModal() { document.getElementById('pyqPreviewModal').classList.remove('show'); }
+async function importPyqFromTextarea() { previewPyqFromTextarea(); } // alias for URL flow that still calls this
 async function importPyqFromUrl() {
   const urlInput = document.getElementById('pyqImportUrl'); const errEl = document.getElementById('pyqUrlImportError'); const statusEl = document.getElementById('pyqUrlImportStatus'); const btn = document.getElementById('pyqUrlImportBtn');
   errEl.style.display = 'none'; statusEl.style.display = 'none';
@@ -1241,10 +1527,101 @@ async function confirmClearLbEntries() {
   if (window.loadRemovedCandidates) loadRemovedCandidates();
 }
 
+// ── BULK RESOLVE ──────────────────────────────────────────────────────────
+let bulkSelectMode = false;
+let bulkSelectedIds = new Set();
+function toggleBulkSelect() {
+  bulkSelectMode = !bulkSelectMode;
+  bulkSelectedIds.clear();
+  const btn = document.getElementById('bulkSelectToggle');
+  const resolveBtn = document.getElementById('bulkResolveBtn');
+  if (btn) btn.textContent = bulkSelectMode ? '✕ Cancel' : '☑ Select';
+  if (resolveBtn) resolveBtn.style.display = bulkSelectMode ? 'inline-block' : 'none';
+  renderReports();
+}
+function toggleBulkSelection(id, cb) {
+  if (cb.checked) bulkSelectedIds.add(id); else bulkSelectedIds.delete(id);
+  const countEl = document.getElementById('bulkCount');
+  if (countEl) countEl.textContent = bulkSelectedIds.size;
+}
+function openBulkResolveModal() {
+  if (!bulkSelectedIds.size) { alert('Select at least one report first.'); return; }
+  document.getElementById('bulkResolveBody').textContent = `Resolve ${bulkSelectedIds.size} selected report${bulkSelectedIds.size > 1 ? 's' : ''} with the reply below.`;
+  document.getElementById('bulkReplyText').value = '';
+  document.getElementById('bulkReplyError').style.display = 'none';
+  document.getElementById('bulkResolveModal').classList.add('show');
+}
+function closeBulkResolveModal() { document.getElementById('bulkResolveModal').classList.remove('show'); }
+async function confirmBulkResolve() {
+  const replyVal = document.getElementById('bulkReplyText').value.trim();
+  if (!replyVal) { document.getElementById('bulkReplyError').style.display = 'block'; return; }
+  closeBulkResolveModal();
+  const ids = [...bulkSelectedIds];
+  for (const id of ids) {
+    if (window.Admin_DB) await window.Admin_DB.updateReport(id, { status: 'Resolved', reply: replyVal });
+  }
+  bulkSelectMode = false; bulkSelectedIds.clear();
+  const btn = document.getElementById('bulkSelectToggle'); if (btn) btn.textContent = '☑ Select';
+  const resolveBtn = document.getElementById('bulkResolveBtn'); if (resolveBtn) resolveBtn.style.display = 'none';
+  renderReports();
+}
+window.toggleBulkSelect = toggleBulkSelect;
+window.toggleBulkSelection = toggleBulkSelection;
+window.openBulkResolveModal = openBulkResolveModal;
+window.closeBulkResolveModal = closeBulkResolveModal;
+window.confirmBulkResolve = confirmBulkResolve;
+
+// ── XP EDIT ───────────────────────────────────────────────────────────────
+let xpEditUid = null;
+function openXpEditModal(uid, name, currentXp) {
+  xpEditUid = uid;
+  document.getElementById('xpEditLabel').textContent = `Editing XP for ${name}`;
+  document.getElementById('xpEditValue').value = currentXp;
+  document.getElementById('xpEditError').style.display = 'none';
+  document.getElementById('xpEditModal').classList.add('show');
+}
+function closeXpEditModal() { document.getElementById('xpEditModal').classList.remove('show'); xpEditUid = null; }
+async function confirmXpEdit() {
+  const val = parseInt(document.getElementById('xpEditValue').value, 10);
+  if (isNaN(val) || val < 0) { document.getElementById('xpEditError').style.display = 'block'; return; }
+  if (!xpEditUid || !window.Admin_DB) return;
+  const result = await window.Admin_DB.setLeaderboardXp(xpEditUid, val);
+  if (!result.ok) { alert('Failed to update XP: ' + (result.error || 'unknown error')); return; }
+  closeXpEditModal();
+  currentLeaderboard = await window.Admin_DB.getLeaderboardOnce();
+  renderLeaderboard();
+}
+window.openXpEditModal = openXpEditModal;
+window.closeXpEditModal = closeXpEditModal;
+window.confirmXpEdit = confirmXpEdit;
+
+// ── REPLY TEMPLATES ───────────────────────────────────────────────────────
+const REPLY_TEMPLATES = [
+  { label: 'Confirmed correct', text: 'Thank you for flagging this. We have reviewed the question and confirmed that the given answer is correct. For further clarity, please refer to your study notes or textbook for this topic.' },
+  { label: 'Will review', text: 'Thank you for bringing this to our attention. This question has been flagged for review and we will update it if necessary. We appreciate your diligence!' },
+  { label: 'Typo acknowledged', text: 'Good catch! There was a typographical error in this question. We will correct it in the next update. The intended answer remains correct despite the typo.' },
+  { label: 'Conceptual clarification', text: 'This is a common point of confusion. The correct answer is right because of the underlying concept — we recommend revisiting this topic in your notes for a detailed explanation.' },
+  { label: 'Wording updated', text: 'Thank you for the feedback. The wording of this question has been noted and will be made clearer in a future update. The answer itself is correct.' },
+];
+function applyReplyTemplate(reportId, idx) {
+  const tpl = REPLY_TEMPLATES[idx];
+  if (!tpl) return;
+  const ta = document.getElementById('replyText-' + reportId);
+  if (ta) {
+    ta.value = tpl.text;
+    ta.style.transition = 'border-color 0.3s'; ta.style.borderColor = 'var(--brass-light)';
+    setTimeout(() => { ta.style.borderColor = ''; }, 1000);
+  }
+}
+window.applyReplyTemplate = applyReplyTemplate;
+
 window.submitReply = submitReply;
 window.verifyGatePasscode = verifyGatePasscode;
 window.switchTab = switchTab;
 window.renderAnalyticsPanel = renderAnalyticsPanel;
+window.previewPyqFromTextarea = previewPyqFromTextarea;
+window.confirmPyqImport = confirmPyqImport;
+window.closePyqPreviewModal = closePyqPreviewModal;
 window.openClearModal = openClearModal;
 window.closeClearModal = closeClearModal;
 window.confirmClearAllReports = confirmClearAllReports;
