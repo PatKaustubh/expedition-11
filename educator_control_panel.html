@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <title>Expedition 11 — Educator Control Panel</title>
-<!-- ============================================================
-     PWA: separate manifest/identity from the student app, so this
-     installs as its own distinct "Educator Panel" app rather than
-     being lumped in with (or conflicting with) the student install.
-     ============================================================ -->
 <link rel="manifest" href="/admin-manifest.json">
 <link rel="icon" href="/faculty-icon-192.png">
 <meta name="theme-color" content="#0c1220">
@@ -19,49 +14,36 @@
 <meta name="apple-mobile-web-app-title" content="Expedition 11 Faculty">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
-
 :root {
   --navy: #0b1320; --navy-deep: #050914;
   --parchment: #f0e6d2; --parchment-dim: #c5bba8;
   --ink: #111a22; --brass: #c99c51; --brass-light: #e8c382;
   --sea: #2a9d8f; --coral: #e76f51; --line: rgba(201, 156, 81, 0.3);
-  --glass: rgba(11, 19, 32, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass: rgba(11, 19, 32, 0.65); --glass-border: rgba(255, 255, 255, 0.12);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, var(--navy) 0%, var(--navy-deep) 100%); color: var(--parchment); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
-
 .app { max-width: 900px; margin: 0 auto; padding: 30px 16px 80px; position: relative; z-index: 10; }
-
-/* DEV-BUILD SCROLLING DISCLAIMER */
 .dev-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 5000; height: 30px; background: rgba(231, 111, 81, 0.16); border-bottom: 1px solid var(--coral); backdrop-filter: blur(6px); overflow: hidden; display: flex; align-items: center; }
 .dev-banner-track { display: inline-flex; white-space: nowrap; animation: devBannerScroll 22s linear infinite; will-change: transform; }
 .dev-banner-track span { display: inline-block; padding: 0 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--coral); }
 @keyframes devBannerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 body { padding-top: 30px; }
 @media (prefers-reduced-motion: reduce) { .dev-banner-track { animation: none; } }
-
-/* BACKEND CONNECTION STATUS */
 .conn-status-row { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; margin-top: 6px; }
 .conn-status-row .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-
-/* HEADER */
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border: 1px solid var(--brass); border-radius: 16px; background: var(--glass); margin-bottom: 30px; gap: 10px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
 .brand h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; color: var(--brass-light); }
 .brand p { margin: 0; font-size: 0.8rem; color: var(--parchment-dim); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
-
 .passcode-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; }
 .passcode-card { background: var(--glass); border: 1px solid var(--brass); border-radius: 24px; width: 100%; max-width: 420px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(20px); }
 .passcode-card h3 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--brass-light); margin: 0 0 10px; }
 .passcode-card p { color: var(--parchment-dim); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
 .passcode-input { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--brass); border-radius: 12px; padding: 14px 20px; width: 100%; color: #fff; font-family: 'JetBrains Mono', monospace; text-align: center; font-size: 1.3rem; outline: none; margin-bottom: 20px; }
 .passcode-input:focus { border-color: var(--brass-light); box-shadow: 0 0 12px rgba(201, 156, 81, 0.3); }
-
-/* TAB TOGGLES */
-.tab-row { display: flex; gap: 12px; margin-bottom: 24px; }
+.tab-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
 .tab-btn { background: var(--glass); border: 1px solid var(--glass-border); color: var(--parchment); border-radius: 10px; padding: 12px 20px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; transition: all 0.2s; }
 .tab-btn.active { border-color: var(--brass-light); color: var(--brass-light); background: rgba(201, 156, 81, 0.1); }
-
 .report-list { display: flex; flex-direction: column; gap: 20px; }
 .report-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px; border-left: 5px solid var(--coral); position: relative; }
 .report-card.resolved { border-left-color: var(--sea); }
@@ -69,210 +51,171 @@ body { padding-top: 30px; }
 .meta-badge { background: rgba(231, 111, 81, 0.15); color: var(--coral); padding: 4px 10px; border-radius: 6px; font-weight: 600; border: 1px solid rgba(231, 111, 81, 0.3); }
 .report-card.resolved .meta-badge { background: rgba(42, 157, 143, 0.15); color: var(--sea); border-color: rgba(42, 157, 143, 0.3); }
 .report-time { color: var(--parchment-dim); }
-
 .report-qtext { background: rgba(0, 0, 0, 0.2); padding: 16px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 14px; font-size: 1.05rem; line-height: 1.5; font-family: 'Playfair Display', serif; }
 .report-ans { color: var(--sea); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; margin-bottom: 14px; }
 .report-comment { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 12px; font-size: 0.95rem; color: var(--parchment-dim); margin-bottom: 16px; line-height: 1.5; }
-
 .reply-area { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 .reply-textarea { background: #0b1320; border: 1px solid var(--brass); border-radius: 12px; padding: 14px; color: #fff; font-size: 0.95rem; outline: none; width: 100%; resize: none; min-height: 80px; }
 .reply-textarea:focus { border-color: var(--brass-light); }
-
+/* AI suggest */
+.ai-suggest-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ai-suggest-note { font-size: 0.78rem; color: var(--parchment-dim); font-style: italic; line-height: 1.5; padding: 8px 12px; background: rgba(201,156,81,0.06); border: 1px solid rgba(201,156,81,0.2); border-radius: 8px; display: none; margin-bottom: 6px; white-space: pre-wrap; }
 .btn { border: none; border-radius: 10px; padding: 12px 24px; cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s; align-self: flex-end; }
 .btn.primary { background: var(--sea); color: #fff; }
 .btn.primary:hover { background: #33bdae; }
 .btn.danger { background: var(--coral); color: #fff; }
 .btn.ghost { background: transparent; border: 1px solid var(--parchment-dim); color: var(--parchment); }
 .btn.ghost:hover { background: rgba(255,255,255,0.05); }
-
+.btn.ai-btn { background: rgba(201,156,81,0.1); border: 1px solid rgba(201,156,81,0.35); color: var(--brass-light); font-size: 0.78rem; padding: 7px 13px; text-transform: none; letter-spacing: 0; font-weight: 600; align-self: flex-start; border-radius: 8px; }
+.btn.ai-btn:hover { background: rgba(201,156,81,0.18); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .resolved-reply { background: rgba(201, 156, 81, 0.05); border: 1px solid var(--line); border-radius: 10px; padding: 14px; color: var(--brass-light); font-size: 0.95rem; line-height: 1.5; }
-
-/* MODALS */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(5, 9, 20, 0.8); backdrop-filter: blur(6px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
 .modal-backdrop.show { display: flex; }
 .modal-box { background: var(--glass); border: 1px solid var(--brass); border-radius: 20px; padding: 36px 30px; max-width: 420px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(20px); }
 .modal-box h3 { font-family: 'Playfair Display', serif; color: var(--coral); font-size: 1.6rem; margin: 0 0 14px; }
 .modal-box p { color: var(--parchment-dim); font-size: 1.05rem; line-height: 1.6; margin: 0 0 26px; }
-
 @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
 .shaking { animation: shake 0.35s ease both; }
 .border-error { border-color: var(--coral) !important; box-shadow: 0 0 12px rgba(231, 111, 81, 0.4) !important; }
 </style>
 </head>
+
 <body>
-
 <div class="dev-banner" role="status" aria-label="Development notice">
-  <div class="dev-banner-track">
-    <span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience! ⚠️</span>
-    <span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience! ⚠️</span>
-  </div>
+<div class="dev-banner-track">
+<span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience! ⚠️</span>
+<span>⚠️ This platform is still under active development — you may run into the occasional bug or hiccup. Thanks so much for your patience! ⚠️</span>
 </div>
-
+</div>
 <div class="app">
-  <div class="passcode-screen" id="passcodeGateScreen">
-    <div class="passcode-card" id="gateCard">
-      <h3>Teacher Portal Authorization</h3>
-      <p>Sign in with your educator account to resolve reported question nodes.</p>
-      <input type="email" id="gateEmailField" class="passcode-input" style="text-align:left; font-size:1rem; margin-bottom:12px;" placeholder="Teacher email...">
-      <input type="password" id="gateField" class="passcode-input" style="text-align:left; font-size:1rem;" placeholder="Password...">
-      <div id="gateError" style="color:var(--coral); font-family:'JetBrains Mono',monospace; font-size:0.8rem; margin-bottom:15px; display:none;">Invalid email/password, or this account isn't authorized as an admin.</div>
-      <button class="btn primary" style="align-self:center;" onclick="verifyGatePasscode()" id="gateSubmitBtn">Sign In &rarr;</button>
-    </div>
-  </div>
-
-  <!-- AUTHENTICATED TEACHER DASHBOARD -->
-  <div id="adminAppDashboard" style="display:none;">
-    <div class="topbar">
-      <div class="brand">
-        <h1>Educator Quality Control</h1>
-        <p>Flagged Questions Review Console</p>
-        <div class="conn-status-row">
-          <span class="dot" id="connStatusDot" style="background:#999;"></span>
-          <span id="connStatusText" style="color:#999;">Connecting...</span>
-        </div>
-      </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openAnnouncementModal()">📢 Broadcast</button>
-        <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto; display:none;" id="adminInstallBtn" onclick="triggerAdminInstall()">⬇️ Install App</button>
-        <button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearResolvedModal()">Purge Resolved</button>
-        <button class="btn danger" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearModal()">Clear All Reports</button>
-      </div>
-    </div>
-
-    <!-- Navigation Tabs -->
-    <div class="tab-row">
-      <button class="tab-btn active" id="tabPending" onclick="switchTab('Pending')">Pending Reviews</button>
-      <button class="tab-btn" id="tabResolved" onclick="switchTab('Resolved')">Resolved Archives</button>
-      <button class="tab-btn" id="tabLeaderboard" onclick="switchTab('Leaderboard')">Leaderboard</button>
-      <button class="tab-btn" id="tabRemoved" onclick="switchTab('Removed')">Removed Candidates</button>
-      <button class="tab-btn" id="tabMessages" onclick="switchTab('Messages')" style="display:flex; align-items:center; gap:6px;">
-        Messages
-        <span id="messagesTabBadge" style="display:none; background:#2A9D8F; color:#fff; border-radius:999px; min-width:18px; height:18px; padding:0 5px; font-size:0.68rem; line-height:18px; text-align:center; font-weight:800;"></span>
-      </button>
-      <button class="tab-btn" id="tabPyq" onclick="switchTab('Pyq')">PYQ Bank</button>
-      <button class="tab-btn" id="tabInsights" onclick="switchTab('Insights')">Weak Topics</button>
-    </div>
-
-    <div id="reportsToolbar" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
-      <input id="reportSearchInput" type="text" placeholder="Search by student, subject, or chapter..." class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-size:0.85rem;" oninput="renderReports()">
-      <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportReportsCsv()">Export CSV</button>
-    </div>
-
-    <div class="report-list" id="reportCardsList">
-      <!-- Dynamic logs rendered here -->
-    </div>
-    <div class="report-list" id="insightsPanel" style="display:none; flex-direction:column;">
-      <!-- Weak-topic aggregation rendered here -->
-    </div>
-    <div class="report-list" id="leaderboardList" style="display:none;">
-      <!-- Leaderboard entries rendered here -->
-    </div>
-    <div class="report-list" id="removedList" style="display:none;">
-      <!-- Removed candidates + discussion threads rendered here -->
-    </div>
-    <div class="report-list" id="inboxList" style="display:none;">
-      <!-- All candidate <-> teacher message threads, sorted by most recent -->
-    </div>
-    <div class="report-list" id="pyqPanelWrap" style="display:none; flex-direction:column;">
-      <div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.8rem; margin-bottom:14px;">
-        Paste questions you have legitimate rights to use (official papers you've sourced, your own material, etc.) as a JSON array. Each item needs: <code>year</code>, <code>exam</code>, <code>subject</code> (math/physics/chemistry), <code>chapter</code>, <code>q</code>, <code>opts</code> (array of 4), <code>ans</code> (0-indexed correct option), optional <code>sol</code>.
-      </div>
-      <textarea id="pyqImportInput" class="reply-textarea" style="min-height:120px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;" placeholder='[{"year":2023,"exam":"JEE Main","subject":"math","chapter":"Sets","q":"...","opts":["a","b","c","d"],"ans":0,"sol":"..."}]'></textarea>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin:10px 0 18px;">
-        <span id="pyqImportError" style="display:none; color:var(--coral); font-size:0.75rem; align-self:center;"></span>
-        <button class="btn primary" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromTextarea()">Import to shared bank</button>
-      </div>
-
-      <div style="border-top:1px solid var(--glass-border); margin:4px 0 16px; padding-top:16px;">
-        <div style="font-size:0.8rem; font-weight:600; margin-bottom:6px;">Or import from a URL</div>
-        <div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.78rem; margin-bottom:10px; line-height:1.5;">
-          Paste a link to a JSON file in the same format as above (a raw GitHub file, a Gist, your own hosted dataset, etc.). Only use sources you have the rights to redistribute — most official JEE/NEET papers are copyrighted by the exam authority, so double-check a dataset's license before importing it here.
-        </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <input id="pyqImportUrl" type="url" class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;" placeholder="https://example.com/pyq-questions.json">
-          <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromUrl()" id="pyqUrlImportBtn">Fetch &amp; import</button>
-        </div>
-        <span id="pyqUrlImportError" style="display:none; color:var(--coral); font-size:0.75rem;"></span>
-        <span id="pyqUrlImportStatus" style="display:none; color:var(--parchment-dim); font-size:0.75rem;"></span>
-      </div>
-
-      <div id="pyqAdminList"></div>
-    </div>
-  </div>
+<div class="passcode-screen" id="passcodeGateScreen">
+<div class="passcode-card" id="gateCard">
+<h3>Teacher Portal Authorization</h3>
+<p>Sign in with your educator account to resolve reported question nodes.</p>
+<input type="email" id="gateEmailField" class="passcode-input" style="text-align:left; font-size:1rem; margin-bottom:12px;" placeholder="Teacher email...">
+<input type="password" id="gateField" class="passcode-input" style="text-align:left; font-size:1rem;" placeholder="Password...">
+<div id="gateError" style="color:var(--coral); font-family:'JetBrains Mono',monospace; font-size:0.8rem; margin-bottom:15px; display:none;">Invalid email/password, or this account isn't authorized as an admin.</div>
+<button class="btn primary" style="align-self:center;" onclick="verifyGatePasscode()" id="gateSubmitBtn">Sign In &rarr;</button>
 </div>
-
-<!-- CUSTOM DIALOG OVERLAY: BROADCAST ANNOUNCEMENT -->
+</div>
+<div id="adminAppDashboard" style="display:none;">
+<div class="topbar">
+<div class="brand">
+<h1>Educator Quality Control</h1>
+<p>Flagged Questions Review Console</p>
+<div class="conn-status-row">
+<span class="dot" id="connStatusDot" style="background:#999;"></span>
+<span id="connStatusText" style="color:#999;">Connecting...</span>
+</div>
+</div>
+<div style="display:flex; gap:8px;">
+<button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openAnnouncementModal()">📢 Broadcast</button>
+<button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto; display:none;" id="adminInstallBtn" onclick="triggerAdminInstall()">⬇️ Install App</button>
+<button class="btn ghost" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearResolvedModal()">Purge Resolved</button>
+<button class="btn danger" style="padding:10px 18px; font-size:0.8rem; align-self:auto;" onclick="openClearModal()">Clear All Reports</button>
+</div>
+</div>
+<div class="tab-row">
+<button class="tab-btn active" id="tabPending" onclick="switchTab('Pending')">Pending Reviews</button>
+<button class="tab-btn" id="tabResolved" onclick="switchTab('Resolved')">Resolved Archives</button>
+<button class="tab-btn" id="tabLeaderboard" onclick="switchTab('Leaderboard')">Leaderboard</button>
+<button class="tab-btn" id="tabRemoved" onclick="switchTab('Removed')">Removed Candidates</button>
+<button class="tab-btn" id="tabMessages" onclick="switchTab('Messages')" style="display:flex; align-items:center; gap:6px;">
+Messages
+<span id="messagesTabBadge" style="display:none; background:#2A9D8F; color:#fff; border-radius:999px; min-width:18px; height:18px; padding:0 5px; font-size:0.68rem; line-height:18px; text-align:center; font-weight:800;"></span>
+</button>
+<button class="tab-btn" id="tabPyq" onclick="switchTab('Pyq')">PYQ Bank</button>
+<button class="tab-btn" id="tabInsights" onclick="switchTab('Insights')">Weak Topics</button>
+<button class="tab-btn" id="tabAnalytics" onclick="switchTab('Analytics')">Analytics</button>
+</div>
+<div id="reportsToolbar" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
+<input id="reportSearchInput" type="text" placeholder="Search by student, subject, or chapter..." class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-size:0.85rem;" oninput="renderReports()">
+<button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportReportsCsv()">Export CSV</button>
+</div>
+<div class="report-list" id="reportCardsList"></div>
+<div class="report-list" id="insightsPanel" style="display:none; flex-direction:column;"></div>
+<div id="analyticsPanel" style="display:none; flex-direction:column; gap:20px;"></div>
+<div class="report-list" id="leaderboardList" style="display:none;"></div>
+<div class="report-list" id="removedList" style="display:none;"></div>
+<div class="report-list" id="inboxList" style="display:none;"></div>
+<div class="report-list" id="pyqPanelWrap" style="display:none; flex-direction:column;">
+<div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.8rem; margin-bottom:14px;">
+Paste questions you have legitimate rights to use (official papers you've sourced, your own material, etc.) as a JSON array. Each item needs: <code>year</code>, <code>exam</code>, <code>subject</code> (math/physics/chemistry), <code>chapter</code>, <code>q</code>, <code>opts</code> (array of 4), <code>ans</code> (0-indexed correct option), optional <code>sol</code>.
+</div>
+<textarea id="pyqImportInput" class="reply-textarea" style="min-height:120px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;" placeholder='[{"year":2023,"exam":"JEE Main","subject":"math","chapter":"Sets","q":"...","opts":["a","b","c","d"],"ans":0,"sol":"..."}]'></textarea>
+<div style="display:flex; justify-content:flex-end; gap:10px; margin:10px 0 18px;">
+<span id="pyqImportError" style="display:none; color:var(--coral); font-size:0.75rem; align-self:center;"></span>
+<button class="btn primary" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromTextarea()">Import to shared bank</button>
+</div>
+<div style="border-top:1px solid var(--glass-border); margin:4px 0 16px; padding-top:16px;">
+<div style="font-size:0.8rem; font-weight:600; margin-bottom:6px;">Or import from a URL</div>
+<div style="background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:0.78rem; margin-bottom:10px; line-height:1.5;">
+Paste a link to a JSON file in the same format as above (a raw GitHub file, a Gist, your own hosted dataset, etc.). Only use sources you have the rights to redistribute — most official JEE/NEET papers are copyrighted by the exam authority, so double-check a dataset's license before importing it here.
+</div>
+<div style="display:flex; gap:10px; flex-wrap:wrap;">
+<input id="pyqImportUrl" type="url" class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;" placeholder="https://example.com/pyq-questions.json">
+<button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="importPyqFromUrl()" id="pyqUrlImportBtn">Fetch &amp; import</button>
+</div>
+<span id="pyqUrlImportError" style="display:none; color:var(--coral); font-size:0.75rem;"></span>
+<span id="pyqUrlImportStatus" style="display:none; color:var(--parchment-dim); font-size:0.75rem;"></span>
+</div>
+<div id="pyqAdminList"></div>
+</div>
+</div>
+</div>
 <div class="modal-backdrop" id="announcementModal">
-  <div class="modal-box" style="max-width: 480px; text-align:left;">
-    <h3 style="text-align:center;">📢 Broadcast Announcement</h3>
-    <p style="text-align:center; font-size:0.85rem; color:var(--parchment-dim);">Shows as a dismissible banner to every student the next time they open the app. Only one announcement is live at a time — sending a new one replaces the last.</p>
-    <textarea id="announcementText" class="reply-textarea" style="min-height:90px; margin-bottom:10px;" placeholder="e.g. Tomorrow's mock exam has been moved to 4 PM..."></textarea>
-    <div id="announcementError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please write a message before sending.</div>
-    <div id="announcementCurrentStatus" style="font-size:0.75rem; color:var(--parchment-dim); margin-bottom:10px;"></div>
-    <div style="display:flex; justify-content:center; gap:12px; margin-top:6px;">
-      <button class="btn ghost" onclick="closeAnnouncementModal()">Cancel</button>
-      <button class="btn danger" onclick="clearAnnouncementNow()">Clear Live Banner</button>
-      <button class="btn primary" onclick="sendAnnouncementNow()">Send</button>
-    </div>
-  </div>
+<div class="modal-box" style="max-width: 480px; text-align:left;">
+<h3 style="text-align:center;">📢 Broadcast Announcement</h3>
+<p style="text-align:center; font-size:0.85rem; color:var(--parchment-dim);">Shows as a dismissible banner to every student the next time they open the app. Only one announcement is live at a time — sending a new one replaces the last.</p>
+<textarea id="announcementText" class="reply-textarea" style="min-height:90px; margin-bottom:10px;" placeholder="e.g. Tomorrow's mock exam has been moved to 4 PM..."></textarea>
+<div id="announcementError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please write a message before sending.</div>
+<div id="announcementCurrentStatus" style="font-size:0.75rem; color:var(--parchment-dim); margin-bottom:10px;"></div>
+<div style="display:flex; justify-content:center; gap:12px; margin-top:6px;">
+<button class="btn ghost" onclick="closeAnnouncementModal()">Cancel</button>
+<button class="btn danger" onclick="clearAnnouncementNow()">Clear Live Banner</button>
+<button class="btn primary" onclick="sendAnnouncementNow()">Send</button>
 </div>
-
-<!-- CUSTOM DIALOG OVERLAY: CLEAR ALL CONFIRMATION -->
+</div>
+</div>
 <div class="modal-backdrop" id="clearConfirmModal">
-  <div class="modal-box">
-    <h3>Clear All Archives?</h3>
-    <p>This action will permanently delete all student flagged questions, pending logs, and completed response notes. This is irreversible.</p>
-    <div style="display:flex; justify-content:center; gap:12px;">
-      <button class="btn ghost" onclick="closeClearModal()">Cancel</button>
-      <button class="btn danger" onclick="confirmClearAllReports()">Purge All</button>
-    </div>
-  </div>
+<div class="modal-box">
+<h3>Clear All Archives?</h3>
+<p>This action will permanently delete all student flagged questions, pending logs, and completed response notes. This is irreversible.</p>
+<div style="display:flex; justify-content:center; gap:12px;">
+<button class="btn ghost" onclick="closeClearModal()">Cancel</button>
+<button class="btn danger" onclick="confirmClearAllReports()">Purge All</button>
 </div>
-
-<!-- CUSTOM DIALOG OVERLAY: CLEAR RESOLVED-ONLY CONFIRMATION -->
+</div>
+</div>
 <div class="modal-backdrop" id="clearResolvedModal">
-  <div class="modal-box">
-    <h3>Purge Resolved Reports?</h3>
-    <p>This will permanently delete only reports marked <strong>Resolved</strong>. Pending reviews are left untouched. This is irreversible.</p>
-    <div style="display:flex; justify-content:center; gap:12px;">
-      <button class="btn ghost" onclick="closeClearResolvedModal()">Cancel</button>
-      <button class="btn danger" onclick="confirmClearResolvedReports()">Purge Resolved</button>
-    </div>
-  </div>
+<div class="modal-box">
+<h3>Purge Resolved Reports?</h3>
+<p>This will permanently delete only reports marked <strong>Resolved</strong>. Pending reviews are left untouched. This is irreversible.</p>
+<div style="display:flex; justify-content:center; gap:12px;">
+<button class="btn ghost" onclick="closeClearResolvedModal()">Cancel</button>
+<button class="btn danger" onclick="confirmClearResolvedReports()">Purge Resolved</button>
 </div>
-
-<!-- CUSTOM DIALOG OVERLAY: LEADERBOARD PURGE CONFIRMATION -->
+</div>
+</div>
 <div class="modal-backdrop" id="clearLbModal">
-  <div class="modal-box" style="max-width: 460px; text-align:left;">
-    <h3 id="clearLbTitle" style="text-align:center;">Remove Leaderboard Entries?</h3>
-    <p id="clearLbBody" style="text-align:center;">This will permanently remove the selected entries. This is irreversible.</p>
-    <label style="display:block; font-size:0.8rem; color:var(--parchment-dim); margin-bottom:8px;">Reason for removal (shown to the candidate, required):</label>
-    <textarea id="clearLbReason" class="reply-textarea" style="min-height:70px; margin-bottom:6px;" placeholder="e.g. Duplicate entry, suspected multiple attempts, name mismatch..."></textarea>
-    <div id="clearLbReasonError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please give a reason — the candidate will see this.</div>
-    <div style="display:flex; justify-content:center; gap:12px; margin-top:14px;">
-      <button class="btn ghost" onclick="closeClearLbModal()">Cancel</button>
-      <button class="btn danger" onclick="confirmClearLbEntries()">Remove</button>
-    </div>
-  </div>
+<div class="modal-box" style="max-width: 460px; text-align:left;">
+<h3 id="clearLbTitle" style="text-align:center;">Remove Leaderboard Entries?</h3>
+<p id="clearLbBody" style="text-align:center;">This will permanently remove the selected entries. This is irreversible.</p>
+<label style="display:block; font-size:0.8rem; color:var(--parchment-dim); margin-bottom:8px;">Reason for removal (shown to the candidate, required):</label>
+<textarea id="clearLbReason" class="reply-textarea" style="min-height:70px; margin-bottom:6px;" placeholder="e.g. Duplicate entry, suspected multiple attempts, name mismatch..."></textarea>
+<div id="clearLbReasonError" style="display:none; color:var(--coral); font-size:0.75rem; margin-bottom:10px;">Please give a reason — the candidate will see this.</div>
+<div style="display:flex; justify-content:center; gap:12px; margin-top:14px;">
+<button class="btn ghost" onclick="closeClearLbModal()">Cancel</button>
+<button class="btn danger" onclick="confirmClearLbEntries()">Remove</button>
 </div>
-
+</div>
+</div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
-// ============================================================================
-// Admin_DB talks to the SAME Firebase Realtime Database project that
-// index.html (the player-facing app) writes reports into. firebaseConfig is
-// defined in the shared firebase-config.js file (loaded above), so this
-// panel and index.html can never end up wired to different backends again.
-//
-// Previously this panel was wired to a kvdb.io bucket while index.html was
-// wired to Firebase — two different backends that never talked to each
-// other, which is why a report filed in the player app never showed up
-// here no matter which browser/device opened this panel.
-// ============================================================================
-
 let dbReady = false;
 let db = null;
 (function initFirebase() {
@@ -289,28 +232,15 @@ let db = null;
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     dbReady = true;
-    // Anonymous Auth: security rules require `auth != null` to read
-    // "leaderboard" (same rule index.html satisfies for students). This
-    // panel was never signing in, so every read here was silently
-    // rejected by the rules and came back empty — regardless of device
-    // or browser, since it's a rules/auth gap, not a local issue.
-    // window.__adminAuthReadyPromise resolves once sign-in completes (or
-    // fails), so Admin_DB calls can await it before touching the DB.
     window.__adminAuthReadyPromise = new Promise((resolve) => {
       try {
-        firebase.auth().onAuthStateChanged((user) => {
-          if (user) resolve(user.uid);
-        });
+        firebase.auth().onAuthStateChanged((user) => { if (user) resolve(user.uid); });
         firebase.auth().signInAnonymously().catch((e) => {
-          console.warn('[Admin] Anonymous sign-in failed — reads will be rejected by security rules until this succeeds:', e);
+          console.warn('[Admin] Anonymous sign-in failed:', e);
           resolve(null);
         });
-      } catch (e) {
-        console.warn('[Admin] Firebase Auth unavailable:', e);
-        resolve(null);
-      }
+      } catch (e) { console.warn('[Admin] Firebase Auth unavailable:', e); resolve(null); }
     });
-    // Live connection indicator via Firebase's own .info/connected node.
     try {
       db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) { try { setAdminBackendStatus('live'); } catch(_) {} }
@@ -324,10 +254,6 @@ let db = null;
   }
 })();
 
-// Drives the "Connecting... / Live (shared) / Local only" indicator in the
-// topbar, plus a hard-to-miss banner when we drop to local-only mode — this
-// is the same signal that meant a report never left a student's device, so
-// making it obvious here closes the loop on that failure mode.
 function setAdminBackendStatus(status, detail) {
   window.adminBackendStatus = status;
   const dot = document.getElementById('connStatusDot');
@@ -349,23 +275,16 @@ function setAdminBackendStatus(status, detail) {
     }
     banner.style.display = 'block';
     document.body.style.paddingTop = (30 + banner.offsetHeight) + 'px';
-    console.info('[Admin] Offline mode:', detail || '');
   } else if (banner) {
     banner.style.display = 'none';
     document.body.style.paddingTop = '30px';
   }
 }
 
-
-
-// ─── Diagnostic dump (copy to clipboard) ──────────────────────────────────
 window.copyExpeditionDiagnostics = async function () {
   const info = {
-    when: new Date().toISOString(),
-    page: location.href,
-    userAgent: navigator.userAgent,
-    online: navigator.onLine,
-    firebaseLoaded: typeof firebase !== 'undefined',
+    when: new Date().toISOString(), page: location.href, userAgent: navigator.userAgent,
+    online: navigator.onLine, firebaseLoaded: typeof firebase !== 'undefined',
     configLoaded: typeof firebaseConfig !== 'undefined',
     databaseURL: (typeof firebaseConfig !== 'undefined' && firebaseConfig.databaseURL) || null,
     dbReady: typeof dbReady !== 'undefined' ? dbReady : null,
@@ -379,40 +298,22 @@ window.copyExpeditionDiagnostics = async function () {
   catch(_) { prompt('Copy this diagnostic info:', text); }
 };
 
-// Waits for the anonymous sign-in kicked off in initFirebase() to finish,
-// so reads/writes below don't race ahead of auth and get rejected by rules.
 async function ensureAdminAuth() {
   if (!dbReady) return null;
   const user = firebase.auth().currentUser || await (window.__adminAuthReadyPromise || Promise.resolve(null)).then(() => firebase.auth().currentUser);
   if (!user) return null;
-  // Force-refresh the ID token so a recently-granted "admin" custom claim is
-  // actually present. Custom claims only take effect on the NEXT token
-  // refresh after they're set — if this admin account's claim was assigned
-  // (or re-assigned) after this browser session started, every write that
-  // requires auth.token.admin === true (removing a candidate, clearing
-  // reports, etc.) fails with permission_denied using the stale cached
-  // token, even though the account genuinely has the claim. This makes sure
-  // we're always checking against the latest claims, not a cached token.
   try { await user.getIdToken(true); } catch (e) { console.warn('[Admin] Token refresh failed:', e); }
   return user.uid;
 }
 
 window.Admin_DB = {
-  // ── Broadcast announcement ────────────────────────────────────────────
-  // Single shared node — one live announcement at a time, shown as a
-  // dismissible banner in index.html. Educators overwrite it to send a
-  // new one, or clear it to remove the banner for everyone.
   async sendAnnouncement(message, audience) {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.' };
     try {
-      await db.ref('announcement').set({
-        id: 'a_' + Date.now(), message, audience: audience || 'all', timestamp: Date.now()
-      });
+      await db.ref('announcement').set({ id: 'a_' + Date.now(), message, audience: audience || 'all', timestamp: Date.now() });
       return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
+    } catch (e) { return { ok: false, error: e.message }; }
   },
   async clearAnnouncement() {
     await ensureAdminAuth();
@@ -426,13 +327,6 @@ window.Admin_DB = {
     try { const snap = await db.ref('announcement').once('value'); return snap.val(); }
     catch (e) { return null; }
   },
-
-  // Manual inactive override: an educator can force a candidate into the
-  // "inactive" bucket immediately (e.g. someone who officially dropped)
-  // without waiting on the 3-day timer, and restore them just as easily.
-  // Stored in its own top-level node (same pattern as removedCandidates)
-  // rather than written onto leaderboard/{uid}, since the leaderboard
-  // node's write rules are schema-locked to score fields only.
   async setManualInactive(uid, val) {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.' };
@@ -448,67 +342,39 @@ window.Admin_DB = {
     try { const snap = await db.ref('manualInactive').once('value'); return snap.val() || {}; }
     catch (e) { return {}; }
   },
-
   getReportsLocal() {
-    try {
-      const prev = localStorage.getItem('explorer_reported_issues');
-      return prev ? JSON.parse(prev) : [];
-    } catch(e) { return []; }
+    try { const prev = localStorage.getItem('explorer_reported_issues'); return prev ? JSON.parse(prev) : []; }
+    catch(e) { return []; }
   },
-
   async updateReport(id, updateData) {
     await ensureAdminAuth();
     if (dbReady) {
-      try {
-        await db.ref('reports/' + id).update(updateData);
-        setAdminBackendStatus('live');
-        return;
-      } catch (e) {
-        console.error("[Admin] Firebase update failed, falling back locally.", e);
-        setAdminBackendStatus('local', 'Update failed: ' + e.message);
-      }
+      try { await db.ref('reports/' + id).update(updateData); setAdminBackendStatus('live'); return; }
+      catch (e) { console.error("[Admin] Firebase update failed, falling back locally.", e); setAdminBackendStatus('local', 'Update failed: ' + e.message); }
     }
     this.updateReportLocal(id, updateData);
   },
-
   updateReportLocal(id, updateData) {
     let list = this.getReportsLocal();
     let idx = list.findIndex(r => r.id === id);
-    if (idx !== -1) {
-      list[idx] = { ...list[idx], ...updateData };
-      localStorage.setItem('explorer_reported_issues', JSON.stringify(list));
-    }
+    if (idx !== -1) { list[idx] = { ...list[idx], ...updateData }; localStorage.setItem('explorer_reported_issues', JSON.stringify(list)); }
     if (window.onReportsUpdate) window.onReportsUpdate();
   },
-
   async clearAll() {
     await ensureAdminAuth();
     if (dbReady) {
       try {
-        // NOTE: db.ref('reports').remove() would require write permission
-        // at the 'reports' node itself, but the security rules only grant
-        // .write at 'reports/$reportId' (per-report). Write permission
-        // cascades DOWN to children but never UP to a parent, so a direct
-        // .remove() on the parent is always rejected here. A multi-location
-        // update() is evaluated per-child instead, so it works correctly
-        // under the existing rules.
         const snap = await db.ref('reports').once('value');
         const val = snap.val() || {};
         const updates = {};
         Object.keys(val).forEach(id => { updates[id] = null; });
-        if (Object.keys(updates).length) {
-          await db.ref('reports').update(updates);
-        }
+        if (Object.keys(updates).length) await db.ref('reports').update(updates);
         setAdminBackendStatus('live');
-      } catch (err) {
-        console.error("[Admin] Firebase purge failed.", err);
-        setAdminBackendStatus('local', 'Purge failed: ' + err.message);
-      }
+      } catch (err) { console.error("[Admin] Firebase purge failed.", err); setAdminBackendStatus('local', 'Purge failed: ' + err.message); }
     }
     localStorage.removeItem('explorer_reported_issues');
     if (window.onReportsUpdate) window.onReportsUpdate();
   },
-
   async clearResolvedOnly() {
     await ensureAdminAuth();
     if (dbReady) {
@@ -516,27 +382,17 @@ window.Admin_DB = {
         const snap = await db.ref('reports').once('value');
         const val = snap.val() || {};
         const updates = {};
-        Object.keys(val).forEach(id => {
-          if (val[id] && val[id].status === 'Resolved') updates[id] = null;
-        });
-        if (Object.keys(updates).length) {
-          await db.ref('reports').update(updates);
-        }
+        Object.keys(val).forEach(id => { if (val[id] && val[id].status === 'Resolved') updates[id] = null; });
+        if (Object.keys(updates).length) await db.ref('reports').update(updates);
         setAdminBackendStatus('live');
-      } catch (err) {
-        console.error("[Admin] Firebase purge (resolved-only) failed.", err);
-        setAdminBackendStatus('local', 'Purge failed: ' + err.message);
-      }
+      } catch (err) { console.error("[Admin] Firebase purge (resolved-only) failed.", err); setAdminBackendStatus('local', 'Purge failed: ' + err.message); }
     }
-    // Local fallback cache only ever mirrors offline-authored reports; drop
-    // resolved ones from it too so the two stay consistent.
     try {
       const list = this.getReportsLocal().filter(r => r.status !== 'Resolved');
       localStorage.setItem('explorer_reported_issues', JSON.stringify(list));
     } catch(_) {}
     if (window.onReportsUpdate) window.onReportsUpdate();
   },
-
   listenReports(callback) {
     if (!dbReady) {
       setAdminBackendStatus('local', 'Firebase did not initialize (check config values)');
@@ -545,22 +401,12 @@ window.Admin_DB = {
       return () => { window.onReportsUpdate = null; };
     }
     const ref = db.ref('reports');
-    const handler = (snapshot) => {
-      setAdminBackendStatus('live');
-      const val = snapshot.val() || {};
-      callback(Object.values(val));
-    };
-    const errHandler = (e) => {
-      console.warn("[Admin] Firebase unreachable, dropping back to local reports.", e);
-      setAdminBackendStatus('local', 'Reports fetch failed: ' + e.message);
-      callback(this.getReportsLocal());
-    };
+    const handler = (snapshot) => { setAdminBackendStatus('live'); const val = snapshot.val() || {}; callback(Object.values(val)); };
+    const errHandler = (e) => { console.warn("[Admin] Firebase unreachable, dropping back to local reports.", e); setAdminBackendStatus('local', 'Reports fetch failed: ' + e.message); callback(this.getReportsLocal()); };
     ref.on('value', handler, errHandler);
-    window.onReportsUpdate = null; // Firebase pushes live, no manual poll trigger needed
+    window.onReportsUpdate = null;
     return () => ref.off('value', handler);
   },
-
-  // ── Leaderboard management ──────────────────────────────────────────────
   async getLeaderboardOnce() {
     if (!dbReady) return [];
     await ensureAdminAuth();
@@ -568,26 +414,11 @@ window.Admin_DB = {
       const snap = await db.ref('leaderboard').once('value');
       const val = snap.val() || {};
       let manual = {};
-      try {
-        const manualSnap = await db.ref('manualInactive').once('value');
-        manual = manualSnap.val() || {};
-      } catch (e) {
-        console.warn("[Admin] Couldn't read 'manualInactive' node (rules may not be added yet) — manual overrides will just show as unset.", e);
-      }
+      try { const manualSnap = await db.ref('manualInactive').once('value'); manual = manualSnap.val() || {}; }
+      catch (e) { console.warn("[Admin] Couldn't read 'manualInactive' node:", e); }
       return Object.keys(val).map(uid => ({ uid, ...val[uid], manualInactive: !!manual[uid] }));
-    } catch (e) {
-      console.error("[Admin] Failed to fetch leaderboard.", e);
-      return [];
-    }
+    } catch (e) { console.error("[Admin] Failed to fetch leaderboard.", e); return []; }
   },
-
-  // Deletes specific leaderboard entries by uid. Same multi-location-update
-  // approach as clearResolvedOnly() — required because the rules only grant
-  // .write at 'leaderboard/$uid', not at the 'leaderboard' parent itself.
-  // Also stamps a removedCandidates/{uid} record with the reason so the
-  // candidate's own screen (index.html) picks it up automatically via its
-  // live listener, and so their client stops re-syncing a score that would
-  // otherwise silently resurrect the entry we just removed.
   async removeLeaderboardEntries(uids, reason, labels) {
     await ensureAdminAuth();
     if (!dbReady || !uids || !uids.length) return { ok: false, removed: 0 };
@@ -595,27 +426,12 @@ window.Admin_DB = {
       const lbUpdates = {};
       uids.forEach(uid => { lbUpdates[uid] = null; });
       await db.ref('leaderboard').update(lbUpdates);
-
       const removalUpdates = {};
-      uids.forEach(uid => {
-        removalUpdates[uid] = {
-          uid,
-          username: (labels && labels[uid]) || uid,
-          reason: reason || '',
-          removedAt: Date.now(),
-          removedBy: 'educator'
-        };
-      });
+      uids.forEach(uid => { removalUpdates[uid] = { uid, username: (labels && labels[uid]) || uid, reason: reason || '', removedAt: Date.now(), removedBy: 'educator' }; });
       await db.ref('removedCandidates').update(removalUpdates);
-
       return { ok: true, removed: uids.length };
-    } catch (err) {
-      console.error("[Admin] Leaderboard purge failed.", err);
-      return { ok: false, removed: 0, error: err.message };
-    }
+    } catch (err) { console.error("[Admin] Leaderboard purge failed.", err); return { ok: false, removed: 0, error: err.message }; }
   },
-
-  // ── Removed-candidates review & discussion ──────────────────────────────
   async getRemovedCandidatesOnce() {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected to the shared database.', list: [] };
@@ -624,160 +440,80 @@ window.Admin_DB = {
       const val = snap.val() || {};
       setAdminBackendStatus('live');
       return { ok: true, list: Object.keys(val).map(uid => ({ uid, ...val[uid] })) };
-    } catch (e) {
-      console.error("[Admin] Failed to fetch removed candidates.", e);
-      setAdminBackendStatus('local', 'Removed-candidates fetch failed: ' + e.message);
-      return { ok: false, error: e.message, list: [] };
-    }
+    } catch (e) { console.error("[Admin] Failed to fetch removed candidates.", e); setAdminBackendStatus('local', 'Removed-candidates fetch failed: ' + e.message); return { ok: false, error: e.message, list: [] }; }
   },
-
-  // Top-level listener across ALL candidates' discussion threads at once —
-  // powers the Messages inbox so the educator doesn't have to remember to
-  // check each candidate individually (previously the only way to see a
-  // message was to already be on that candidate's leaderboard/removed row).
   listenAllDiscussions(callback) {
     if (!dbReady) { callback({ ok: false, error: 'Not connected.', byUid: {} }); return () => {}; }
     const ref = db.ref('removalDiscussion');
     const handler = (snapshot) => {
       const val = snapshot.val() || {};
       const byUid = {};
-      Object.keys(val).forEach(uid => {
-        const msgsObj = (val[uid] && val[uid].messages) || {};
-        byUid[uid] = Object.keys(msgsObj).map(id => ({ id, ...msgsObj[id] })).sort((a, b) => (a.at || 0) - (b.at || 0));
-      });
+      Object.keys(val).forEach(uid => { const msgsObj = (val[uid] && val[uid].messages) || {}; byUid[uid] = Object.keys(msgsObj).map(id => ({ id, ...msgsObj[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)); });
       callback({ ok: true, byUid });
     };
-    const errHandler = (e) => {
-      console.error("[Admin] All-discussions listener failed (likely a rules/permission issue).", e);
-      callback({ ok: false, error: e.message, byUid: {} });
-    };
+    const errHandler = (e) => { console.error("[Admin] All-discussions listener failed.", e); callback({ ok: false, error: e.message, byUid: {} }); };
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
   },
-
   listenDiscussion(uid, callback) {
     if (!dbReady) { callback({ ok: false, error: 'Not connected.', messages: [] }); return () => {}; }
     const ref = db.ref('removalDiscussion/' + uid + '/messages');
-    const handler = (snapshot) => {
-      const val = snapshot.val() || {};
-      callback({ ok: true, messages: Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)) });
-    };
-    const errHandler = (e) => {
-      console.error("[Admin] Discussion listener failed (likely a rules/permission issue).", e);
-      callback({ ok: false, error: e.message, messages: [] });
-    };
+    const handler = (snapshot) => { const val = snapshot.val() || {}; callback({ ok: true, messages: Object.keys(val).map(id => ({ id, ...val[id] })).sort((a, b) => (a.at || 0) - (b.at || 0)) }); };
+    const errHandler = (e) => { console.error("[Admin] Discussion listener failed.", e); callback({ ok: false, error: e.message, messages: [] }); };
     ref.on('value', handler, errHandler);
     return () => ref.off('value', handler);
   },
-
   async sendDiscussionMessage(uid, text) {
     await ensureAdminAuth();
     if (!dbReady || !text || !text.trim()) return { ok: false, error: 'Not connected.' };
     try {
       const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-      await db.ref('removalDiscussion/' + uid + '/messages/' + id).set({
-        from: 'educator', text: text.trim(), at: Date.now()
-      });
+      await db.ref('removalDiscussion/' + uid + '/messages/' + id).set({ from: 'educator', text: text.trim(), at: Date.now() });
       return { ok: true };
-    } catch (e) {
-      console.error("[Admin] Failed to send discussion reply (likely a rules/permission issue).", e);
-      return { ok: false, error: e.message };
-    }
+    } catch (e) { console.error("[Admin] Failed to send discussion reply.", e); return { ok: false, error: e.message }; }
   },
-
-  // Un-removes a candidate: clears the removal record so their next score
-  // sync writes back to the shared leaderboard normally again.
   async restoreCandidate(uid) {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false };
-    try {
-      await db.ref('removedCandidates/' + uid).remove();
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
+    try { await db.ref('removedCandidates/' + uid).remove(); return { ok: true }; }
+    catch (e) { return { ok: false, error: e.message }; }
   },
-
-  // ── PYQ (Previous Year Questions) bank ──────────────────────────────────
-  // Educator-sourced content only — we don't auto-populate this from
-  // external datasets due to licensing/copyright uncertainty around
-  // redistributing exam questions. The educator pastes questions they have
-  // legitimate rights to use (official papers, their own textbook, etc.)
-  // and we sync them to every student via Firebase.
   async getPyqOnce() {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.', list: [] };
-    try {
-      const snap = await db.ref('pyqBank').once('value');
-      const val = snap.val() || {};
-      return { ok: true, list: Object.keys(val).map(id => ({ id, ...val[id] })) };
-    } catch (e) {
-      console.error('[Admin] Failed to fetch PYQ bank.', e);
-      return { ok: false, error: e.message, list: [] };
-    }
+    try { const snap = await db.ref('pyqBank').once('value'); const val = snap.val() || {}; return { ok: true, list: Object.keys(val).map(id => ({ id, ...val[id] })) }; }
+    catch (e) { console.error('[Admin] Failed to fetch PYQ bank.', e); return { ok: false, error: e.message, list: [] }; }
   },
-
   async importPyqBatch(items) {
     await ensureAdminAuth();
     if (!dbReady || !items || !items.length) return { ok: false, imported: 0 };
     try {
       const updates = {};
-      items.forEach(item => {
-        const id = 'pyq_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        updates[id] = item;
-      });
+      items.forEach(item => { const id = 'pyq_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); updates[id] = item; });
       await db.ref('pyqBank').update(updates);
       return { ok: true, imported: items.length };
-    } catch (e) {
-      console.error('[Admin] PYQ import failed.', e);
-      return { ok: false, imported: 0, error: e.message };
-    }
+    } catch (e) { console.error('[Admin] PYQ import failed.', e); return { ok: false, imported: 0, error: e.message }; }
   },
-
   async deletePyq(id) {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false };
-    try {
-      await db.ref('pyqBank/' + id).remove();
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
+    try { await db.ref('pyqBank/' + id).remove(); return { ok: true }; }
+    catch (e) { return { ok: false, error: e.message }; }
   }
 };
 </script>
-
 <script>
-/* ================= STREAMING_CHUNK: Launching Admin verification checks ================= */
 let activeTab = 'Pending';
 let activeReports = [];
 
-// Access is now gated by real Firebase Authentication, not a client-side
-// passcode. Anyone can *load* this page and see the sign-in form (that's
-// unavoidable for a static site), but only accounts an admin has explicitly
-// granted the `admin: true` custom claim to (via a one-off script run with
-// a service account — see scripts/set-admin-claim.js) can actually sign in
-// successfully AND pass the security rules for admin-only writes
-// (removedCandidates, pyqBank). Firebase security rules are the real
-// boundary here, not this client-side check — this just gives a friendly
-// error instead of a silent permission_denied from every button.
 async function verifyGatePasscode() {
   const email = document.getElementById('gateEmailField').value.trim();
   const password = document.getElementById('gateField').value;
   const error = document.getElementById('gateError');
   const card = document.getElementById('gateCard');
   const btn = document.getElementById('gateSubmitBtn');
-
-  if (!email || !password) {
-    error.textContent = 'Enter both email and password.';
-    error.style.display = 'block';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Signing in...';
-  error.style.display = 'none';
-
+  if (!email || !password) { error.textContent = 'Enter both email and password.'; error.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...'; error.style.display = 'none';
   try {
     const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
     const tokenResult = await cred.user.getIdTokenResult();
@@ -795,14 +531,9 @@ async function verifyGatePasscode() {
     error.textContent = 'Sign-in failed: ' + (e.message || 'unknown error');
     error.style.display = 'block';
     card.classList.remove('shaking'); void card.offsetWidth; card.classList.add('shaking');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Sign In →';
-  }
+  } finally { btn.disabled = false; btn.textContent = 'Sign In →'; }
 }
 
-// If the browser already has a signed-in admin session (e.g. page refresh),
-// skip straight to the dashboard instead of asking them to log in again.
 firebase.auth().onAuthStateChanged(async (user) => {
   if (!user) return;
   try {
@@ -815,23 +546,12 @@ firebase.auth().onAuthStateChanged(async (user) => {
   } catch (_) {}
 });
 
-// Support hitting 'Enter' to log in
-document.getElementById('gateField').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') verifyGatePasscode();
-});
-document.getElementById('gateEmailField').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') verifyGatePasscode();
-});
+document.getElementById('gateField').addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyGatePasscode(); });
+document.getElementById('gateEmailField').addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyGatePasscode(); });
 
 function startAdminEngine() {
   if (window.Admin_DB) {
-    window.Admin_DB.listenReports((reports) => {
-      activeReports = reports;
-      renderReports();
-    });
-    // Started immediately (not lazily on tab switch) so the unread badge on
-    // the Messages tab is accurate the moment the panel loads, even if the
-    // educator never clicks into that tab.
+    window.Admin_DB.listenReports((reports) => { activeReports = reports; renderReports(); });
     window.Admin_DB.listenAllDiscussions((result) => {
       allDiscussions = result.byUid || {};
       updateMessagesTabBadge();
@@ -840,29 +560,11 @@ function startAdminEngine() {
   }
 }
 
-// ── MESSAGES INBOX ──────────────────────────────────────────────────────
-// Solves: "candidates can message me, but I have no easy way to see who's
-// messaged." Previously a thread was only reachable by finding that exact
-// candidate on the Leaderboard or Removed Candidates tab first.
-let allDiscussions = {};      // uid -> messages[]
+let allDiscussions = {};
 const ADMIN_LAST_SEEN_KEY = 'admin_chat_last_seen_v1';
-function getAdminLastSeenMap() {
-  try { return JSON.parse(localStorage.getItem(ADMIN_LAST_SEEN_KEY)) || {}; } catch (e) { return {}; }
-}
-function setAdminLastSeen(uid) {
-  const map = getAdminLastSeenMap();
-  map[uid] = Date.now();
-  try { localStorage.setItem(ADMIN_LAST_SEEN_KEY, JSON.stringify(map)); } catch (e) {}
-}
-function unreadCountFor(uid, messages) {
-  const lastSeen = getAdminLastSeenMap()[uid] || 0;
-  return (messages || []).filter(m => m.from === 'student' && (m.at || 0) > lastSeen).length;
-}
-// Name lookup, in priority order: (1) the name attached to the student's own
-// messages — reliable since it's set to their exact explorerName at time of
-// sending — (2) whatever's cached from the Leaderboard/Removed tabs, in case
-// a candidate has never actually typed anything themselves (e.g. this is a
-// still-empty thread the educator started), (3) a shortened uid as a last resort.
+function getAdminLastSeenMap() { try { return JSON.parse(localStorage.getItem(ADMIN_LAST_SEEN_KEY)) || {}; } catch (e) { return {}; } }
+function setAdminLastSeen(uid) { const map = getAdminLastSeenMap(); map[uid] = Date.now(); try { localStorage.setItem(ADMIN_LAST_SEEN_KEY, JSON.stringify(map)); } catch (e) {} }
+function unreadCountFor(uid, messages) { const lastSeen = getAdminLastSeenMap()[uid] || 0; return (messages || []).filter(m => m.from === 'student' && (m.at || 0) > lastSeen).length; }
 function nameForUid(uid, messages) {
   const studentMsg = (messages || []).slice().reverse().find(m => m.from === 'student' && m.name);
   if (studentMsg) return studentMsg.name;
@@ -872,42 +574,22 @@ function nameForUid(uid, messages) {
   if (fromRemoved && fromRemoved.username) return fromRemoved.username;
   return uid.slice(0, 10) + '…';
 }
-function totalUnreadMessages() {
-  return Object.keys(allDiscussions).reduce((sum, uid) => sum + unreadCountFor(uid, allDiscussions[uid]), 0);
-}
+function totalUnreadMessages() { return Object.keys(allDiscussions).reduce((sum, uid) => sum + unreadCountFor(uid, allDiscussions[uid]), 0); }
 function updateMessagesTabBadge() {
   const badge = document.getElementById('messagesTabBadge');
   const n = totalUnreadMessages();
-  if (badge) {
-    if (n > 0) { badge.textContent = n > 99 ? '99+' : String(n); badge.style.display = 'inline-block'; }
-    else { badge.style.display = 'none'; }
-  }
-  // Also reflect the count in the browser tab title, so unread messages are
-  // noticeable even when the educator is looking at a different tab/app and
-  // hasn't clicked into "Messages" (or this panel at all) — the button badge
-  // alone only helps if they're already looking at this page.
+  if (badge) { if (n > 0) { badge.textContent = n > 99 ? '99+' : String(n); badge.style.display = 'inline-block'; } else { badge.style.display = 'none'; } }
   const baseTitle = 'Expedition 11 — Educator Control Panel';
   document.title = n > 0 ? `(${n > 99 ? '99+' : n}) ${baseTitle}` : baseTitle;
 }
 let openInboxUid = null;
-let inboxThreadUnsub = null;
 function renderInbox() {
   const container = document.getElementById('inboxList');
   if (!container) return;
-  // Ensure names are available for the lookup above.
   if (!currentLeaderboard || !currentLeaderboard.length) loadLeaderboard();
   const uids = Object.keys(allDiscussions).filter(uid => (allDiscussions[uid] || []).length > 0);
-  if (!uids.length) {
-    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">No messages yet — candidate messages will show up here.</div>`;
-    return;
-  }
-  const rows = uids.map(uid => {
-    const msgs = allDiscussions[uid];
-    const last = msgs[msgs.length - 1];
-    const unread = unreadCountFor(uid, msgs);
-    return { uid, last, unread };
-  }).sort((a, b) => (b.last.at || 0) - (a.last.at || 0));
-
+  if (!uids.length) { container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">No messages yet — candidate messages will show up here.</div>`; return; }
+  const rows = uids.map(uid => { const msgs = allDiscussions[uid]; const last = msgs[msgs.length - 1]; const unread = unreadCountFor(uid, msgs); return { uid, last, unread }; }).sort((a, b) => (b.last.at || 0) - (a.last.at || 0));
   container.innerHTML = rows.map(row => `
     <div class="report-card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; cursor:pointer;" onclick="openInboxThread('${row.uid}')">
@@ -929,31 +611,20 @@ function renderInbox() {
             <textarea id="inboxThreadInput-${row.uid}" class="reply-textarea" style="min-height:50px;" placeholder="Reply..."></textarea>
             <button class="btn primary" style="align-self:flex-end; padding:10px 16px; font-size:0.75rem;" onclick="sendInboxReply('${row.uid}')">Send</button>
           </div>
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
-
+        </div>` : ''}
+    </div>`).join('');
   if (openInboxUid) renderInboxThreadMessages(openInboxUid, allDiscussions[openInboxUid] || []);
 }
-function escapeHtmlAdmin(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
+function escapeHtmlAdmin(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function renderInboxThreadMessages(uid, messages) {
   const msgsEl = document.getElementById('inboxThreadMsgs-' + uid);
   if (!msgsEl) return;
-  if (!messages.length) {
-    msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet.</div>`;
-    return;
-  }
+  if (!messages.length) { msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet.</div>`; return; }
   msgsEl.innerHTML = messages.map(m => `
     <div style="align-self:${m.from === 'educator' ? 'flex-end' : 'flex-start'}; max-width:85%; background:${m.from === 'educator' ? 'rgba(201,156,81,0.12)' : 'rgba(42,157,143,0.15)'}; border:1px solid ${m.from === 'educator' ? 'var(--line)' : 'rgba(42,157,143,0.3)'}; border-radius:10px; padding:8px 12px; font-size:0.85rem;">
       <div style="font-size:0.65rem; opacity:0.7; margin-bottom:2px; text-transform:uppercase;">${m.from === 'educator' ? 'You' : (m.name || 'Candidate')}</div>
       ${escapeHtmlAdmin(m.text || '')}
-    </div>
-  `).join('');
+    </div>`).join('');
   msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 function openInboxThread(uid) {
@@ -973,123 +644,73 @@ async function sendInboxReply(uid) {
 window.openInboxThread = openInboxThread;
 window.sendInboxReply = sendInboxReply;
 
-/* ================= STREAMING_CHUNK: Executing tab controller filters ================= */
 function switchTab(tab) {
   activeTab = tab;
-  document.getElementById('tabPending').classList.toggle('active', tab === 'Pending');
-  document.getElementById('tabResolved').classList.toggle('active', tab === 'Resolved');
-  document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'Leaderboard');
-  document.getElementById('tabRemoved').classList.toggle('active', tab === 'Removed');
-  document.getElementById('tabMessages').classList.toggle('active', tab === 'Messages');
-  document.getElementById('tabPyq').classList.toggle('active', tab === 'Pyq');
-  document.getElementById('tabInsights').classList.toggle('active', tab === 'Insights');
-
+  ['Pending','Resolved','Leaderboard','Removed','Messages','Pyq','Insights','Analytics'].forEach(t => {
+    document.getElementById('tab' + t).classList.toggle('active', tab === t);
+  });
   const reportsList = document.getElementById('reportCardsList');
   const lbList = document.getElementById('leaderboardList');
   const removedList = document.getElementById('removedList');
   const inboxList = document.getElementById('inboxList');
   const pyqList = document.getElementById('pyqPanelWrap');
   const insightsPanel = document.getElementById('insightsPanel');
+  const analyticsPanel = document.getElementById('analyticsPanel');
   const toolbar = document.getElementById('reportsToolbar');
-
-  reportsList.style.display = 'none';
-  lbList.style.display = 'none';
-  removedList.style.display = 'none';
-  inboxList.style.display = 'none';
-  pyqList.style.display = 'none';
-  insightsPanel.style.display = 'none';
-  toolbar.style.display = 'none';
-
-  if (tab === 'Leaderboard') {
-    lbList.style.display = 'flex';
-    loadLeaderboard();
-  } else if (tab === 'Removed') {
-    removedList.style.display = 'flex';
-    loadRemovedCandidates();
-  } else if (tab === 'Messages') {
-    inboxList.style.display = 'flex';
-    renderInbox();
-  } else if (tab === 'Pyq') {
-    pyqList.style.display = 'flex';
-    loadPyqAdmin();
-  } else if (tab === 'Insights') {
-    insightsPanel.style.display = 'flex';
-    renderInsightsPanel();
-  } else {
-    toolbar.style.display = 'flex';
-    reportsList.style.display = 'flex';
-    renderReports();
-  }
+  [reportsList, lbList, removedList, inboxList, pyqList, insightsPanel, analyticsPanel, toolbar].forEach(el => { if (el) el.style.display = 'none'; });
+  if (tab === 'Leaderboard') { lbList.style.display = 'flex'; loadLeaderboard(); }
+  else if (tab === 'Removed') { removedList.style.display = 'flex'; loadRemovedCandidates(); }
+  else if (tab === 'Messages') { inboxList.style.display = 'flex'; renderInbox(); }
+  else if (tab === 'Pyq') { pyqList.style.display = 'flex'; loadPyqAdmin(); }
+  else if (tab === 'Insights') { insightsPanel.style.display = 'flex'; renderInsightsPanel(); }
+  else if (tab === 'Analytics') { analyticsPanel.style.display = 'flex'; renderAnalyticsPanel(); }
+  else { toolbar.style.display = 'flex'; reportsList.style.display = 'flex'; renderReports(); }
 }
 
 function renderReports() {
   const container = document.getElementById('reportCardsList');
   if (!container) return;
-
   const searchEl = document.getElementById('reportSearchInput');
   const q = (searchEl && searchEl.value || '').trim().toLowerCase();
-
   let filtered = activeReports.filter(r => r.status === activeTab);
-  if (q) {
-    filtered = filtered.filter(r =>
-      (r.studentName || '').toLowerCase().includes(q) ||
-      (r.subject || '').toLowerCase().includes(q) ||
-      (r.chapter || '').toLowerCase().includes(q) ||
-      (r.questionText || '').toLowerCase().includes(q)
-    );
-  }
-
+  if (q) { filtered = filtered.filter(r => (r.studentName||'').toLowerCase().includes(q) || (r.subject||'').toLowerCase().includes(q) || (r.chapter||'').toLowerCase().includes(q) || (r.questionText||'').toLowerCase().includes(q)); }
   if (filtered.length === 0) {
-    container.innerHTML = `
-      <div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
-        <p style="font-size:1.2rem; margin-bottom:5px;">All clear!</p>
-        <p style="font-size:0.9rem; opacity:0.7;">${q ? `No "${activeTab}" logs match "${q}".` : `No logged queries in the "${activeTab}" directory.`}</p>
-      </div>
-    `;
+    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">All clear!</p><p style="font-size:0.9rem; opacity:0.7;">${q ? `No "${activeTab}" logs match "${q}".` : `No logged queries in the "${activeTab}" directory.`}</p></div>`;
     return;
   }
-
-  // Sort by newest first
   filtered.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-
   container.innerHTML = "";
   filtered.forEach(r => {
     let card = document.createElement('div');
     card.className = "report-card" + (r.status === 'Resolved' ? ' resolved' : '');
-    
     let interactionMarkup = '';
     if (r.status === 'Pending') {
       interactionMarkup = `
         <div class="reply-area">
-          <textarea id="replyText-${r.id}" class="reply-textarea" placeholder="Type resolution or educational feedback to send to student..."></textarea>
-          <button class="btn primary" onclick="submitReply('${r.id}')">Submit Reply & Resolve</button>
-        </div>
-      `;
+          <div style="font-size:0.78rem; font-weight:600; color:var(--parchment-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.6px;">Your reply to student</div>
+          <div class="ai-suggest-row">
+            <button class="btn ai-btn" onclick="suggestAiReply('${r.id}', this)">🤖 Draft with AI</button>
+            <span style="font-size:0.72rem; color:var(--parchment-dim); opacity:0.75; line-height:1.4;">AI drafts an explanation of the correct answer — review &amp; edit before sending.</span>
+          </div>
+          <div class="ai-suggest-note" id="aiNote-${r.id}"></div>
+          <textarea id="replyText-${r.id}" class="reply-textarea" placeholder="Write educational feedback for the student — explain why the correct answer is right, and where their thinking went wrong..."></textarea>
+          <button class="btn primary" onclick="submitReply('${r.id}')">Send Reply &amp; Resolve</button>
+        </div>`;
     } else {
-      interactionMarkup = `
-        <div class="resolved-reply">
-          <strong>Teacher Resolution:</strong> ${r.reply || "Acknowledge and updated."}
-        </div>
-      `;
+      interactionMarkup = `<div class="resolved-reply"><strong>Teacher Resolution:</strong> ${r.reply || "Acknowledged and updated."}</div>`;
     }
-
     let optionsHtml = '';
     if (Array.isArray(r.allOptions) && r.allOptions.length) {
-      optionsHtml = `
-        <div style="margin-bottom:14px;">
-          <div style="font-size:0.8rem; color:var(--parchment-dim); margin-bottom:6px; font-family:'JetBrains Mono',monospace;">All Options:</div>
-          <ul style="margin:0; padding-left:20px; font-size:0.9rem; line-height:1.6;">
-            ${r.allOptions.map((o, idx) => {
-              const isUserPick = idx === r.userSelectedIdx;
-              const isCorrectOpt = idx === r.correctAnswerIdx;
-              const color = isCorrectOpt ? 'var(--sea)' : (isUserPick ? 'var(--coral)' : 'var(--parchment)');
-              const tag = isCorrectOpt ? ' &nbsp;✓ correct answer' : (isUserPick ? ' &nbsp;(student selected)' : '');
-              return `<li style="color:${color};">${o}${tag}</li>`;
-            }).join('')}
-          </ul>
-        </div>`;
+      optionsHtml = `<div style="margin-bottom:14px;"><div style="font-size:0.8rem; color:var(--parchment-dim); margin-bottom:6px; font-family:'JetBrains Mono',monospace;">All Options:</div><ul style="margin:0; padding-left:20px; font-size:0.9rem; line-height:1.6;">
+        ${r.allOptions.map((o, idx) => {
+          const isUserPick = idx === r.userSelectedIdx;
+          const isCorrectOpt = idx === r.correctAnswerIdx;
+          const color = isCorrectOpt ? 'var(--sea)' : (isUserPick ? 'var(--coral)' : 'var(--parchment)');
+          const tag = isCorrectOpt ? ' &nbsp;✓ correct answer' : (isUserPick ? ' &nbsp;(student selected)' : '');
+          return `<li style="color:${color};">${o}${tag}</li>`;
+        }).join('')}
+      </ul></div>`;
     }
-
     card.innerHTML = `
       <div class="report-meta">
         <span class="meta-badge">${r.category}</span>
@@ -1101,63 +722,232 @@ function renderReports() {
       <div class="report-ans" style="color:var(--coral);">Student's Selected Answer: "${r.userSelectedText || 'Not answered yet'}"</div>
       <div class="report-ans">Correct Answer: "${r.correctAnswerText}"</div>
       ${optionsHtml}
-      <div class="report-comment">
-        <strong>Student Remarks:</strong> "${r.comments}"
-      </div>
-      ${interactionMarkup}
-    `;
+      <div class="report-comment"><strong>Student Remarks:</strong> "${r.comments}"</div>
+      ${interactionMarkup}`;
     container.appendChild(card);
   });
 }
 
-/* ================= CSV EXPORT ================= */
-function csvEscape(val) {
-  const s = (val === undefined || val === null) ? '' : String(val);
-  return '"' + s.replace(/"/g, '""') + '"';
+// ── AI REPLY SUGGESTION ──────────────────────────────────────────────────
+// Sends the flagged question + wrong/correct answer to /api/ai-explain
+// (mode:"mistake") and pre-fills the reply textarea with the AI explanation.
+// The teacher can freely edit or overwrite before submitting.
+// After a successful suggestion the button switches to "Regenerate" so the
+// educator can keep asking for a fresh draft without reloading the card.
+async function suggestAiReply(reportId, btn) {
+  const report = activeReports.find(r => r.id === reportId);
+  if (!report) return;
+  const origText = btn.dataset.origLabel || btn.textContent;
+  btn.dataset.origLabel = origText;
+  btn.disabled = true;
+  btn.textContent = '🤖 Drafting explanation…';
+  const noteEl = document.getElementById('aiNote-' + reportId);
+  const textareaEl = document.getElementById('replyText-' + reportId);
+  if (noteEl) { noteEl.textContent = ''; noteEl.style.display = 'none'; }
+  try {
+    const options = report.allOptions && report.allOptions.length
+      ? report.allOptions
+      : [report.userSelectedText, report.correctAnswerText].filter(Boolean);
+    const body = {
+      mode: 'mistake',
+      question: report.questionText || '',
+      options,
+      correctAnswer: report.correctAnswerIdx ?? 1,
+      userAnswer: report.userSelectedIdx ?? 0,
+      subject: report.subject || '',
+      chapter: report.chapter || ''
+    };
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('Server responded ' + res.status);
+    const data = await res.json();
+    if (data.answer) {
+      if (textareaEl) {
+        textareaEl.value = data.answer;
+        // pulse the textarea so the educator notices it was filled
+        textareaEl.style.transition = 'border-color 0.3s';
+        textareaEl.style.borderColor = 'var(--sea)';
+        setTimeout(() => { textareaEl.style.borderColor = ''; }, 1200);
+      }
+      // Switch button to "Regenerate" so educator can ask for a fresh draft
+      btn.textContent = '🔄 Regenerate';
+      btn.disabled = false;
+      btn.style.display = 'inline-flex';
+    } else {
+      if (noteEl) { noteEl.textContent = data.error || 'AI returned no suggestion — try again.'; noteEl.style.display = 'block'; }
+      btn.disabled = false; btn.textContent = origText;
+    }
+  } catch (e) {
+    if (noteEl) { noteEl.textContent = 'Could not reach AI — check your connection and try again.'; noteEl.style.display = 'block'; }
+    btn.disabled = false; btn.textContent = origText;
+  }
 }
+window.suggestAiReply = suggestAiReply;
+
+// ── ANALYTICS PANEL ──────────────────────────────────────────────────────
+function renderAnalyticsPanel() {
+  const el = document.getElementById('analyticsPanel');
+  if (!el) return;
+
+  const reports = activeReports;
+  const lb = currentLeaderboard || [];
+
+  if (!reports.length && !lb.length) {
+    el.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">No data yet</p><p style="font-size:0.9rem; opacity:0.7;">Analytics will populate once students start using the platform.</p></div>`;
+    return;
+  }
+
+  // ── core counts ──
+  const total = reports.length;
+  const pending = reports.filter(r => r.status === 'Pending').length;
+  const resolved = reports.filter(r => r.status === 'Resolved').length;
+  const resolutionRate = total ? Math.round((resolved / total) * 100) : 0;
+
+  // ── avg resolution time (ms → hours) ──
+  const resolvedWithTime = reports.filter(r => r.status === 'Resolved' && r.resolvedAt && r.timestamp);
+  const avgResolutionHrs = resolvedWithTime.length
+    ? Math.round(resolvedWithTime.reduce((sum, r) => sum + (new Date(r.resolvedAt) - new Date(r.timestamp)), 0) / resolvedWithTime.length / 36e5)
+    : null;
+
+  // ── per-subject breakdown ──
+  const bySubject = {};
+  reports.forEach(r => { const s = (r.subject || 'Unknown').toLowerCase(); bySubject[s] = (bySubject[s] || 0) + 1; });
+  const subjectRows = Object.entries(bySubject).sort((a, b) => b[1] - a[1]);
+  const subjectColors = { math: 'var(--brass)', physics: 'var(--sea)', chemistry: 'var(--coral)' };
+  const maxSubject = subjectRows.length ? subjectRows[0][1] : 1;
+
+  // ── per-chapter top 8 ──
+  const byChapter = {};
+  reports.forEach(r => { const key = `${(r.subject||'?').slice(0,3).toUpperCase()} · ${r.chapter||'Unknown'}`; byChapter[key] = (byChapter[key] || 0) + 1; });
+  const chapterRows = Object.entries(byChapter).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const maxChapter = chapterRows.length ? chapterRows[0][1] : 1;
+
+  // ── weekly activity (last 7 days, day buckets) ──
+  const now = Date.now();
+  const DAY = 86400000;
+  const dayLabels = [];
+  const dayCounts = Array(7).fill(0);
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now - i * DAY);
+    dayLabels.push(d.toLocaleDateString('en-IN', { weekday: 'short' }));
+  }
+  reports.forEach(r => {
+    const ts = r.timestamp ? new Date(r.timestamp).getTime() : 0;
+    if (!ts) return;
+    const daysAgo = Math.floor((now - ts) / DAY);
+    if (daysAgo >= 0 && daysAgo < 7) dayCounts[6 - daysAgo]++;
+  });
+  const maxDay = Math.max(...dayCounts, 1);
+
+  // ── top reporters (top 6) ──
+  const byStudent = {};
+  reports.forEach(r => { const s = r.studentName || 'Unknown'; byStudent[s] = (byStudent[s] || 0) + 1; });
+  const topReporters = Object.entries(byStudent).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  // ── leaderboard stats ──
+  const activeStudents = lb.filter(r => !r.manualInactive && r.timestamp && (now - r.timestamp) < 3 * DAY).length;
+  const totalXp = lb.reduce((s, r) => s + (r.xp || 0), 0);
+  const avgXp = lb.length ? Math.round(totalXp / lb.length) : 0;
+
+  // ── render ──
+  el.innerHTML = `
+    <!-- KPI row -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px;">
+      ${[
+        ['Total Reports', total, 'var(--brass-light)'],
+        ['Pending', pending, 'var(--coral)'],
+        ['Resolved', resolved, 'var(--sea)'],
+        ['Resolution Rate', resolutionRate + '%', resolutionRate >= 80 ? 'var(--sea)' : resolutionRate >= 50 ? 'var(--brass-light)' : 'var(--coral)'],
+        avgResolutionHrs !== null ? ['Avg. Resolution', avgResolutionHrs + 'h', 'var(--parchment)'] : null,
+        ['Active Students', activeStudents, 'var(--sea)'],
+        ['Avg. XP', avgXp, 'var(--brass-light)'],
+      ].filter(Boolean).map(([label, val, color]) => `
+        <div style="background:rgba(201,156,81,0.07); border:1px solid var(--line); border-radius:12px; padding:14px 16px;">
+          <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:4px;">${label}</div>
+          <div style="font-size:1.65rem; font-weight:700; color:${color}; font-family:'JetBrains Mono',monospace;">${val}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Weekly activity bar chart -->
+    <div style="background:rgba(201,156,81,0.05); border:1px solid var(--line); border-radius:16px; padding:20px 22px;">
+      <div style="font-size:0.82rem; font-weight:700; color:var(--parchment-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;">Reports filed — last 7 days</div>
+      <div style="display:flex; align-items:flex-end; gap:8px; height:72px;">
+        ${dayCounts.map((count, i) => `
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--parchment-dim);">${count || ''}</div>
+            <div style="width:100%; border-radius:4px 4px 0 0; background:var(--brass); opacity:${count ? 0.5 + 0.5 * (count / maxDay) : 0.12}; height:${Math.max(4, (count / maxDay) * 56)}px; transition:height 0.4s;"></div>
+            <div style="font-size:0.65rem; color:var(--parchment-dim);">${dayLabels[i]}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Subject + Chapter side by side -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; flex-wrap:wrap;">
+      <!-- Subject breakdown -->
+      <div style="background:rgba(201,156,81,0.05); border:1px solid var(--line); border-radius:16px; padding:18px 20px; min-width:0;">
+        <div style="font-size:0.82rem; font-weight:700; color:var(--parchment-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px;">By subject</div>
+        ${subjectRows.length ? subjectRows.map(([subject, count]) => `
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <div style="flex:0 0 76px; font-size:0.82rem; text-transform:capitalize;">${subject}</div>
+            <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:14px;">
+              <div style="width:${Math.max(4,(count/maxSubject)*100)}%; background:${subjectColors[subject] || 'var(--brass)'}; height:100%;"></div>
+            </div>
+            <div style="flex:0 0 26px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.78rem;">${count}</div>
+          </div>`).join('') : '<div style="font-size:0.85rem; color:var(--parchment-dim); opacity:0.6;">No data.</div>'}
+      </div>
+      <!-- Top chapters -->
+      <div style="background:rgba(201,156,81,0.05); border:1px solid var(--line); border-radius:16px; padding:18px 20px; min-width:0;">
+        <div style="font-size:0.82rem; font-weight:700; color:var(--parchment-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px;">Top flagged chapters</div>
+        ${chapterRows.length ? chapterRows.map(([chapter, count]) => `
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <div style="flex:1; font-size:0.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${chapter}</div>
+            <div style="flex:0 0 80px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:12px;">
+              <div style="width:${Math.max(4,(count/maxChapter)*100)}%; background:var(--coral); height:100%;"></div>
+            </div>
+            <div style="flex:0 0 22px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.75rem;">${count}</div>
+          </div>`).join('') : '<div style="font-size:0.85rem; color:var(--parchment-dim); opacity:0.6;">No data.</div>'}
+      </div>
+    </div>
+
+    <!-- Top reporters -->
+    <div style="background:rgba(201,156,81,0.05); border:1px solid var(--line); border-radius:16px; padding:18px 20px;">
+      <div style="font-size:0.82rem; font-weight:700; color:var(--parchment-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px;">Most active reporters</div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        ${topReporters.length ? topReporters.map(([name, count], i) => `
+          <div style="background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:10px; padding:10px 14px; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:100px;">
+            <div style="font-size:1.2rem; font-weight:700; color:var(--brass-light); font-family:'JetBrains Mono',monospace;">${count}</div>
+            <div style="font-size:0.75rem; color:var(--parchment-dim); text-align:center; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</div>
+          </div>`).join('') : '<div style="font-size:0.85rem; color:var(--parchment-dim); opacity:0.6;">No reporters yet.</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function csvEscape(val) { const s = (val === undefined || val === null) ? '' : String(val); return '"' + s.replace(/"/g, '""') + '"'; }
 function exportReportsCsv() {
   const searchEl = document.getElementById('reportSearchInput');
   const q = (searchEl && searchEl.value || '').trim().toLowerCase();
   let rows = activeReports.filter(r => r.status === activeTab);
-  if (q) {
-    rows = rows.filter(r =>
-      (r.studentName || '').toLowerCase().includes(q) ||
-      (r.subject || '').toLowerCase().includes(q) ||
-      (r.chapter || '').toLowerCase().includes(q) ||
-      (r.questionText || '').toLowerCase().includes(q)
-    );
-  }
+  if (q) { rows = rows.filter(r => (r.studentName||'').toLowerCase().includes(q) || (r.subject||'').toLowerCase().includes(q) || (r.chapter||'').toLowerCase().includes(q) || (r.questionText||'').toLowerCase().includes(q)); }
   if (!rows.length) { alert('No reports to export for the current view.'); return; }
-  const headers = ['timestamp', 'status', 'studentName', 'subject', 'chapter', 'level', 'category', 'questionText', 'userSelectedText', 'correctAnswerText', 'comments', 'reply'];
+  const headers = ['timestamp','status','studentName','subject','chapter','level','category','questionText','userSelectedText','correctAnswerText','comments','reply'];
   const lines = [headers.join(',')];
   rows.forEach(r => { lines.push(headers.map(h => csvEscape(r[h])).join(',')); });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `expedition11-reports-${activeTab.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = `expedition11-reports-${activeTab.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-/* ================= WEAK TOPICS INSIGHTS =================
-   Aggregates ALL flagged-question reports (Pending + Resolved) by
-   subject/chapter, so an educator can see at a glance which chapters
-   generate the most confusion across the whole class — a class-wide
-   proxy for "weak topics" built from data already synced to Firebase,
-   without needing per-student practice data to be uploaded anywhere. */
 function renderInsightsPanel() {
   const el = document.getElementById('insightsPanel');
   if (!el) return;
-  if (!activeReports.length) {
-    el.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
-      <p style="font-size:1.2rem; margin-bottom:5px;">No data yet</p>
-      <p style="font-size:0.9rem; opacity:0.7;">Weak-topic trends will appear here once students start filing reports.</p>
-    </div>`;
-    return;
-  }
-  const byChapter = {};
-  const byStudent = {};
+  if (!activeReports.length) { el.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">No data yet</p><p style="font-size:0.9rem; opacity:0.7;">Weak-topic trends will appear here once students start filing reports.</p></div>`; return; }
+  const byChapter = {}, byStudent = {};
   activeReports.forEach(r => {
     const key = `${r.subject || 'Unknown'} · ${r.chapter || 'Unknown'}`;
     byChapter[key] = (byChapter[key] || 0) + 1;
@@ -1167,72 +957,41 @@ function renderInsightsPanel() {
   const chapterRows = Object.entries(byChapter).sort((a, b) => b[1] - a[1]).slice(0, 15);
   const studentRows = Object.entries(byStudent).sort((a, b) => b[1] - a[1]).slice(0, 10);
   const maxChapterCount = chapterRows.length ? chapterRows[0][1] : 1;
-
   const pendingCount = activeReports.filter(r => r.status === 'Pending').length;
   const resolvedCount = activeReports.filter(r => r.status === 'Resolved').length;
-
   el.innerHTML = `
     <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px;">
-      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
-        <div style="font-size:0.75rem; color:var(--parchment-dim);">Total reports</div>
-        <div style="font-size:1.6rem; font-weight:700;">${activeReports.length}</div>
-      </div>
-      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
-        <div style="font-size:0.75rem; color:var(--parchment-dim);">Pending</div>
-        <div style="font-size:1.6rem; font-weight:700; color:var(--coral);">${pendingCount}</div>
-      </div>
-      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;">
-        <div style="font-size:0.75rem; color:var(--parchment-dim);">Resolved</div>
-        <div style="font-size:1.6rem; font-weight:700; color:var(--sea);">${resolvedCount}</div>
-      </div>
+      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;"><div style="font-size:0.75rem; color:var(--parchment-dim);">Total reports</div><div style="font-size:1.6rem; font-weight:700;">${activeReports.length}</div></div>
+      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;"><div style="font-size:0.75rem; color:var(--parchment-dim);">Pending</div><div style="font-size:1.6rem; font-weight:700; color:var(--coral);">${pendingCount}</div></div>
+      <div style="flex:1 1 140px; background:rgba(201,156,81,0.08); border:1px solid var(--line); border-radius:10px; padding:14px;"><div style="font-size:0.75rem; color:var(--parchment-dim);">Resolved</div><div style="font-size:1.6rem; font-weight:700; color:var(--sea);">${resolvedCount}</div></div>
     </div>
-
     <h3 style="margin:0 0 10px;">Most-flagged chapters</h3>
     <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:24px;">
-      ${chapterRows.map(([label, count]) => `
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div style="flex:0 0 220px; font-size:0.85rem;">${label}</div>
-          <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:16px;">
-            <div style="width:${Math.max(4, (count / maxChapterCount) * 100)}%; background:var(--brass, #c99c51); height:100%;"></div>
-          </div>
-          <div style="flex:0 0 30px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.8rem;">${count}</div>
-        </div>`).join('')}
+      ${chapterRows.map(([label, count]) => `<div style="display:flex; align-items:center; gap:10px;"><div style="flex:0 0 220px; font-size:0.85rem;">${label}</div><div style="flex:1; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:16px;"><div style="width:${Math.max(4,(count/maxChapterCount)*100)}%; background:var(--brass); height:100%;"></div></div><div style="flex:0 0 30px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.8rem;">${count}</div></div>`).join('')}
     </div>
-
     <h3 style="margin:0 0 10px;">Most-active reporters</h3>
     <div style="display:flex; flex-direction:column; gap:6px;">
-      ${studentRows.map(([name, count]) => `
-        <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:6px 0; border-bottom:1px solid var(--glass-border, rgba(255,255,255,0.08));">
-          <span>${name}</span><span style="font-family:'JetBrains Mono',monospace;">${count}</span>
-        </div>`).join('')}
-    </div>
-  `;
+      ${studentRows.map(([name, count]) => `<div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:6px 0; border-bottom:1px solid var(--glass-border, rgba(255,255,255,0.08));"><span>${name}</span><span style="font-family:'JetBrains Mono',monospace;">${count}</span></div>`).join('')}
+    </div>`;
 }
 
-
-/* ================= BROADCAST ANNOUNCEMENT ================= */
 async function openAnnouncementModal() {
   document.getElementById('announcementError').style.display = 'none';
   document.getElementById('announcementText').value = '';
   document.getElementById('announcementCurrentStatus').textContent = 'Checking for a currently live announcement...';
   document.getElementById('announcementModal').classList.add('show');
   const current = window.Admin_DB ? await window.Admin_DB.getAnnouncementOnce() : null;
-  document.getElementById('announcementCurrentStatus').textContent = current
-    ? `Currently live (sent ${new Date(current.timestamp).toLocaleString()}): "${current.message}"`
-    : 'No announcement is currently live.';
+  document.getElementById('announcementCurrentStatus').textContent = current ? `Currently live (sent ${new Date(current.timestamp).toLocaleString()}): "${current.message}"` : 'No announcement is currently live.';
 }
 function closeAnnouncementModal() { document.getElementById('announcementModal').classList.remove('show'); }
-
 async function sendAnnouncementNow() {
-  const textbox = document.getElementById('announcementText');
-  const msg = textbox.value.trim();
+  const msg = document.getElementById('announcementText').value.trim();
   if (!msg) { document.getElementById('announcementError').style.display = 'block'; return; }
   document.getElementById('announcementError').style.display = 'none';
   const result = window.Admin_DB ? await window.Admin_DB.sendAnnouncement(msg) : { ok: false, error: 'Not initialized.' };
   if (result.ok) { closeAnnouncementModal(); }
   else { document.getElementById('announcementCurrentStatus').textContent = 'Failed to send: ' + (result.error || 'unknown error'); }
 }
-
 async function clearAnnouncementNow() {
   const result = window.Admin_DB ? await window.Admin_DB.clearAnnouncement() : { ok: false, error: 'Not initialized.' };
   if (result.ok) { closeAnnouncementModal(); }
@@ -1243,396 +1002,146 @@ function submitReply(id) {
   const textbox = document.getElementById(`replyText-${id}`);
   if (!textbox) return;
   const replyVal = textbox.value.trim();
-  
-  if (!replyVal) {
-    textbox.classList.add('border-error');
-    textbox.classList.remove('shaking'); void textbox.offsetWidth; textbox.classList.add('shaking');
-    return;
-  }
+  if (!replyVal) { textbox.classList.add('border-error'); textbox.classList.remove('shaking'); void textbox.offsetWidth; textbox.classList.add('shaking'); return; }
   textbox.classList.remove('border-error');
-
-  if (window.Admin_DB) {
-    window.Admin_DB.updateReport(id, {
-      status: "Resolved",
-      reply: replyVal
-    }).then(() => {
-      renderReports();
-    });
-  }
+  if (window.Admin_DB) { window.Admin_DB.updateReport(id, { status: "Resolved", reply: replyVal }).then(() => { renderReports(); }); }
 }
 
-/* ================= CUSTOM CONFIRMATION WINDOW OVERLAYS ================= */
-function openClearModal() {
-  document.getElementById('clearConfirmModal').classList.add('show');
-}
+function openClearModal() { document.getElementById('clearConfirmModal').classList.add('show'); }
+function closeClearModal() { document.getElementById('clearConfirmModal').classList.remove('show'); }
+function confirmClearAllReports() { closeClearModal(); if (window.Admin_DB) { window.Admin_DB.clearAll().then(() => { renderReports(); }); } }
+function openClearResolvedModal() { document.getElementById('clearResolvedModal').classList.add('show'); }
+function closeClearResolvedModal() { document.getElementById('clearResolvedModal').classList.remove('show'); }
+function confirmClearResolvedReports() { closeClearResolvedModal(); if (window.Admin_DB) { window.Admin_DB.clearResolvedOnly().then(() => { renderReports(); }); } }
 
-function closeClearModal() {
-  document.getElementById('clearConfirmModal').classList.remove('show');
-}
-
-function confirmClearAllReports() {
-  closeClearModal();
-  if (window.Admin_DB) {
-    window.Admin_DB.clearAll().then(() => {
-      renderReports();
-    });
-  }
-}
-
-function openClearResolvedModal() {
-  document.getElementById('clearResolvedModal').classList.add('show');
-}
-
-function closeClearResolvedModal() {
-  document.getElementById('clearResolvedModal').classList.remove('show');
-}
-
-function confirmClearResolvedReports() {
-  closeClearResolvedModal();
-  if (window.Admin_DB) {
-    window.Admin_DB.clearResolvedOnly().then(() => {
-      renderReports();
-    });
-  }
-}
-
-/* ================= STREAMING_CHUNK: Leaderboard management ================= */
 let currentLeaderboard = [];
-let pendingLbRemoval = []; // uids queued up for the confirmation modal
-
+let pendingLbRemoval = [];
 async function loadLeaderboard() {
   const container = document.getElementById('leaderboardList');
   container.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">Loading leaderboard...</div>`;
   currentLeaderboard = await window.Admin_DB.getLeaderboardOnce();
   renderLeaderboard();
 }
-
 function renderLeaderboard() {
   const container = document.getElementById('leaderboardList');
   if (!container) return;
-
-  if (!dbReady) {
-    container.innerHTML = `
-      <div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
-        <p style="font-size:1.2rem; margin-bottom:5px;">Not connected</p>
-        <p style="font-size:0.9rem; opacity:0.7;">Leaderboard management requires a live connection to the shared database.</p>
-      </div>`;
-    return;
-  }
-
-  if (!currentLeaderboard.length) {
-    container.innerHTML = `
-      <div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
-        <p style="font-size:1.2rem; margin-bottom:5px;">No entries</p>
-        <p style="font-size:0.9rem; opacity:0.7;">The leaderboard is currently empty.</p>
-      </div>`;
-    return;
-  }
-
+  if (!dbReady) { container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">Not connected</p><p style="font-size:0.9rem; opacity:0.7;">Leaderboard management requires a live connection to the shared database.</p></div>`; return; }
+  if (!currentLeaderboard.length) { container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">No entries</p><p style="font-size:0.9rem; opacity:0.7;">The leaderboard is currently empty.</p></div>`; return; }
   const sorted = [...currentLeaderboard].sort((a,b) => (b.xp||0) - (a.xp||0));
-
-  // Inactive candidates: anyone whose last XP sync (the `timestamp` field
-  // already written on every syncPlayerScore call) is 3+ days old, OR anyone
-  // an educator has manually forced inactive (e.g. a student who officially
-  // dropped out) via the `manualInactive` flag. This is purely a display
-  // split, not a deletion — nothing is removed from Firebase, so the moment
-  // a student plays again (or an educator restores them) they fall back
-  // into the "active" bucket on the next render.
   const INACTIVE_MS = 3 * 24 * 60 * 60 * 1000;
   const nowTs = Date.now();
   const isNaturallyInactive = r => !r.timestamp || (nowTs - r.timestamp) >= INACTIVE_MS;
   const activeEntries = sorted.filter(r => !r.manualInactive && !isNaturallyInactive(r));
   const inactiveEntries = sorted.filter(r => r.manualInactive || isNaturallyInactive(r));
-
-  // Detect obvious test/placeholder entries so the quick-purge button can
-  // show exactly what it'll remove before anything happens.
-  const isTestLike = (r) => {
-    const name = (r.username || '').toLowerCase();
-    const uid = (r.uid || '').toLowerCase();
-    return /\btest\b|\bknp\b/.test(name) || /\btest\b|\bknp\b/.test(uid);
-  };
+  const isTestLike = (r) => { const name = (r.username || '').toLowerCase(); const uid = (r.uid || '').toLowerCase(); return /\btest\b|\bknp\b/.test(name) || /\btest\b|\bknp\b/.test(uid); };
   const testEntries = sorted.filter(isTestLike);
-
   let quickPurgeBar = '';
   if (testEntries.length) {
-    quickPurgeBar = `
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(231,111,81,0.08); border:1px solid rgba(231,111,81,0.3); border-radius:12px; padding:14px 18px; margin-bottom:6px; flex-wrap:wrap;">
-        <div style="font-size:0.9rem; color:var(--parchment-dim);">
-          Found <strong style="color:var(--coral);">${testEntries.length}</strong> entr${testEntries.length === 1 ? 'y' : 'ies'} that look like test data (matching "test" or "knp"): 
-          <span style="color:var(--brass-light);">${testEntries.map(r => r.username || r.uid).join(', ')}</span>
-        </div>
-        <button class="btn danger" style="padding:10px 16px; font-size:0.8rem; align-self:auto;" onclick="openClearLbModal(${JSON.stringify(testEntries.map(r=>r.uid)).replace(/"/g,'&quot;')}, 'test/knp')">Purge These</button>
-      </div>`;
+    quickPurgeBar = `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(231,111,81,0.08); border:1px solid rgba(231,111,81,0.3); border-radius:12px; padding:14px 18px; margin-bottom:6px; flex-wrap:wrap;"><div style="font-size:0.9rem; color:var(--parchment-dim);">Found <strong style="color:var(--coral);">${testEntries.length}</strong> entr${testEntries.length === 1 ? 'y' : 'ies'} that look like test data: <span style="color:var(--brass-light);">${testEntries.map(r => r.username || r.uid).join(', ')}</span></div><button class="btn danger" style="padding:10px 16px; font-size:0.8rem; align-self:auto;" onclick="openClearLbModal(${JSON.stringify(testEntries.map(r=>r.uid)).replace(/"/g,'&quot;')}, 'test/knp')">Purge These</button></div>`;
   }
-
-  // Duplicate-name detection: the leaderboard is keyed by Firebase auth uid,
-  // not by candidate name — so a candidate who uses Switch Player (or plays
-  // from a second device) gets a brand-new uid, and shows up as a second,
-  // separate row under the same name rather than updating their old one.
-  // Firebase Rules also mean a student's own browser can never merge or
-  // delete a past uid's entry (only an admin account can) — so this has to
-  // be a manual cleanup tool here rather than something that fixes itself.
   const nameGroups = {};
-  sorted.forEach(r => {
-    const key = (r.username || '').trim().toLowerCase();
-    if (!key) return;
-    (nameGroups[key] = nameGroups[key] || []).push(r);
-  });
+  sorted.forEach(r => { const key = (r.username || '').trim().toLowerCase(); if (!key) return; (nameGroups[key] = nameGroups[key] || []).push(r); });
   const duplicateGroups = Object.values(nameGroups).filter(g => g.length > 1);
-
   let duplicatesBar = '';
   if (duplicateGroups.length) {
     duplicatesBar = duplicateGroups.map(group => {
-      // Keep whichever entry has the highest XP (most likely the "real"
-      // ongoing progress); flag the rest as the stale duplicates to purge.
       const sortedGroup = [...group].sort((a, b) => (b.xp || 0) - (a.xp || 0));
-      const keep = sortedGroup[0];
-      const stale = sortedGroup.slice(1);
-      return `
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(233,196,106,0.08); border:1px solid rgba(233,196,106,0.3); border-radius:12px; padding:14px 18px; margin-bottom:6px; flex-wrap:wrap;">
-          <div style="font-size:0.9rem; color:var(--parchment-dim);">
-            <strong style="color:var(--brass-light);">${keep.username}</strong> appears ${group.length} times (likely re-entered after Switch Player). Keeping the ${keep.xp || 0} XP entry, ${stale.length} older duplicate${stale.length > 1 ? 's' : ''} can be removed:
-            <span style="opacity:0.75;">${stale.map(r => `${r.xp || 0} XP, ${r.timestamp ? new Date(r.timestamp).toLocaleDateString() : 'no date'}`).join(' · ')}</span>
-          </div>
-          <button class="btn danger" style="padding:10px 16px; font-size:0.8rem; align-self:auto;" onclick="openClearLbModal(${JSON.stringify(stale.map(r=>r.uid)).replace(/"/g,'&quot;')}, '${keep.username.replace(/'/g,"\\'")} duplicates')">Remove Duplicates</button>
-        </div>`;
+      const keep = sortedGroup[0]; const stale = sortedGroup.slice(1);
+      return `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(233,196,106,0.08); border:1px solid rgba(233,196,106,0.3); border-radius:12px; padding:14px 18px; margin-bottom:6px; flex-wrap:wrap;"><div style="font-size:0.9rem; color:var(--parchment-dim);"><strong style="color:var(--brass-light);">${keep.username}</strong> appears ${group.length} times. Keeping the ${keep.xp || 0} XP entry, ${stale.length} duplicate${stale.length > 1 ? 's' : ''} can be removed: <span style="opacity:0.75;">${stale.map(r => `${r.xp || 0} XP, ${r.timestamp ? new Date(r.timestamp).toLocaleDateString() : 'no date'}`).join(' · ')}</span></div><button class="btn danger" style="padding:10px 16px; font-size:0.8rem; align-self:auto;" onclick="openClearLbModal(${JSON.stringify(stale.map(r=>r.uid)).replace(/"/g,'&quot;')}, '${keep.username.replace(/'/g,"\\'")} duplicates')">Remove Duplicates</button></div>`;
     }).join('');
   }
-
-  const exportBar = `
-    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
-      <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportLeaderboardCsv()">Export CSV</button>
-    </div>`;
-
-  const rowHtml = (r) => `
-    <div class="report-card" style="padding:16px 20px; display:flex; flex-direction:column; gap:10px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-        <div>
-          <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div>
-          <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div>
-        </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}', 'lb')">${openDiscussionUid === r.uid ? 'Hide' : '💬 Message'}</button>
-          <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', true)">Mark Inactive</button>
-          <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
-        </div>
-      </div>
-      <div id="discBox-${r.uid}"></div>
-    </div>
-  `;
-
-  const rows = activeEntries.map(rowHtml).join('') || `
-    <div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">
-      <p style="font-size:0.9rem; opacity:0.7;">No active candidates in the last 3 days.</p>
-    </div>`;
-
+  const exportBar = `<div style="display:flex; justify-content:flex-end; margin-bottom:10px;"><button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportLeaderboardCsv()">Export CSV</button></div>`;
+  const rowHtml = (r) => `<div class="report-card" style="padding:16px 20px; display:flex; flex-direction:column; gap:10px;"><div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;"><div><div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}</div><div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</div></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}', 'lb')">${openDiscussionUid === r.uid ? 'Hide' : '💬 Message'}</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', true)">Mark Inactive</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button></div></div><div id="discBox-${r.uid}"></div></div>`;
+  const rows = activeEntries.map(rowHtml).join('') || `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);"><p style="font-size:0.9rem; opacity:0.7;">No active candidates in the last 3 days.</p></div>`;
   let inactiveSection = '';
   if (inactiveEntries.length) {
     const daysAgo = (ts) => ts ? Math.floor((nowTs - ts) / 86400000) : null;
-    inactiveSection = `
-      <div style="margin-top:22px;">
-        <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="toggleInactiveLb()">
-          <span id="inactiveLbToggleLabel">${inactiveLbExpanded ? 'Hide' : 'Show'} inactive candidates (${inactiveEntries.length})</span>
-        </button>
-        <div id="inactiveLbList" style="display:${inactiveLbExpanded ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:12px;">
-          <div style="font-size:0.78rem; color:var(--parchment-dim);">Naturally inactive (3+ days) or manually marked. They move back to "active" automatically the moment they play again, or you can restore them now.</div>
-          ${inactiveEntries.map(r => `
-            <div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; opacity:0.7;">
-              <div>
-                <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}${r.manualInactive ? ' <span style="font-size:0.7rem; color:var(--coral);">(manually marked)</span>' : ''}</div>
-                <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">
-                  uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp;
-                  ${r.timestamp ? `inactive ${daysAgo(r.timestamp)}d (last seen ${new Date(r.timestamp).toLocaleDateString()})` : 'no activity recorded yet'}
-                </div>
-              </div>
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', false)">Restore</button>
-                <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button>
-              </div>
-            </div>`).join('')}
-        </div>
-      </div>`;
+    inactiveSection = `<div style="margin-top:22px;"><button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="toggleInactiveLb()"><span id="inactiveLbToggleLabel">${inactiveLbExpanded ? 'Hide' : 'Show'} inactive candidates (${inactiveEntries.length})</span></button><div id="inactiveLbList" style="display:${inactiveLbExpanded ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:12px;"><div style="font-size:0.78rem; color:var(--parchment-dim);">Naturally inactive (3+ days) or manually marked.</div>${inactiveEntries.map(r => `<div class="report-card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; opacity:0.7;"><div><div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light);">${r.username || '(no name)'}${r.manualInactive ? ' <span style="font-size:0.7rem; color:var(--coral);">(manually marked)</span>' : ''}</div><div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--parchment-dim);">uid: ${r.uid} &nbsp;·&nbsp; xp: ${r.xp ?? '—'} &nbsp;·&nbsp; ${r.timestamp ? `inactive ${daysAgo(r.timestamp)}d (last seen ${new Date(r.timestamp).toLocaleDateString()})` : 'no activity recorded yet'}</div></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="setLbManualInactive('${r.uid}', false)">Restore</button><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="openClearLbModal(['${r.uid}'], '${(r.username||r.uid).replace(/'/g,"\\'")}')">Remove</button></div></div>`).join('')}</div></div>`;
   }
-
   container.innerHTML = exportBar + duplicatesBar + quickPurgeBar + rows + inactiveSection;
   if (openDiscussionUid) openDiscussionThread(openDiscussionUid);
 }
-
 let inactiveLbExpanded = false;
-function toggleInactiveLb() {
-  inactiveLbExpanded = !inactiveLbExpanded;
-  renderLeaderboard();
-}
-
+function toggleInactiveLb() { inactiveLbExpanded = !inactiveLbExpanded; renderLeaderboard(); }
 async function setLbManualInactive(uid, val) {
   if (!window.Admin_DB) return;
   const result = await window.Admin_DB.setManualInactive(uid, val);
-  if (!result.ok) {
-    alert('Could not update: ' + (result.error || 'unknown error') + '\n\nThis usually means the "manualInactive" path needs read/write rules added in Firebase, same as "removedCandidates" already has.');
-    return;
-  }
+  if (!result.ok) { alert('Could not update: ' + (result.error || 'unknown error')); return; }
   currentLeaderboard = await window.Admin_DB.getLeaderboardOnce();
   renderLeaderboard();
 }
-
 function exportLeaderboardCsv() {
   if (!currentLeaderboard.length) { alert('Leaderboard is empty.'); return; }
-  const headers = ['username', 'uid', 'xp', 'weeklyXp', 'timestamp', 'manualInactive'];
+  const headers = ['username','uid','xp','weeklyXp','timestamp','manualInactive'];
   const lines = [headers.join(',')];
   currentLeaderboard.forEach(r => { lines.push(headers.map(h => csvEscape(r[h])).join(',')); });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `expedition11-leaderboard-${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href = url; a.download = `expedition11-leaderboard-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-
 let pendingLbLabels = {};
 function openClearLbModal(uids, label) {
-  pendingLbRemoval = uids;
-  // Remember username per uid so we can label the removal record even after
-  // the leaderboard entry itself is deleted.
-  pendingLbLabels = {};
-  uids.forEach(uid => {
-    const entry = (currentLeaderboard || []).find(r => r.uid === uid);
-    pendingLbLabels[uid] = entry ? (entry.username || uid) : (uids.length === 1 ? label : uid);
-  });
-  document.getElementById('clearLbTitle').textContent = uids.length > 1
-    ? `Remove ${uids.length} Leaderboard Entries?`
-    : `Remove Leaderboard Entry?`;
-  document.getElementById('clearLbBody').textContent = uids.length > 1
-    ? `This will permanently remove all entries matching "${label}" (${uids.length} total). This is irreversible.`
-    : `This will permanently remove "${label}" from the leaderboard. This is irreversible.`;
-  document.getElementById('clearLbReason').value = '';
-  document.getElementById('clearLbReasonError').style.display = 'none';
+  pendingLbRemoval = uids; pendingLbLabels = {};
+  uids.forEach(uid => { const entry = (currentLeaderboard || []).find(r => r.uid === uid); pendingLbLabels[uid] = entry ? (entry.username || uid) : (uids.length === 1 ? label : uid); });
+  document.getElementById('clearLbTitle').textContent = uids.length > 1 ? `Remove ${uids.length} Leaderboard Entries?` : `Remove Leaderboard Entry?`;
+  document.getElementById('clearLbBody').textContent = uids.length > 1 ? `This will permanently remove all entries matching "${label}" (${uids.length} total). This is irreversible.` : `This will permanently remove "${label}" from the leaderboard. This is irreversible.`;
+  document.getElementById('clearLbReason').value = ''; document.getElementById('clearLbReasonError').style.display = 'none';
   document.getElementById('clearLbModal').classList.add('show');
 }
+function closeClearLbModal() { document.getElementById('clearLbModal').classList.remove('show'); pendingLbRemoval = []; }
 
-function closeClearLbModal() {
-  document.getElementById('clearLbModal').classList.remove('show');
-  pendingLbRemoval = [];
-}
-
-// ── Removed Candidates tab ──────────────────────────────────────────────
-let currentRemoved = [];
-let currentRemovedError = null;
-let openDiscussionUid = null;
-let discussionUnsub = null;
-
+let currentRemoved = [], currentRemovedError = null, openDiscussionUid = null, discussionUnsub = null;
 async function loadRemovedCandidates() {
   const container = document.getElementById('removedList');
   if (!container) return;
   container.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">Loading...</div>`;
   if (!window.Admin_DB) { currentRemoved = []; currentRemovedError = 'Admin_DB not initialized.'; renderRemovedCandidates(); return; }
   const result = await window.Admin_DB.getRemovedCandidatesOnce();
-  currentRemoved = result.list || [];
-  currentRemovedError = result.ok ? null : result.error;
+  currentRemoved = result.list || []; currentRemovedError = result.ok ? null : result.error;
   renderRemovedCandidates();
 }
 window.loadRemovedCandidates = loadRemovedCandidates;
-
 function renderRemovedCandidates() {
   const container = document.getElementById('removedList');
   if (!container) return;
-
-  if (!dbReady) {
-    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">Not connected</p><p style="font-size:0.9rem; opacity:0.7;">This requires a live connection to the shared database.</p></div>`;
-    return;
-  }
-  if (currentRemovedError) {
-    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--coral);"><p style="font-size:1.2rem; margin-bottom:5px;">Couldn't load removed candidates</p><p style="font-size:0.85rem; opacity:0.85; font-family:'JetBrains Mono',monospace;">${currentRemovedError}</p><p style="font-size:0.85rem; margin-top:10px; opacity:0.7;">This is almost always a Firebase Rules issue — the "removedCandidates" and "removalDiscussion" paths need read/write rules added, same as "leaderboard" and "reports" already have.</p></div>`;
-    return;
-  }
-  if (!currentRemoved.length) {
-    container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">No removed candidates</p><p style="font-size:0.9rem; opacity:0.7;">Anyone you remove from the leaderboard will show up here, along with any clarification questions they send.</p></div>`;
-    return;
-  }
-
+  if (!dbReady) { container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">Not connected</p><p style="font-size:0.9rem; opacity:0.7;">This requires a live connection to the shared database.</p></div>`; return; }
+  if (currentRemovedError) { container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--coral);"><p style="font-size:1.2rem; margin-bottom:5px;">Couldn't load removed candidates</p><p style="font-size:0.85rem; opacity:0.85; font-family:'JetBrains Mono',monospace;">${currentRemovedError}</p><p style="font-size:0.85rem; margin-top:10px; opacity:0.7;">This is almost always a Firebase Rules issue — the "removedCandidates" and "removalDiscussion" paths need read/write rules added.</p></div>`; return; }
+  if (!currentRemoved.length) { container.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);"><p style="font-size:1.2rem; margin-bottom:5px;">No removed candidates</p><p style="font-size:0.9rem; opacity:0.7;">Anyone you remove from the leaderboard will show up here.</p></div>`; return; }
   const sorted = [...currentRemoved].sort((a, b) => (b.removedAt || 0) - (a.removedAt || 0));
-  const exportBar = `
-    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
-      <button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportRemovedCsv()">Export CSV</button>
-    </div>`;
-  container.innerHTML = exportBar + sorted.map(r => `
-    <div class="report-card">
-      <div class="report-meta">
-        <span class="meta-badge">Removed</span>
-        <span class="report-time">${r.removedAt ? new Date(r.removedAt).toLocaleString() : ''}</span>
-      </div>
-      <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light); margin-bottom:6px;">${r.username || r.uid}</div>
-      <div class="report-comment"><strong style="color:var(--parchment);">Reason:</strong> ${r.reason || '(none given)'}</div>
-      <div id="discBox-${r.uid}" style="margin-top:10px;"></div>
-      <div style="display:flex; justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;">
-        <button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}')">${openDiscussionUid === r.uid ? 'Hide' : 'View'} discussion</button>
-        <button class="btn primary" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="restoreCandidate('${r.uid}')">Restore to leaderboard</button>
-      </div>
-    </div>
-  `).join('');
-
+  const exportBar = `<div style="display:flex; justify-content:flex-end; margin-bottom:10px;"><button class="btn ghost" style="padding:8px 16px; font-size:0.8rem;" onclick="exportRemovedCsv()">Export CSV</button></div>`;
+  container.innerHTML = exportBar + sorted.map(r => `<div class="report-card"><div class="report-meta"><span class="meta-badge">Removed</span><span class="report-time">${r.removedAt ? new Date(r.removedAt).toLocaleString() : ''}</span></div><div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--brass-light); margin-bottom:6px;">${r.username || r.uid}</div><div class="report-comment"><strong style="color:var(--parchment);">Reason:</strong> ${r.reason || '(none given)'}</div><div id="discBox-${r.uid}" style="margin-top:10px;"></div><div style="display:flex; justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;"><button class="btn ghost" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="toggleDiscussion('${r.uid}')">${openDiscussionUid === r.uid ? 'Hide' : 'View'} discussion</button><button class="btn primary" style="padding:8px 14px; font-size:0.75rem; align-self:auto;" onclick="restoreCandidate('${r.uid}')">Restore to leaderboard</button></div></div>`).join('');
   if (openDiscussionUid) openDiscussionThread(openDiscussionUid);
 }
-
 function exportRemovedCsv() {
   if (!currentRemoved.length) { alert('No removed candidates to export.'); return; }
-  const headers = ['username', 'uid', 'reason', 'removedAt'];
+  const headers = ['username','uid','reason','removedAt'];
   const lines = [headers.join(',')];
   currentRemoved.forEach(r => { lines.push(headers.map(h => csvEscape(r[h])).join(',')); });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `expedition11-removed-${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `expedition11-removed-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-
 function toggleDiscussion(uid, source) {
-  if (openDiscussionUid === uid) {
-    if (discussionUnsub) { discussionUnsub(); discussionUnsub = null; }
-    openDiscussionUid = null;
-  } else {
-    openDiscussionUid = uid;
-  }
-  // 'lb' = triggered from the main leaderboard tab; otherwise assume the
-  // removed-candidates tab. Re-render whichever list actually has the row,
-  // since both tabs share this same discussion-thread UI/backend.
+  if (openDiscussionUid === uid) { if (discussionUnsub) { discussionUnsub(); discussionUnsub = null; } openDiscussionUid = null; }
+  else { openDiscussionUid = uid; }
   if (source === 'lb') { renderLeaderboard(); } else { renderRemovedCandidates(); }
 }
-
 function openDiscussionThread(uid) {
   if (discussionUnsub) { discussionUnsub(); discussionUnsub = null; }
   const box = document.getElementById('discBox-' + uid);
   if (!box) return;
-  box.innerHTML = `
-    <div id="discMsgs-${uid}" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; margin-bottom:8px;"></div>
-    <div style="display:flex; gap:8px;">
-      <textarea id="discInput-${uid}" class="reply-textarea" style="min-height:50px;" placeholder="Reply with clarification..."></textarea>
-      <button class="btn primary" style="align-self:flex-end; padding:10px 16px; font-size:0.75rem;" onclick="sendDiscussionReply('${uid}')">Send</button>
-    </div>`;
+  box.innerHTML = `<div id="discMsgs-${uid}" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; margin-bottom:8px;"></div><div style="display:flex; gap:8px;"><textarea id="discInput-${uid}" class="reply-textarea" style="min-height:50px;" placeholder="Reply with clarification..."></textarea><button class="btn primary" style="align-self:flex-end; padding:10px 16px; font-size:0.75rem;" onclick="sendDiscussionReply('${uid}')">Send</button></div>`;
   discussionUnsub = window.Admin_DB.listenDiscussion(uid, (result) => {
     const msgsEl = document.getElementById('discMsgs-' + uid);
     if (!msgsEl) return;
-    if (!result.ok) {
-      msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--coral);">Couldn't load messages: ${result.error || 'permission denied'}. Check Firebase Rules for "removalDiscussion".</div>`;
-      return;
-    }
+    if (!result.ok) { msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--coral);">Couldn't load messages: ${result.error || 'permission denied'}. Check Firebase Rules for "removalDiscussion".</div>`; return; }
     const messages = result.messages;
-    if (!messages.length) {
-      msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet.</div>`;
-      return;
-    }
-    msgsEl.innerHTML = messages.map(m => `
-      <div style="align-self:${m.from === 'educator' ? 'flex-end' : 'flex-start'}; max-width:85%; background:${m.from === 'educator' ? 'rgba(201,156,81,0.12)' : 'rgba(42,157,143,0.15)'}; border:1px solid ${m.from === 'educator' ? 'var(--line)' : 'rgba(42,157,143,0.3)'}; border-radius:10px; padding:8px 12px; font-size:0.85rem;">
-        <div style="font-size:0.65rem; opacity:0.7; margin-bottom:2px; text-transform:uppercase;">${m.from === 'educator' ? 'You' : (m.name || 'Candidate')}</div>
-        ${(m.text || '').replace(/</g,'&lt;')}
-      </div>
-    `).join('');
+    if (!messages.length) { msgsEl.innerHTML = `<div style="font-size:0.8rem; color:var(--parchment-dim); opacity:0.7;">No messages yet.</div>`; return; }
+    msgsEl.innerHTML = messages.map(m => `<div style="align-self:${m.from === 'educator' ? 'flex-end' : 'flex-start'}; max-width:85%; background:${m.from === 'educator' ? 'rgba(201,156,81,0.12)' : 'rgba(42,157,143,0.15)'}; border:1px solid ${m.from === 'educator' ? 'var(--line)' : 'rgba(42,157,143,0.3)'}; border-radius:10px; padding:8px 12px; font-size:0.85rem;"><div style="font-size:0.65rem; opacity:0.7; margin-bottom:2px; text-transform:uppercase;">${m.from === 'educator' ? 'You' : (m.name || 'Candidate')}</div>${(m.text || '').replace(/</g,'&lt;')}</div>`).join('');
     msgsEl.scrollTop = msgsEl.scrollHeight;
   });
 }
-
 async function sendDiscussionReply(uid) {
   const input = document.getElementById('discInput-' + uid);
   const text = input.value.trim();
@@ -1641,211 +1150,101 @@ async function sendDiscussionReply(uid) {
   if (!result.ok) { alert('Failed to send reply: ' + (result.error || 'unknown error')); return; }
   input.value = '';
 }
-
 async function restoreCandidate(uid) {
   if (!window.Admin_DB) return;
   const result = await window.Admin_DB.restoreCandidate(uid);
-  if (!result.ok) {
-    alert('Failed to restore candidate: ' + (result.error || 'unknown error'));
-    return;
-  }
+  if (!result.ok) { alert('Failed to restore candidate: ' + (result.error || 'unknown error')); return; }
   if (openDiscussionUid === uid && discussionUnsub) { discussionUnsub(); discussionUnsub = null; openDiscussionUid = null; }
   await loadRemovedCandidates();
 }
-
 window.toggleDiscussion = toggleDiscussion;
 window.sendDiscussionReply = sendDiscussionReply;
 window.restoreCandidate = restoreCandidate;
 
-// ── PYQ Bank tab ─────────────────────────────────────────────────────────
 let currentPyq = [];
-
 async function loadPyqAdmin() {
   const wrap = document.getElementById('pyqAdminList');
   wrap.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--parchment-dim);">Loading...</div>`;
   if (!window.Admin_DB) { wrap.innerHTML = ''; return; }
   const result = await window.Admin_DB.getPyqOnce();
-  if (!result.ok) {
-    wrap.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--coral);"><p>Couldn't load PYQ bank: ${result.error}</p><p style="font-size:0.8rem; opacity:0.8; margin-top:6px;">Add a Firebase Rule for "pyqBank" (same pattern as "leaderboard").</p></div>`;
-    return;
-  }
-  currentPyq = result.list;
-  renderPyqAdminList();
+  if (!result.ok) { wrap.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--coral);"><p>Couldn't load PYQ bank: ${result.error}</p><p style="font-size:0.8rem; opacity:0.8; margin-top:6px;">Add a Firebase Rule for "pyqBank" (same pattern as "leaderboard").</p></div>`; return; }
+  currentPyq = result.list; renderPyqAdminList();
 }
-
 function renderPyqAdminList() {
   const wrap = document.getElementById('pyqAdminList');
-  if (!currentPyq.length) {
-    wrap.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">No PYQs imported yet.</div>`;
-    return;
-  }
+  if (!currentPyq.length) { wrap.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">No PYQs imported yet.</div>`; return; }
   const sorted = [...currentPyq].sort((a, b) => (b.year || 0) - (a.year || 0));
-  wrap.innerHTML = sorted.map(q => `
-    <div class="report-card">
-      <div class="report-meta">
-        <span class="meta-badge">${q.exam || 'PYQ'} ${q.year || ''}</span>
-        <span class="report-time">${q.subject || ''} · ${q.chapter || ''}</span>
-      </div>
-      <div class="report-comment">${(q.q || '').slice(0, 160)}${(q.q || '').length > 160 ? '…' : ''}</div>
-      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-        <button class="btn ghost" style="padding:6px 12px; font-size:0.7rem;" onclick="deletePyqEntry('${q.id}')">Delete</button>
-      </div>
-    </div>
-  `).join('');
+  wrap.innerHTML = sorted.map(q => `<div class="report-card"><div class="report-meta"><span class="meta-badge">${q.exam || 'PYQ'} ${q.year || ''}</span><span class="report-time">${q.subject || ''} · ${q.chapter || ''}</span></div><div class="report-comment">${(q.q || '').slice(0, 160)}${(q.q || '').length > 160 ? '…' : ''}</div><div style="display:flex; justify-content:flex-end; margin-top:10px;"><button class="btn ghost" style="padding:6px 12px; font-size:0.7rem;" onclick="deletePyqEntry('${q.id}')">Delete</button></div></div>`).join('');
 }
-
 async function deletePyqEntry(id) {
   if (!window.Admin_DB) return;
   const result = await window.Admin_DB.deletePyq(id);
   if (!result.ok) { alert('Failed to delete: ' + (result.error || 'unknown error')); return; }
   await loadPyqAdmin();
 }
-
-// Shared shape-check for PYQ items, regardless of whether they came from the
-// textarea or a fetched URL. Returns { valid, errors }.
 function validatePyqItems(parsed) {
-  const valid = [];
-  const errors = [];
+  const valid = [], errors = [];
   parsed.forEach((item, i) => {
-    if (!item.q || !Array.isArray(item.opts) || item.opts.length < 2 || typeof item.ans !== 'number') {
-      errors.push(`Item ${i + 1} is missing required fields (q, opts[], ans).`);
-      return;
-    }
-    valid.push({
-      year: item.year || null,
-      exam: item.exam || 'PYQ',
-      subject: item.subject || 'math',
-      chapter: item.chapter || '',
-      q: item.q,
-      opts: item.opts,
-      ans: item.ans,
-      sol: item.sol || ''
-    });
+    if (!item.q || !Array.isArray(item.opts) || item.opts.length < 2 || typeof item.ans !== 'number') { errors.push(`Item ${i + 1} is missing required fields (q, opts[], ans).`); return; }
+    valid.push({ year: item.year || null, exam: item.exam || 'PYQ', subject: item.subject || 'math', chapter: item.chapter || '', q: item.q, opts: item.opts, ans: item.ans, sol: item.sol || '' });
   });
   return { valid, errors };
 }
-
 async function importPyqFromTextarea() {
-  const input = document.getElementById('pyqImportInput');
-  const errEl = document.getElementById('pyqImportError');
-  errEl.style.display = 'none';
+  const input = document.getElementById('pyqImportInput'); const errEl = document.getElementById('pyqImportError'); errEl.style.display = 'none';
   let parsed;
-  try {
-    parsed = JSON.parse(input.value);
-    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array.');
-  } catch (e) {
-    errEl.textContent = 'Invalid JSON: ' + e.message;
-    errEl.style.display = 'inline';
-    return;
-  }
+  try { parsed = JSON.parse(input.value); if (!Array.isArray(parsed)) throw new Error('Expected a JSON array.'); }
+  catch (e) { errEl.textContent = 'Invalid JSON: ' + e.message; errEl.style.display = 'inline'; return; }
   const { valid, errors } = validatePyqItems(parsed);
-  if (errors.length) {
-    errEl.textContent = errors.slice(0, 3).join(' ');
-    errEl.style.display = 'inline';
-    if (!valid.length) return;
-  }
+  if (errors.length) { errEl.textContent = errors.slice(0, 3).join(' '); errEl.style.display = 'inline'; if (!valid.length) return; }
   if (!window.Admin_DB) return;
   const result = await window.Admin_DB.importPyqBatch(valid);
-  if (!result.ok) {
-    alert('Import failed: ' + (result.error || 'unknown error'));
-    return;
-  }
-  input.value = '';
-  await loadPyqAdmin();
+  if (!result.ok) { alert('Import failed: ' + (result.error || 'unknown error')); return; }
+  input.value = ''; await loadPyqAdmin();
 }
-
-// Fetch a JSON array of PYQ-shaped items from an educator-supplied URL and
-// import it the same way as a pasted batch. We deliberately don't ship any
-// bundled/hardcoded question dataset here — the educator points at a source
-// they've vetted for licensing, and this just does the fetch + validate +
-// import plumbing for them.
 async function importPyqFromUrl() {
-  const urlInput = document.getElementById('pyqImportUrl');
-  const errEl = document.getElementById('pyqUrlImportError');
-  const statusEl = document.getElementById('pyqUrlImportStatus');
-  const btn = document.getElementById('pyqUrlImportBtn');
-  errEl.style.display = 'none';
-  statusEl.style.display = 'none';
-
+  const urlInput = document.getElementById('pyqImportUrl'); const errEl = document.getElementById('pyqUrlImportError'); const statusEl = document.getElementById('pyqUrlImportStatus'); const btn = document.getElementById('pyqUrlImportBtn');
+  errEl.style.display = 'none'; statusEl.style.display = 'none';
   const url = urlInput.value.trim();
-  if (!url) {
-    errEl.textContent = 'Enter a URL first.';
-    errEl.style.display = 'inline';
-    return;
-  }
-  let parsedUrl;
-  try {
-    parsedUrl = new URL(url);
-    if (!/^https?:$/.test(parsedUrl.protocol)) throw new Error('URL must start with http:// or https://');
-  } catch (e) {
-    errEl.textContent = 'Invalid URL: ' + e.message;
-    errEl.style.display = 'inline';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Fetching...';
+  if (!url) { errEl.textContent = 'Enter a URL first.'; errEl.style.display = 'inline'; return; }
+  try { const p = new URL(url); if (!/^https?:$/.test(p.protocol)) throw new Error('URL must start with http:// or https://'); }
+  catch (e) { errEl.textContent = 'Invalid URL: ' + e.message; errEl.style.display = 'inline'; return; }
+  btn.disabled = true; btn.textContent = 'Fetching...';
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Server responded with ${res.status}`);
     const parsed = await res.json();
     if (!Array.isArray(parsed)) throw new Error('Expected the URL to return a JSON array.');
-
     const { valid, errors } = validatePyqItems(parsed);
-    if (!valid.length) {
-      errEl.textContent = errors.length
-        ? 'No valid items found. ' + errors.slice(0, 3).join(' ')
-        : 'No items found in that file.';
-      errEl.style.display = 'inline';
-      return;
-    }
+    if (!valid.length) { errEl.textContent = errors.length ? 'No valid items found. ' + errors.slice(0, 3).join(' ') : 'No items found in that file.'; errEl.style.display = 'inline'; return; }
     if (!window.Admin_DB) throw new Error('Database not connected.');
     const result = await window.Admin_DB.importPyqBatch(valid);
     if (!result.ok) throw new Error(result.error || 'unknown error');
-
-    statusEl.textContent = `Imported ${valid.length} question${valid.length === 1 ? '' : 's'}`
-      + (errors.length ? ` (${errors.length} skipped — wrong shape).` : '.');
-    statusEl.style.display = 'inline';
-    urlInput.value = '';
-    await loadPyqAdmin();
-  } catch (e) {
-    errEl.textContent = 'Import failed: ' + e.message + ' (the source may not allow cross-origin fetches — try downloading the file and pasting its contents into the box above instead).';
-    errEl.style.display = 'inline';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Fetch & import';
-  }
+    statusEl.textContent = `Imported ${valid.length} question${valid.length === 1 ? '' : 's'}` + (errors.length ? ` (${errors.length} skipped — wrong shape).` : '.'); statusEl.style.display = 'inline';
+    urlInput.value = ''; await loadPyqAdmin();
+  } catch (e) { errEl.textContent = 'Import failed: ' + e.message + ' (the source may not allow cross-origin fetches — try downloading the file and pasting its contents above instead).'; errEl.style.display = 'inline'; }
+  finally { btn.disabled = false; btn.textContent = 'Fetch & import'; }
 }
-
 window.importPyqFromTextarea = importPyqFromTextarea;
 window.importPyqFromUrl = importPyqFromUrl;
 window.deletePyqEntry = deletePyqEntry;
 window.loadPyqAdmin = loadPyqAdmin;
 
 async function confirmClearLbEntries() {
-  const uids = pendingLbRemoval;
-  const reasonEl = document.getElementById('clearLbReason');
-  const reason = reasonEl.value.trim();
-  if (!reason) {
-    document.getElementById('clearLbReasonError').style.display = 'block';
-    reasonEl.classList.remove('shaking'); void reasonEl.offsetWidth; reasonEl.classList.add('shaking');
-    reasonEl.classList.add('border-error');
-    return;
-  }
+  const uids = pendingLbRemoval; const reasonEl = document.getElementById('clearLbReason'); const reason = reasonEl.value.trim();
+  if (!reason) { document.getElementById('clearLbReasonError').style.display = 'block'; reasonEl.classList.remove('shaking'); void reasonEl.offsetWidth; reasonEl.classList.add('shaking'); reasonEl.classList.add('border-error'); return; }
   closeClearLbModal();
   if (!uids.length || !window.Admin_DB) return;
   const result = await window.Admin_DB.removeLeaderboardEntries(uids, reason, pendingLbLabels);
-  if (!result.ok) {
-    alert('Failed to remove leaderboard entries: ' + (result.error || 'unknown error') + '\n\nCheck the connection status indicator — this requires a live connection.');
-  }
+  if (!result.ok) { alert('Failed to remove leaderboard entries: ' + (result.error || 'unknown error') + '\n\nCheck the connection status indicator — this requires a live connection.'); }
   await loadLeaderboard();
   if (window.loadRemovedCandidates) loadRemovedCandidates();
 }
 
-// Bind globally
 window.submitReply = submitReply;
 window.verifyGatePasscode = verifyGatePasscode;
 window.switchTab = switchTab;
+window.renderAnalyticsPanel = renderAnalyticsPanel;
 window.openClearModal = openClearModal;
 window.closeClearModal = closeClearModal;
 window.confirmClearAllReports = confirmClearAllReports;
@@ -1856,9 +1255,7 @@ window.openClearLbModal = openClearLbModal;
 window.closeClearLbModal = closeClearLbModal;
 window.confirmClearLbEntries = confirmClearLbEntries;
 </script>
-
 <script>
-// Small unobtrusive corner button — only shows if we're offline.
 document.addEventListener('DOMContentLoaded', function () {
   const btn = document.createElement('button');
   btn.id = 'diagBtn';
@@ -1872,57 +1269,22 @@ document.addEventListener('DOMContentLoaded', function () {
   }, 1500);
 });
 </script>
-
 <script>
-// ── PWA install (Educator Panel) ────────────────────────────────────────
-// Mirrors the student app's install flow, but simpler: just a toolbar
-// button rather than a timed nudge, since an educator opening this panel
-// has already shown clear intent to use it (no need to wait for a "level
-// clear" moment the way the student app does).
 (function () {
-  var deferredPrompt = null;
-  var installBtn;
-
-  function isStandalone() {
-    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  }
-  function isIOS() {
-    return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-  }
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js').catch(function (err) {
-        console.warn('[Admin PWA] service worker registration failed:', err);
-      });
-    });
-  }
-
-  window.addEventListener('beforeinstallprompt', function (e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBtn && !isStandalone()) installBtn.style.display = 'inline-block';
-  });
-
-  window.addEventListener('appinstalled', function () {
-    if (installBtn) installBtn.style.display = 'none';
-    deferredPrompt = null;
-  });
-
+  var deferredPrompt = null, installBtn;
+  function isStandalone() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+  function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+  if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function (err) { console.warn('[Admin PWA] service worker registration failed:', err); }); }); }
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredPrompt = e; if (installBtn && !isStandalone()) installBtn.style.display = 'inline-block'; });
+  window.addEventListener('appinstalled', function () { if (installBtn) installBtn.style.display = 'none'; deferredPrompt = null; });
   window.triggerAdminInstall = function () {
-    if (isIOS()) {
-      alert('To install: tap the Share icon in Safari\'s toolbar, then "Add to Home Screen".');
-      return;
-    }
+    if (isIOS()) { alert('To install: tap the Share icon in Safari\'s toolbar, then "Add to Home Screen".'); return; }
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     deferredPrompt.userChoice.finally(function () { deferredPrompt = null; });
   };
-
   document.addEventListener('DOMContentLoaded', function () {
     installBtn = document.getElementById('adminInstallBtn');
-    // iOS never fires beforeinstallprompt, so show the button unconditionally
-    // there (it just explains the manual Share-sheet steps when tapped).
     if (isIOS() && !isStandalone() && installBtn) installBtn.style.display = 'inline-block';
   });
 })();
