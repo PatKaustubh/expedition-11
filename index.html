@@ -1429,6 +1429,18 @@ function sbNav(which) {
       <div id="arenaPastAttempts"></div>
     </div>
 
+    <div class="screen" id="screen-battle">
+      <div class="path-header">
+        <button class="back-btn" onclick="leaveBattleRoom(); sbNav('home');">&larr; Leave</button>
+        <div style="width:70px"></div>
+      </div>
+      <div class="title-wrap">
+        <h2>⚔️ Battle Arena</h2>
+        <p>Race a friend head-to-head, live</p>
+      </div>
+      <div id="battleScreenBody" style="max-width:560px;"></div>
+    </div>
+
     <div class="screen" id="screen-subjects">
       <!-- CHALLENGE-ACCEPTED BANNER — shown when arriving via a friend's
            "Challenge a Friend" share link (?challenge=...&score=...&from=...).
@@ -1840,17 +1852,6 @@ function sbNav(which) {
         <button class="btn ghost" onclick="closeShareTextModal()">Close</button>
         <button class="btn primary" id="shareTextModalCopyBtn" onclick="copyShareModalText()">Copy</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Battle Arena — live head-to-head races, see the code block starting
-       "BATTLE ARENA" in the script for the room state machine. -->
-  <div class="modal-backdrop" id="battleModal" onclick="if(event.target===this) closeBattleModal()">
-    <div class="modal-box" style="max-width: 480px; text-align: left;">
-      <div style="display:flex; justify-content:flex-end; margin-bottom:-10px;">
-        <button class="popup-close" onclick="closeBattleModal()">✕ Close</button>
-      </div>
-      <div id="battleModalBody"></div>
     </div>
   </div>
 
@@ -7171,8 +7172,9 @@ function generateBattleCode() {
 }
 
 function openBattleModal() {
+  showScreen('screen-battle');
   if (window.explorerBackendStatus !== 'live') {
-    renderBattleModalBody(`
+    renderBattleScreenBody(`
       <div style="text-align:center; padding:20px 10px;">
         <div style="font-size:1.8rem; margin-bottom:10px;">📡</div>
         <h3 style="margin:0 0 8px;">Needs a live connection</h3>
@@ -7181,16 +7183,15 @@ function openBattleModal() {
   } else {
     renderBattleSetup();
   }
-  document.getElementById('battleModal').classList.add('show');
 }
 
 function closeBattleModal() {
   leaveBattleRoom();
-  document.getElementById('battleModal').classList.remove('show');
+  sbNav('home');
 }
 
-function renderBattleModalBody(html) {
-  const body = document.getElementById('battleModalBody');
+function renderBattleScreenBody(html) {
+  const body = document.getElementById('battleScreenBody');
   if (body) body.innerHTML = html;
 }
 
@@ -7198,7 +7199,7 @@ function renderBattleSetup() {
   const subjectButtons = DATA.filter(s => s.id !== 'mixed').map(s =>
     `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px;" onclick="battlePickSubject('${s.id}')">${s.name}</button>`
   ).join('');
-  renderBattleModalBody(`
+  renderBattleScreenBody(`
     <div id="battleSetupSubjectStep">
       <h3 style="margin:0 0 4px;">⚔️ Battle Arena</h3>
       <p style="color:var(--parchment-dim); font-size:0.85rem; margin-top:0;">Race a friend through ${BATTLE_QUESTION_COUNT} quick questions — whoever gets the most right, fastest, wins.</p>
@@ -7222,7 +7223,7 @@ function battlePickSubject(subjId) {
   const chapButtons = subj.chapters.map(ch =>
     `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:6px;" onclick="battlePickChapter('${subjId}','${ch.id}')">${ch.name}</button>`
   ).join('');
-  renderBattleModalBody(`
+  renderBattleScreenBody(`
     <button class="btn ghost" style="margin-bottom:12px;" onclick="renderBattleSetup()">&larr; Back</button>
     <h3 style="margin:0 0 10px;">${subj.name} — pick a chapter</h3>
     <div style="max-height:320px; overflow-y:auto;">${chapButtons}</div>`);
@@ -7235,26 +7236,39 @@ function battlePickChapter(subjId, chapId) {
     { max: 6, label: 'Up to 6', desc: 'Full squad' }
   ];
   const sizeButtons = sizes.map(s => `
-    <button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;" onclick="createBattleRoom('${subjId}','${chapId}',${s.max})">
+    <button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;" onclick="battlePickSize('${subjId}','${chapId}',${s.max})">
       <span><strong>${s.label}</strong> <span style="color:var(--parchment-dim); font-weight:400;"> — ${s.desc}</span></span>
     </button>`).join('');
-  renderBattleModalBody(`
+  renderBattleScreenBody(`
     <button class="btn ghost" style="margin-bottom:12px;" onclick="battlePickSubject('${subjId}')">&larr; Back</button>
     <h3 style="margin:0 0 10px;">Room size</h3>
     <p style="color:var(--parchment-dim); font-size:0.85rem; margin-top:0;">This caps how many people can join — you can always start once at least 2 are in.</p>
     ${sizeButtons}`);
 }
 
-async function createBattleRoom(subjId, chapId, maxPlayers) {
+function battlePickSize(subjId, chapId, maxPlayers) {
+  const counts = [5, 10, 15];
+  const countButtons = counts.map(n => `
+    <button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px;" onclick="createBattleRoom('${subjId}','${chapId}',${maxPlayers},${n})">
+      <strong>${n} questions</strong> <span style="color:var(--parchment-dim); font-weight:400;"> — ${n <= 5 ? 'quick race' : n <= 10 ? 'a bit longer' : 'the full grind'}</span>
+    </button>`).join('');
+  renderBattleScreenBody(`
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="battlePickChapter('${subjId}','${chapId}')">&larr; Back</button>
+    <h3 style="margin:0 0 10px;">How many questions?</h3>
+    ${countButtons}`);
+}
+
+async function createBattleRoom(subjId, chapId, maxPlayers, qCount) {
   const subj = DATA.find(s => s.id === subjId);
   const chap = subj && subj.chapters.find(c => c.id === chapId);
   if (!subj || !chap) return;
   // Clamp defensively regardless of caller — 2 is the minimum a "battle"
   // can mean, BATTLE_MAX_PLAYERS is the app-wide hard ceiling.
   maxPlayers = Math.max(2, Math.min(BATTLE_MAX_PLAYERS, Number(maxPlayers) || BATTLE_MAX_PLAYERS));
-  renderBattleModalBody(`<div style="text-align:center; padding:30px;">Setting up the room…</div>`);
+  qCount = [5, 10, 15].includes(Number(qCount)) ? Number(qCount) : BATTLE_QUESTION_COUNT;
+  renderBattleScreenBody(`<div style="text-align:center; padding:30px;">Setting up the room…</div>`);
 
-  const rawQs = Factory.fallbackGenerate(subjId, chapId, 5, BATTLE_QUESTION_COUNT);
+  const rawQs = Factory.fallbackGenerate(subjId, chapId, 5, qCount);
   // Strip explanations/extra fields — the room payload only needs enough to
   // ask the question and grade the answer, not the full solution writeup.
   const questions = rawQs.map(q => ({ q: q.q, opts: q.opts, ans: q.ans }));
@@ -7273,14 +7287,14 @@ async function createBattleRoom(subjId, chapId, maxPlayers) {
     });
     attachBattleRoomListener(code, uid, true);
   } catch (e) {
-    renderBattleModalBody(`<div style="text-align:center; padding:20px;">Couldn't create the room — check your connection and try again.</div>`);
+    renderBattleScreenBody(`<div style="text-align:center; padding:20px;">Couldn't create the room — check your connection and try again.</div>`);
   }
 }
 
 async function joinBattleRoom(codeInput) {
   const code = String(codeInput || '').trim().toUpperCase();
   if (code.length !== 5) { renderBattleJoinError('Enter the 5-character code your friend shared.'); return; }
-  renderBattleModalBody(`<div style="text-align:center; padding:30px;">Joining room ${code}…</div>`);
+  renderBattleScreenBody(`<div style="text-align:center; padding:30px;">Joining room ${code}…</div>`);
 
   try {
     const snap = await db.ref('battleRooms/' + code).once('value');
@@ -7303,7 +7317,7 @@ async function joinBattleRoom(codeInput) {
 function renderBattleJoinError(msg) {
   const existing = document.getElementById('battleJoinError');
   if (existing) { existing.textContent = msg; return; }
-  const body = document.getElementById('battleModalBody');
+  const body = document.getElementById('battleScreenBody');
   if (body) body.insertAdjacentHTML('beforeend', `<div id="battleJoinError" style="color:var(--coral); font-size:0.82rem; margin-top:10px;">${msg}</div>`);
 }
 
@@ -7342,7 +7356,7 @@ function renderBattleLobby(room) {
   const cap = room.maxPlayers || BATTLE_MAX_PLAYERS;
   const rows = players.map(p => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line);"><span>${p.name}</span>${p.joinedAt ? '' : '<span style="color:var(--parchment-dim); font-size:0.75rem;">joining…</span>'}</div>`).join('');
   const canStart = window._battleIsHost && players.length >= 2;
-  renderBattleModalBody(`
+  renderBattleScreenBody(`
     <h3 style="margin:0 0 4px;">${room.chapName}</h3>
     <p style="color:var(--parchment-dim); font-size:0.85rem; margin-top:0;">Share this code with a friend:</p>
     <div style="font-family:'Space Mono',monospace; font-size:2rem; letter-spacing:8px; text-align:center; font-weight:700; color:var(--brass-light); background:rgba(201,154,75,0.1); border-radius:6px; padding:14px; margin-bottom:16px;">${battleRoomCode}</div>
@@ -7375,7 +7389,7 @@ function renderBattleQuestionIfNeeded(room) {
   const optsHtml = q.opts.map((opt, i) =>
     `<button class="btn ghost" style="width:100%; text-align:left; margin-bottom:8px;" onclick="submitBattleAnswer(${i})">${String.fromCharCode(65 + i)}. ${opt}</button>`
   ).join('');
-  renderBattleModalBody(`
+  renderBattleScreenBody(`
     <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:6px;">Question ${battleMyIdx + 1} of ${room.questions.length}</div>
     <div id="battleQCard" data-idx="${battleMyIdx}">
       <div style="margin-bottom:14px; font-weight:600;">${q.q}</div>
@@ -7383,7 +7397,7 @@ function renderBattleQuestionIfNeeded(room) {
     </div>
     <div id="battleLiveStandings" style="margin-top:16px; padding-top:12px; border-top:1px solid var(--line);"></div>
   `);
-  typesetMath(document.getElementById('battleModalBody'));
+  typesetMath(document.getElementById('battleScreenBody'));
   renderBattleLiveStandings(room);
 }
 
@@ -7422,7 +7436,7 @@ async function submitBattleAnswer(selectedIdx) {
 }
 
 function renderBattleWaitingForOthers(room) {
-  renderBattleModalBody(`
+  renderBattleScreenBody(`
     <div style="text-align:center; padding:20px 10px;">
       <div style="font-size:1.8rem; margin-bottom:10px;">🏁</div>
       <h3 style="margin:0 0 8px;">You finished! ${battleMyCorrect}/${room.questions.length}</h3>
@@ -7466,7 +7480,7 @@ function renderBattleResults(room) {
       <span>${medals[i] || `#${i + 1}`} ${p.name}</span>
       <span style="font-family:'Space Mono',monospace; font-weight:700;">${p.correct}/${room.questions.length}</span>
     </div>`).join('');
-  renderBattleModalBody(`
+  renderBattleScreenBody(`
     <h3 style="margin:0 0 4px;">🏆 Results — ${room.chapName}</h3>
     ${xpGain > 0 ? `<div style="color:var(--brass-light); font-weight:700; font-size:0.9rem; margin-bottom:12px;">+${xpGain} XP earned</div>` : ''}
     ${rows}
