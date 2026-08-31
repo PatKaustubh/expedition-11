@@ -1113,10 +1113,33 @@ body.has-sidebar .fp-subtitle { display: block; }
 .tcq-timer-text.danger { color: var(--coral); animation: pulseRed 1s infinite; }
 
 /* ===== STUDY PLAN ===== */
-.study-plan-day { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
-.study-plan-day .spd-head { font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--brass-light); margin-bottom: 6px; }
-.study-plan-day .spd-tasks { font-size: 0.82rem; color: var(--parchment); line-height: 1.55; }
-.study-plan-day .spd-tasks li { padding: 2px 0; }
+.sp-form-section { margin-bottom: 18px; }
+.sp-form-label { font-size: 0.72rem; font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.8px; color: var(--parchment-dim); margin-bottom: 8px; display: block; }
+.sp-style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sp-style-btn { background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 10px 8px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; font-size: 0.78rem; color: var(--parchment-dim); }
+.sp-style-btn.active { border-color: var(--brass); background: rgba(201,156,81,0.1); color: var(--parchment); }
+.sp-style-btn .sp-style-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+.sp-style-btn .sp-style-name { font-weight: 600; font-size: 0.78rem; display: block; }
+.sp-style-btn .sp-style-desc { font-size: 0.68rem; opacity: 0.7; display: block; margin-top: 2px; }
+.sp-ai-note { background: rgba(201,156,81,0.07); border: 1px solid rgba(201,156,81,0.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.85rem; line-height: 1.7; color: var(--parchment); font-style: italic; }
+.study-plan-day { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+.study-plan-day.today { border-color: var(--brass); background: rgba(201,156,81,0.06); }
+.study-plan-day .spd-head { font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--brass-light); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.study-plan-day.today .spd-head { color: var(--brass); }
+.study-plan-day .spd-tasks { font-size: 0.82rem; color: var(--parchment); line-height: 1.6; list-style: none; padding: 0; margin: 0; }
+.study-plan-day .spd-tasks li { padding: 2px 0; display: flex; align-items: flex-start; gap: 6px; }
+.study-plan-day .spd-tasks li::before { content: '·'; color: var(--brass); flex-shrink: 0; margin-top: 1px; }
+.spd-subj-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+/* AI doubt solver chat */
+.doubt-chat-wrap { display: flex; flex-direction: column; height: 420px; }
+.doubt-chat-log { flex: 1; overflow-y: auto; padding: 4px 0 12px; display: flex; flex-direction: column; gap: 10px; }
+.doubt-msg { max-width: 88%; padding: 10px 13px; border-radius: 12px; font-size: 0.86rem; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+.doubt-msg.user { background: rgba(201,156,81,0.12); border: 1px solid rgba(201,156,81,0.25); align-self: flex-end; color: var(--parchment); border-bottom-right-radius: 3px; }
+.doubt-msg.ai { background: var(--glass); border: 1px solid var(--glass-border); align-self: flex-start; color: var(--parchment); border-bottom-left-radius: 3px; }
+.doubt-msg.ai.thinking { opacity: 0.5; font-style: italic; }
+.doubt-input-row { display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; }
+.doubt-input-row textarea { flex: 1; background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--parchment); font-family: 'Public Sans', sans-serif; font-size: 0.87rem; resize: none; min-height: 44px; max-height: 120px; line-height: 1.5; }
+.doubt-input-row textarea:focus { outline: none; border-color: var(--brass); }
 
 /* ===== OCR UPLOAD ===== */
 .ocr-drop-zone { border: 2px dashed var(--line); border-radius: 14px; padding: 32px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; font-size: 0.9rem; color: var(--parchment-dim); }
@@ -1343,6 +1366,7 @@ body.has-sidebar .fp-subtitle { display: block; }
   <div class="sb-item" data-sb="flashcards" onclick="sbNav('flashcards')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="9" rx="1"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8 8v2M7 9h2"/></svg></span><span class="sb-label">Flashcards</span></div>
   <div class="sb-item" data-sb="timedquiz" onclick="sbNav('timedquiz')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="5.5"/><path d="M8 6.5v3l2 1.2"/><path d="M6 1.5h4"/></svg></span><span class="sb-label">Quick Quiz</span></div>
   <div class="sb-item" data-sb="ocrscan" onclick="sbNav('ocrscan')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5"/><rect x="9" y="2" width="5" height="5"/><rect x="2" y="9" width="5" height="5"/><path d="M9 11.5h4M11 9.5v4"/></svg></span><span class="sb-label">Scan Q</span></div>
+  <div class="sb-item" data-sb="doubtsolver" onclick="sbNav('doubtsolver')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2.5h11v8.5H9l-3 2.5v-2.5H2.5z"/><path d="M5.5 6.5h5M5.5 8.5h3"/></svg></span><span class="sb-label">AI Tutor</span></div>
   <div class="sb-item" data-sb="studyplan" onclick="sbNav('studyplan')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="0.6"/><path d="M5 2.5V1M11 2.5V1M2 6h12"/><path d="M5.5 9l1.5 1.5 3-3"/></svg></span><span class="sb-label">Study Plan</span></div>
   <div class="sb-item" data-sb="parentdash" onclick="sbNav('parentdash')"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.5" r="2.5"/><path d="M1.5 13.5c.5-2.5 2.3-3.8 4.5-3.8"/><path d="M11 9.5l1.5 1.5 3-3"/></svg></span><span class="sb-label">Share View</span></div>
   <div class="sb-item" onclick="openSwitchPlayerModal()"><span class="sb-icon"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.3" r="2.3"/><path d="M3.5 13.5c.6-2.6 2.3-4 4.5-4s3.9 1.4 4.5 4"/></svg></span><span class="sb-label">Switch player</span></div>
@@ -1415,6 +1439,7 @@ function sbNav(which) {
       case 'ocrscan': if (typeof openOcrUpload === 'function') openOcrUpload(); break;
       case 'studyplan': if (typeof openStudyPlan === 'function') openStudyPlan(); break;
       case 'parentdash': if (typeof openParentDash === 'function') openParentDash(); break;
+      case 'doubtsolver': if (typeof openDoubtSolver === 'function') openDoubtSolver(); break;
     }
   } catch (err) {
     console.error('[sbNav] failed to open "' + which + '":', err);
@@ -1427,7 +1452,8 @@ function sbNav(which) {
     notes: 'quickNotesModal', formulas: 'formulaSheetModal', badges: 'badgesPopup',
     leaderboard: 'leaderboardPopup', backup: 'backupPopup', focus: 'focusTimerModal',
     analytics: 'analyticsModal', flashcards: 'flashcardModal', timedquiz: 'timedQuizSetupModal',
-    ocrscan: 'ocrUploadModal', studyplan: 'studyPlanModal', parentdash: 'parentDashModal'
+    ocrscan: 'ocrUploadModal', studyplan: 'studyPlanModal', parentdash: 'parentDashModal',
+    doubtsolver: 'doubtSolverModal'
   };
   const forcedId = modalIdByTab[which];
   if (forcedId) {
@@ -9574,12 +9600,14 @@ function renderFlashcard() {
   const back = document.getElementById('fcBack');
   const counter = document.getElementById('fcCounter');
   const fill = document.getElementById('fcProgressFill');
+  const aiExplain = document.getElementById('fcAiExplain');
 
   if (scene) scene.classList.toggle('flipped', fcFlipped);
   if (front) { front.innerHTML = escapeHtml(card.topic); }
   if (back) { back.innerHTML = card.formula; }
   if (counter) counter.textContent = `${fcIdx + 1} / ${fcDeck.length}`;
   if (fill) fill.style.width = ((fcIdx + 1) / fcDeck.length * 100) + '%';
+  if (aiExplain) { aiExplain.style.display = 'none'; aiExplain.textContent = ''; }
 
   // Re-typeset for the back face
   typesetMath(document.getElementById('flashcardModal'));
@@ -9689,14 +9717,125 @@ function renderAnalyticsDashboard() {
       <div class="analytics-card"><div class="ac-label">Mistake Bank</div><div class="ac-value">${mistakeCount}</div><div class="ac-sub">${dueCount} due for review now</div></div>
       <div class="analytics-card"><div class="ac-label">Best Chapter</div><div class="ac-value" style="font-size:1rem;">${bestChap ? bestChap.name : '–'}</div><div class="ac-sub">${bestChap ? bestChap.acc + '% accuracy' : 'Practice more chapters'}</div></div>
     </div>
-    <div style="margin-bottom:22px;">
+    <div style="margin-bottom:16px;">
       <div style="font-family:'Space Mono',monospace; font-size:0.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:12px;">XP — Last 7 Days</div>
       ${xpBarHtml}
     </div>
     ${worstChap ? `<div style="margin-bottom:14px; padding:10px 14px; background:rgba(231,111,81,0.08); border:1px solid rgba(231,111,81,0.25); border-radius:10px; font-size:0.82rem;">🎯 <strong>Focus suggestion:</strong> <b>${worstChap.name}</b> (${worstChap.sub}) has your lowest accuracy at ~${worstChap.acc}%.</div>` : ''}
+    <div id="analyticsAiSummary" style="display:none; margin-bottom:16px;" class="sp-ai-note"></div>
+    <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+      <button class="btn ghost" style="font-size:0.78rem;" onclick="fetchAnalyticsSummary(this)">🤖 Get AI performance summary</button>
+    </div>
     <div style="font-family:'Space Mono',monospace; font-size:0.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:10px;">Accuracy by Chapter <span style="font-weight:400; text-transform:none;">(★ stars → estimated %)</span></div>
     <div>${chapterRows || '<div style="color:var(--parchment-dim); font-size:0.85rem;">Complete a few levels to see per-chapter accuracy.</div>'}</div>
   `;
+}
+
+/* ============================================================
+   AI ANALYTICS SUMMARY
+   ============================================================ */
+async function fetchAnalyticsSummary(btn) {
+  const origText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Thinking…';
+  const totalXp = state.xp || 0;
+  const streak = computeActivityStreak();
+  const bank = getMistakeBank();
+  const mistakeCount = Object.keys(bank).length;
+  const dueCount = Object.values(bank).filter(v => (v.nextReviewAt || 0) <= Date.now()).length;
+  const weak = computeWeakChapter ? computeWeakChapter() : null;
+  const prompt = `A Class 11 JEE student has ${totalXp} XP, a ${streak}-day streak, ${mistakeCount} items in their mistake bank (${dueCount} due today)${weak ? `, and their weakest area is ${weak}` : ''}. Write a 3-sentence personalised weekly performance summary: what they're doing well, what needs attention, and one concrete action to take this week. Be direct and specific.`;
+  try {
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'doubt', question: prompt })
+    });
+    const data = await res.json();
+    const el = document.getElementById('analyticsAiSummary');
+    if (el && data.answer) { el.textContent = '🤖 ' + data.answer; el.style.display = 'block'; btn.style.display = 'none'; }
+    else { btn.disabled = false; btn.textContent = origText; }
+  } catch (_) { btn.disabled = false; btn.textContent = origText; }
+}
+
+/* ============================================================
+   AI EXPLAIN FORMULA (flashcard back face)
+   ============================================================ */
+async function explainFlashcardFormula(btn) {
+  if (!fcDeck.length) return;
+  const card = fcDeck[fcIdx];
+  const origText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Asking AI…';
+  const el = document.getElementById('fcAiExplain');
+  if (el) { el.style.display = 'none'; el.textContent = ''; }
+  try {
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'doubt', question: `Explain this formula intuitively in 2-3 sentences for a Class 11 student: "${card.topic}" — ${card.formula}. Focus on the physical/mathematical meaning and a real-world example, not just the symbols.` })
+    });
+    const data = await res.json();
+    if (el && data.answer) { el.textContent = data.answer; el.style.display = 'block'; }
+  } catch (_) {}
+  btn.disabled = false; btn.textContent = origText;
+}
+
+/* ============================================================
+   AI DOUBT SOLVER CHAT
+   ============================================================ */
+let doubtHistory = []; // [{role:'user'|'ai', text}]
+
+function openDoubtSolver() {
+  doubtHistory = [];
+  _renderDoubtChat();
+  document.getElementById('doubtSolverModal').classList.add('show');
+  setTimeout(() => { const ta = document.getElementById('doubtInput'); if (ta) ta.focus(); }, 100);
+}
+function closeDoubtSolver() {
+  document.getElementById('doubtSolverModal').classList.remove('show');
+}
+
+function _renderDoubtChat() {
+  const log = document.getElementById('doubtChatLog');
+  if (!log) return;
+  if (!doubtHistory.length) {
+    log.innerHTML = '<div class="doubt-msg ai">👋 Hi! Ask me any Math, Physics or Chemistry doubt — I\'ll explain it clearly.</div>';
+    return;
+  }
+  log.innerHTML = doubtHistory.map(m =>
+    `<div class="doubt-msg ${m.role}">${m.role === 'ai' ? m.text : escapeHtml(m.text)}</div>`
+  ).join('');
+  log.scrollTop = log.scrollHeight;
+}
+
+async function sendDoubt() {
+  const ta = document.getElementById('doubtInput');
+  const question = ta ? ta.value.trim() : '';
+  if (!question) return;
+  ta.value = '';
+  ta.style.height = '';
+
+  doubtHistory.push({ role: 'user', text: question });
+  doubtHistory.push({ role: 'ai', text: '…', thinking: true });
+  _renderDoubtChat();
+
+  const sendBtn = document.getElementById('doubtSendBtn');
+  if (sendBtn) sendBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'doubt', question })
+    });
+    const data = await res.json();
+    doubtHistory[doubtHistory.length - 1] = { role: 'ai', text: data.answer || data.error || 'No answer — try rephrasing.' };
+  } catch (_) {
+    doubtHistory[doubtHistory.length - 1] = { role: 'ai', text: 'Could not reach the AI tutor — check your connection.' };
+  }
+  _renderDoubtChat();
+  if (sendBtn) sendBtn.disabled = false;
+  setTimeout(() => { const ta2 = document.getElementById('doubtInput'); if (ta2) ta2.focus(); }, 50);
+}
+
+function _doubtKeyHandler(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDoubt(); }
 }
 
 /* ============================================================
@@ -10019,74 +10158,103 @@ function copyOcrAiText() {
 /* ============================================================
    CUSTOM STUDY PLAN GENERATOR
    ============================================================ */
+const SP_SUBJ_COLORS = { math: '#c99c51', physics: '#9b8ecb', chemistry: '#7fa06f' };
+
 function openStudyPlan() {
-  // Restore the form view (in case a previous generate replaced innerHTML)
   const body = document.getElementById('studyPlanBody');
   body.innerHTML = `
-    <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--parchment-dim);">Exam / Target Date</label>
-    <input type="date" id="studyPlanExamDate" class="input-field" style="width:100%;margin-bottom:16px;">
-    <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--parchment-dim);">Subjects to include</label>
-    <div id="studyPlanSubjPills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;"></div>
-    <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--parchment-dim);">Available study hours per day</label>
-    <select id="studyPlanHours" class="input-field" style="width:100%;margin-bottom:20px;">
-      <option value="1">1 hour</option>
-      <option value="2" selected>2 hours</option>
-      <option value="3">3 hours</option>
-      <option value="4">4 hours</option>
-      <option value="5">5 hours</option>
-      <option value="6">6 hours</option>
-    </select>
-    <div style="display:flex;justify-content:flex-end;gap:8px;">
+    <div class="sp-form-section">
+      <span class="sp-form-label">Exam / Target Date</span>
+      <input type="date" id="studyPlanExamDate" class="input-field" style="width:100%;">
+    </div>
+    <div class="sp-form-section">
+      <span class="sp-form-label">Subjects to include</span>
+      <div id="studyPlanSubjPills" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+    <div class="sp-form-section">
+      <span class="sp-form-label">Study hours per day</span>
+      <select id="studyPlanHours" class="input-field" style="width:100%;">
+        <option value="1">1 hour</option>
+        <option value="2" selected>2 hours</option>
+        <option value="3">3 hours</option>
+        <option value="4">4 hours</option>
+        <option value="5">5 hours</option>
+        <option value="6">6 hours</option>
+      </select>
+    </div>
+    <div class="sp-form-section">
+      <span class="sp-form-label">Study style</span>
+      <div class="sp-style-grid" id="studyStyleGrid">
+        <div class="sp-style-btn active" data-style="balanced" onclick="selectStudyStyle(this)">
+          <span class="sp-style-icon">⚖️</span>
+          <span class="sp-style-name">Balanced</span>
+          <span class="sp-style-desc">Mix weak &amp; strong chapters evenly</span>
+        </div>
+        <div class="sp-style-btn" data-style="weakfirst" onclick="selectStudyStyle(this)">
+          <span class="sp-style-icon">🎯</span>
+          <span class="sp-style-name">Weak-first</span>
+          <span class="sp-style-desc">Tackle hardest chapters early</span>
+        </div>
+        <div class="sp-style-btn" data-style="revision" onclick="selectStudyStyle(this)">
+          <span class="sp-style-icon">🔁</span>
+          <span class="sp-style-name">Revision</span>
+          <span class="sp-style-desc">Only revisit cleared chapters</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
       <button class="btn ghost" onclick="closeStudyPlan()">Cancel</button>
-      <button class="btn primary" onclick="generateStudyPlan()">Generate Plan →</button>
+      <button class="btn primary" id="spGenerateBtn" onclick="generateStudyPlan(this)">Generate Plan →</button>
     </div>`;
 
-  // Populate subject pills
+  // Subject pills with colour dots
   const pillsEl = document.getElementById('studyPlanSubjPills');
   DATA.filter(s => s.id !== 'mixed').forEach(s => {
     const btn = document.createElement('button');
     btn.className = 'pyq-chip active';
     btn.dataset.subjId = s.id;
-    btn.textContent = s.name;
+    const dot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${SP_SUBJ_COLORS[s.id]||'var(--brass)'};margin-right:5px;vertical-align:middle;"></span>`;
+    btn.innerHTML = dot + s.name;
     btn.onclick = () => btn.classList.toggle('active');
     pillsEl.appendChild(btn);
   });
 
-  // Pre-fill existing exam date
   const existingDate = localStorage.getItem(EXAM_DATE_STORAGE_KEY);
   if (existingDate) document.getElementById('studyPlanExamDate').value = existingDate;
 
   document.getElementById('studyPlanModal').classList.add('show');
 }
+
+function selectStudyStyle(el) {
+  document.querySelectorAll('#studyStyleGrid .sp-style-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
 function closeStudyPlan() {
   document.getElementById('studyPlanModal').classList.remove('show');
 }
 
-function generateStudyPlan() {
+async function generateStudyPlan(btn) {
   const examDate = document.getElementById('studyPlanExamDate').value;
   const hours = parseInt(document.getElementById('studyPlanHours').value, 10);
   const selectedSubjs = Array.from(document.querySelectorAll('#studyPlanSubjPills .pyq-chip.active'))
-    .map(btn => btn.dataset.subjId);
+    .map(b => b.dataset.subjId);
+  const style = (document.querySelector('#studyStyleGrid .sp-style-btn.active') || {}).dataset?.style || 'balanced';
 
-  if (!examDate) {
-    alert('Please set your exam date first.');
-    return;
-  }
-  if (!selectedSubjs.length) {
-    alert('Select at least one subject.');
-    return;
-  }
+  if (!examDate) { alert('Please set your exam date first.'); return; }
+  if (!selectedSubjs.length) { alert('Select at least one subject.'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Building…'; }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const target = new Date(examDate + 'T00:00:00');
   const daysLeft = Math.max(1, Math.ceil((target - today) / 86400000));
 
-  // Save exam date
   localStorage.setItem(EXAM_DATE_STORAGE_KEY, examDate);
   renderExamCountdownChip();
 
-  // Collect chapters for selected subjects, prioritising weak ones
+  // Collect chapters
   const chapList = [];
   selectedSubjs.forEach(subjId => {
     const subj = DATA.find(s => s.id === subjId);
@@ -10096,18 +10264,40 @@ function generateStudyPlan() {
       const cleared = p ? Math.max(0, (p.maxUnlocked || 1) - 1) : 0;
       const stars = p && p.stars ? Object.values(p.stars).reduce((a,b) => a + (b||0), 0) : 0;
       const maxStars = cleared * 3;
-      const weakness = maxStars > 0 ? 1 - (stars / maxStars) : 1; // 1.0 = unstarted/weakest
-      chapList.push({ subj: subj.name, ch: ch.name, cleared, weakness });
+      const weakness = maxStars > 0 ? 1 - (stars / maxStars) : 1;
+      chapList.push({ subjId, subj: subj.name, ch: ch.name, cleared, weakness });
     });
   });
-  // Sort: weakest first
-  chapList.sort((a, b) => b.weakness - a.weakness);
 
-  // Build plan: allocate ~1 chapter per day (with more for high-hours)
+  // Sort based on style
+  if (style === 'weakfirst') {
+    chapList.sort((a, b) => b.weakness - a.weakness);
+  } else if (style === 'revision') {
+    chapList.sort((a, b) => a.weakness - b.weakness); // strongest first = already cleared
+  } else {
+    // balanced: interleave weak and strong
+    chapList.sort((a, b) => b.weakness - a.weakness);
+    const half = Math.ceil(chapList.length / 2);
+    const weak = chapList.slice(0, half);
+    const strong = chapList.slice(half).reverse();
+    let i = 0, j = 0, toggle = true;
+    const balanced = [];
+    while (i < weak.length || j < strong.length) {
+      if (toggle && i < weak.length) balanced.push(weak[i++]);
+      else if (!toggle && j < strong.length) balanced.push(strong[j++]);
+      else if (i < weak.length) balanced.push(weak[i++]);
+      else balanced.push(strong[j++]);
+      toggle = !toggle;
+    }
+    chapList.length = 0;
+    chapList.push(...balanced);
+  }
+
+  // Build plan
   const chapsPerDay = Math.max(1, Math.floor(hours / 1.5));
   const plan = [];
   let chapIdx = 0;
-  const planDays = Math.min(daysLeft, 60); // cap at 60 days in the view
+  const planDays = Math.min(daysLeft, 60);
 
   for (let d = 0; d < planDays; d++) {
     const date = new Date(today);
@@ -10115,37 +10305,58 @@ function generateStudyPlan() {
     const label = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     const tasks = [];
     for (let i = 0; i < chapsPerDay; i++) {
-      if (chapIdx >= chapList.length) chapIdx = 0; // cycle through
+      if (chapIdx >= chapList.length) chapIdx = 0;
       const c = chapList[chapIdx];
-      tasks.push(`${c.subj}: <b>${c.ch}</b>${c.cleared > 0 ? ` — resume at Level ${c.cleared + 1}` : ' — start from Level 1'}`);
+      tasks.push({ subjId: c.subjId, subj: c.subj, ch: c.ch, cleared: c.cleared });
       chapIdx++;
     }
-    tasks.push(`Review Mistake Bank (due cards)`);
     plan.push({ label, tasks, isToday: d === 0 });
   }
 
-  // Render
+  // Render plan immediately, then fetch AI note async
   const body = document.getElementById('studyPlanBody');
   const planHtml = plan.map(day => `
-    <div class="study-plan-day" style="${day.isToday ? 'border-color:var(--brass);' : ''}">
-      <div class="spd-head">${day.isToday ? '🎯 Today — ' : ''}${day.label}</div>
-      <ul class="spd-tasks" style="margin:0; padding-left:18px;">
-        ${day.tasks.map(t => `<li>${t}</li>`).join('')}
+    <div class="study-plan-day${day.isToday ? ' today' : ''}">
+      <div class="spd-head">${day.isToday ? '🎯 ' : ''}${day.label}</div>
+      <ul class="spd-tasks">
+        ${day.tasks.map(t => `<li><span class="spd-subj-dot" style="background:${SP_SUBJ_COLORS[t.subjId]||'var(--brass)'}"></span><span>${t.subj}: <b>${t.ch}</b>${t.cleared > 0 ? ` — resume Lvl ${t.cleared + 1}` : ' — start Lvl 1'}</span></li>`).join('')}
+        <li><span class="spd-subj-dot" style="background:var(--sea)"></span><span>Review Mistake Bank</span></li>
       </ul>
     </div>`).join('');
 
+  const weakest = chapList.slice(0, 3).map(c => `${c.ch} (${c.subj})`).join(', ');
   body.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
       <div>
-        <div style="font-family:'Fraunces',serif; font-size:1.1rem; color:var(--brass-light);">Your ${daysLeft}-Day Study Plan</div>
-        <div style="font-size:0.78rem; color:var(--parchment-dim);">${hours}h/day · ${selectedSubjs.length} subject${selectedSubjs.length > 1 ? 's' : ''} · ${chapList.length} chapters</div>
+        <div style="font-family:'Fraunces',serif; font-size:1.05rem; color:var(--brass-light);">Your ${daysLeft}-Day Study Plan</div>
+        <div style="font-size:0.76rem; color:var(--parchment-dim);">${hours}h/day · ${style} · ${chapList.length} chapters</div>
       </div>
-      <button class="btn ghost" style="font-size:0.8rem;" onclick="openStudyPlan()">← Regenerate</button>
+      <button class="btn ghost" style="font-size:0.78rem;" onclick="openStudyPlan()">← Redo</button>
     </div>
-    <div class="popup-list" style="max-height:55vh; overflow-y:auto;">${planHtml}</div>
-    <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+    <div id="spAiNote" class="sp-ai-note" style="display:none;"></div>
+    <div class="popup-list" style="max-height:50vh; overflow-y:auto; margin-bottom:12px;">${planHtml}</div>
+    <div style="display:flex; justify-content:flex-end;">
       <button class="btn ghost" onclick="closeStudyPlan()">Close</button>
     </div>`;
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Generate Plan →'; }
+
+  // Fetch AI coaching note in background
+  try {
+    const streak = computeActivityStreak();
+    const mistakeCount = Object.keys(getMistakeBank()).length;
+    const prompt = `A Class 11 JEE student has ${daysLeft} days until their exam. They study ${hours} hours/day. Their weakest chapters are: ${weakest}. They have a ${streak}-day study streak and ${mistakeCount} items in their mistake bank. In 2-3 sentences give them a sharp, specific, motivating coaching note for their study plan. No generic advice — be concrete.`;
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'doubt', question: prompt })
+    });
+    const data = await res.json();
+    if (data.answer) {
+      const noteEl = document.getElementById('spAiNote');
+      if (noteEl) { noteEl.textContent = '🤖 ' + data.answer; noteEl.style.display = 'block'; }
+    }
+  } catch (_) { /* silently skip if AI unavailable */ }
 }
 
 /* ============================================================
@@ -10263,6 +10474,8 @@ if ('serviceWorker' in navigator) {
         <div class="flashcard-face flashcard-back">
           <div class="flashcard-label">Formula</div>
           <div class="flashcard-text" id="fcBack"></div>
+          <div id="fcAiExplain" style="display:none; margin-top:10px; font-size:0.78rem; line-height:1.6; color:var(--parchment-dim); font-style:italic; text-align:left; width:100%;"></div>
+          <button class="btn ghost" style="font-size:0.72rem; margin-top:10px; padding:5px 12px; flex-shrink:0;" onclick="explainFlashcardFormula(this)">🤖 Explain this</button>
         </div>
       </div>
     </div>
@@ -10430,6 +10643,25 @@ if ('serviceWorker' in navigator) {
       <div style="display:flex; gap:10px; justify-content:flex-end;">
         <button class="btn ghost" onclick="closeStudyPlan()">Cancel</button>
         <button class="btn primary" onclick="generateStudyPlan()">Generate Plan →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AI DOUBT SOLVER MODAL ===== -->
+<div class="modal-backdrop" id="doubtSolverModal" onclick="if(event.target===this) closeDoubtSolver()">
+  <div class="modal-box list-popup" style="max-width:560px; text-align:left;">
+    <div class="widget-hdr">
+      <h3>🤖 AI Doubt Solver</h3>
+      <button class="popup-close" onclick="closeDoubtSolver()">✕ Close</button>
+    </div>
+    <div class="doubt-chat-wrap">
+      <div class="doubt-chat-log" id="doubtChatLog"></div>
+      <div class="doubt-input-row">
+        <textarea id="doubtInput" placeholder="Type your doubt here… (Enter to send, Shift+Enter for new line)"
+          rows="1" onkeydown="_doubtKeyHandler(event)"
+          oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button class="btn primary" id="doubtSendBtn" onclick="sendDoubt()" style="padding:10px 16px; flex-shrink:0;">Send</button>
       </div>
     </div>
   </div>
