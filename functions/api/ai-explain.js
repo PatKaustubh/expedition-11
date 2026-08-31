@@ -13,7 +13,7 @@
 //      → Add binding → Variable name: AI
 //   3. Trigger a new deployment (push a commit or click Retry deploy)
 
-const MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const MODEL = '@cf/meta/llama-3.3-8b-instruct-fp8-fast';
 
 const TUTOR_VOICE =
   'You are a friendly, sharp tutor for Indian Class 11 JEE aspirants (Math, ' +
