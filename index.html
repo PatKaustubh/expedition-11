@@ -720,16 +720,6 @@ body { padding-top: 30px; }
   justify-content: center;
   background: rgba(201,154,75,0.12);
 }
-  flex-shrink: 0;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
-  background: rgba(255,255,255,0.08);
-}
 .resume-hero-body { flex: 1 1 auto; min-width: 0; }
 .resume-hero-body h3 {
   margin: 0 0 3px;
@@ -1113,8 +1103,93 @@ body.has-sidebar .fp-subtitle { display: block; }
 .tcq-timer-text.danger { color: var(--coral); animation: pulseRed 1s infinite; }
 
 /* ===== STUDY PLAN ===== */
-.sp-form-section { margin-bottom: 18px; }
-.sp-form-label { font-size: 0.72rem; font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.8px; color: var(--parchment-dim); margin-bottom: 8px; display: block; }
+.sp-form-section { margin-bottom: 22px; }
+.sp-form-label {
+  font-size: 0.68rem; font-family: 'Space Mono', monospace;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--parchment-dim); margin-bottom: 10px; display: block;
+  opacity: 0.8;
+}
+
+/* Styled date input */
+.sp-date-wrap {
+  position: relative;
+}
+.sp-date-wrap input[type="date"] {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,154,75,0.25);
+  border-radius: 14px;
+  padding: 14px 48px 14px 18px;
+  color: var(--parchment);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  color-scheme: dark;
+}
+.sp-date-wrap input[type="date"]:hover {
+  border-color: rgba(201,154,75,0.5);
+  background: rgba(255,255,255,0.06);
+}
+.sp-date-wrap input[type="date"]:focus {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 3px rgba(201,154,75,0.15), inset 0 1px 0 rgba(255,255,255,0.04);
+  background: rgba(201,154,75,0.06);
+}
+.sp-date-wrap .sp-date-icon {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: var(--brass); opacity: 0.7; font-size: 1rem;
+}
+
+/* Styled hours selector — button-strip instead of native <select> */
+.sp-hours-strip {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.sp-hours-btn {
+  flex: 1 1 auto;
+  min-width: 52px;
+  padding: 11px 6px;
+  text-align: center;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  color: var(--parchment-dim);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  position: relative;
+}
+.sp-hours-btn:hover {
+  border-color: rgba(201,154,75,0.4);
+  background: rgba(201,154,75,0.07);
+  color: var(--parchment);
+}
+.sp-hours-btn.active {
+  background: rgba(201,154,75,0.18);
+  border-color: var(--brass);
+  color: var(--brass-light);
+  box-shadow: 0 0 0 2px rgba(201,154,75,0.15), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.sp-hours-btn .sp-h-sub {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: var(--parchment-dim);
+  margin-top: 3px;
+  opacity: 0.75;
+}
+.sp-hours-btn.active .sp-h-sub { color: var(--brass); opacity: 1; }
 .sp-style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .sp-style-btn { background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 10px 8px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; font-size: 0.78rem; color: var(--parchment-dim); }
 .sp-style-btn.active { border-color: var(--brass); background: rgba(201,156,81,0.1); color: var(--parchment); }
@@ -1148,6 +1223,475 @@ body.has-sidebar .fp-subtitle { display: block; }
 .ocr-action-bar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
 .ocr-action-bar .btn { font-size: 0.8rem; padding: 7px 14px; }
 .ocr-section-label { font-size: 0.68rem; font-family: 'Space Mono', monospace; color: var(--parchment-dim); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; margin-top: 16px; }
+</style>
+
+<style>
+/* ===================================================================
+   VISUAL POLISH LAYER — cascade override block
+   All rules here win over the earlier stylesheet sections above.
+   Covers 8 areas: topbar, card-item, question card, sidebar,
+   home screen, level buttons, intro modal, global micro-details.
+   =================================================================== */
+
+/* ── 1. TOPBAR ── */
+.topbar {
+  background: linear-gradient(180deg, rgba(26,33,56,0.95) 0%, rgba(18,24,43,0.98) 100%) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  backdrop-filter: blur(14px) !important;
+  padding: 12px 20px !important;
+}
+/* Brand logo badge */
+.topbar .brand::before {
+  content: '11';
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--brass-light), var(--brass));
+  color: var(--navy-deep);
+  font-family: 'Fraunces', serif;
+  font-size: 0.9rem; font-weight: 800;
+  box-shadow: 0 0 0 2px rgba(201,154,75,0.25), 0 4px 12px rgba(201,154,75,0.25);
+  transform: rotate(-6deg);
+}
+.brand-text h1 {
+  font-size: 1.25rem !important;
+  background: linear-gradient(135deg, var(--brass-light) 0%, var(--parchment) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+/* Stat chips */
+.stat {
+  background: rgba(255,255,255,0.045) !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  border-radius: 12px !important;
+  padding: 8px 14px !important;
+  transition: border-color 0.2s ease, background 0.2s ease !important;
+}
+.stat:hover {
+  background: rgba(201,154,75,0.1) !important;
+  border-color: rgba(201,154,75,0.35) !important;
+}
+.stat .num { color: var(--brass-light) !important; font-size: 1.1rem !important; }
+
+/* ── 2. CARD-ITEM (subject / chapter cards) ── */
+.card-item {
+  background: linear-gradient(160deg, rgba(26,33,56,0.85) 0%, rgba(18,24,43,0.95) 100%) !important;
+  border-radius: 18px !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease !important;
+  position: relative; overflow: hidden;
+}
+/* Top-edge accent line */
+.card-item::before {
+  content: '';
+  position: absolute; top: 0; left: 16px; right: 16px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,154,75,0.5), transparent);
+  border-radius: 0 0 2px 2px;
+}
+.card-item:hover {
+  border-color: rgba(201,154,75,0.45) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,154,75,0.18) !important;
+  transform: translateY(-3px) !important;
+}
+/* Icon ring */
+.card-item .ico {
+  width: 64px; height: 64px; border-radius: 50% !important;
+  background: radial-gradient(circle at 40% 35%, rgba(201,154,75,0.22), rgba(201,154,75,0.06)) !important;
+  border: 1px solid rgba(201,154,75,0.2) !important;
+  box-shadow: 0 0 14px rgba(201,154,75,0.12) !important;
+  font-size: 1.9rem !important;
+}
+.card-item h3 { font-size: 1.35rem !important; }
+
+/* subject / chapter / level card overrides from the earlier block — bump them */
+.subject-card, .chapter-card, .level-card {
+  background: linear-gradient(160deg, rgba(26,33,56,0.85) 0%, rgba(18,24,43,0.95) 100%) !important;
+  border-radius: 18px !important;
+}
+
+/* ── 3. QUESTION CARD ── */
+.card {
+  background: linear-gradient(160deg, rgba(26,33,56,0.82) 0%, rgba(14,19,36,0.92) 100%) !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(201,154,75,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.2) !important;
+}
+/* Faint brass shimmer on top edge */
+.card::after {
+  content: '';
+  position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,154,75,0.45), transparent);
+  border-radius: 0 0 4px 4px;
+  pointer-events: none;
+}
+.qtag {
+  display: inline-block;
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(201,154,75,0.1);
+  border: 1px solid rgba(201,154,75,0.25);
+  font-size: 0.78rem !important;
+  letter-spacing: 1.8px !important;
+}
+/* Answer options */
+.opt {
+  border-radius: 16px !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  background: rgba(255,255,255,0.055) !important;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s cubic-bezier(0.16,1,0.3,1), box-shadow 0.18s ease !important;
+  position: relative; overflow: hidden;
+}
+.opt::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(201,154,75,0.12), transparent 60%);
+  opacity: 0; transition: opacity 0.2s ease;
+  border-radius: inherit; pointer-events: none;
+}
+.opt:hover::before { opacity: 1; }
+.opt:hover {
+  border-color: rgba(201,154,75,0.55) !important;
+  background: rgba(201,156,81,0.1) !important;
+  transform: translateX(10px) !important;
+  box-shadow: -4px 0 16px rgba(201,154,75,0.15) !important;
+}
+
+/* ── 4. SIDEBAR ── */
+#sidebarNav {
+  background: linear-gradient(180deg, rgba(14,19,34,0.98) 0%, rgba(10,14,24,1) 100%) !important;
+  border-right: 1px solid rgba(255,255,255,0.07) !important;
+}
+#sidebarNav .sb-item {
+  border-radius: 8px !important;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease !important;
+}
+#sidebarNav .sb-item:hover {
+  background: rgba(255,255,255,0.05) !important;
+  box-shadow: inset 3px 0 0 rgba(201,154,75,0.35) !important;
+  color: var(--parchment) !important;
+}
+#sidebarNav .sb-item.active {
+  background: linear-gradient(90deg, rgba(201,154,75,0.14) 0%, rgba(201,154,75,0.04) 100%) !important;
+  box-shadow: inset 3px 0 0 var(--brass) !important;
+  color: var(--brass-light) !important;
+  border-left-color: transparent !important;
+}
+#sidebarNav .sb-item.active::before { display: none; }  /* remove old pseudo indicator */
+#sidebarNav .sb-item.active .sb-icon { color: var(--brass-light) !important; opacity: 1 !important; }
+/* Sidebar logo badge */
+#sidebarNav .sb-logo {
+  background: radial-gradient(circle at 40% 35%, var(--brass), var(--navy-deep)) !important;
+  border-color: rgba(201,154,75,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(201,154,75,0.1) !important;
+}
+
+/* ── 5. HOME SCREEN ── */
+/* Welcome hero */
+.title-wrap h2 {
+  font-size: 2.5rem !important;
+  background: linear-gradient(135deg, var(--brass-light) 0%, var(--parchment) 65%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.title-wrap p { font-size: 1rem !important; letter-spacing: 0.3px; }
+/* Home stat pills */
+.home-stats-row .stat {
+  background: linear-gradient(160deg, rgba(26,33,56,0.9) 0%, rgba(18,24,43,0.95) 100%) !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25) !important;
+  padding: 14px 10px !important;
+  text-align: center;
+}
+.home-stats-row .stat .num {
+  font-size: 1.7rem !important;
+  background: linear-gradient(135deg, var(--brass-light), var(--sea));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+/* Resume hero card */
+.resume-hero {
+  background: linear-gradient(135deg, rgba(201,154,75,0.12) 0%, rgba(26,33,56,0.9) 100%) !important;
+  border: 1px solid rgba(201,154,75,0.28) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+.resume-hero:hover {
+  border-color: rgba(201,154,75,0.55) !important;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,154,75,0.2) !important;
+  transform: translateY(-2px) !important;
+}
+.resume-hero-icon {
+  width: 48px !important; height: 48px !important;
+  border-radius: 14px !important;
+  background: radial-gradient(circle at 40% 35%, rgba(201,154,75,0.28), rgba(201,154,75,0.08)) !important;
+  border: 1px solid rgba(201,154,75,0.3) !important;
+  box-shadow: 0 0 12px rgba(201,154,75,0.15) !important;
+}
+.resume-hero-body h3 {
+  font-size: 1.1rem !important;
+  background: linear-gradient(90deg, var(--brass-light), var(--parchment));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.resume-hero-arrow { color: var(--brass-light) !important; font-size: 1.3rem !important; }
+
+/* Side panels (home sub-panels like leaderboard / subject progress) */
+.side-panel {
+  background: linear-gradient(160deg, rgba(26,33,56,0.82) 0%, rgba(18,24,43,0.92) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.28) !important;
+  backdrop-filter: blur(10px) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.side-panel:hover {
+  border-color: rgba(201,154,75,0.38) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.38) !important;
+}
+
+/* ── 6. LEVEL BUTTONS ── */
+.level-btn {
+  border-radius: 18px !important;
+  transition: all 0.22s cubic-bezier(0.16,1,0.3,1) !important;
+}
+.level-btn.unlocked {
+  background: linear-gradient(160deg, rgba(26,33,56,0.88) 0%, rgba(14,20,36,0.96) 100%) !important;
+  border: 1px solid rgba(201,154,75,0.22) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07) !important;
+}
+.level-btn.unlocked:hover {
+  background: linear-gradient(160deg, rgba(201,154,75,0.18) 0%, rgba(14,20,36,0.96) 100%) !important;
+  border-color: var(--brass-light) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,154,75,0.22) !important;
+  transform: translateY(-3px) scale(1.04) !important;
+}
+.level-btn.locked {
+  opacity: 0.32 !important;
+  background: rgba(255,255,255,0.02) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: none !important;
+}
+.level-btn .lbl {
+  color: var(--parchment-dim) !important;
+  font-size: 0.7rem !important;
+  letter-spacing: 1.2px !important;
+}
+
+/* ── 7. INTRO MODAL ── */
+.intro-modal {
+  background: radial-gradient(ellipse at 30% 0%, rgba(201,154,75,0.12) 0%, transparent 55%),
+              radial-gradient(ellipse at 70% 100%, rgba(127,160,111,0.08) 0%, transparent 50%),
+              var(--navy-deep) !important;
+}
+.intro-bg {
+  background-image:
+    radial-gradient(circle at 50% -10%, rgba(201,154,75,0.22), transparent 58%),
+    radial-gradient(circle at 15% 85%, rgba(155,142,203,0.1), transparent 40%) !important;
+}
+/* Animated subtitle particles */
+@keyframes subtitleFade {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.intro-content p {
+  animation: subtitleFade 0.9s 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  font-size: 1.1rem !important;
+  color: var(--parchment-dim) !important;
+}
+.intro-content h1 {
+  font-size: 4.4rem !important;
+  animation: subtitleFade 0.7s 0.05s cubic-bezier(0.16,1,0.3,1) both;
+  text-shadow: 0 8px 40px rgba(201,154,75,0.3), 0 2px 4px rgba(0,0,0,0.6) !important;
+}
+.intro-form {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(201,154,75,0.25) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07) !important;
+  backdrop-filter: blur(16px) !important;
+  animation: subtitleFade 1s 0.55s cubic-bezier(0.16,1,0.3,1) both;
+}
+.intro-btn {
+  background: linear-gradient(135deg, var(--brass) 0%, var(--brass-light) 50%, #e8c97a 100%) !important;
+  border-radius: 44px !important;
+  font-size: 1.15rem !important;
+  letter-spacing: 1.5px !important;
+  box-shadow: 0 8px 28px rgba(201,154,75,0.38), 0 0 0 1px rgba(201,154,75,0.3) !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease !important;
+}
+.intro-btn:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 44px rgba(201,154,75,0.52), 0 0 0 2px rgba(201,154,75,0.4) !important;
+  filter: brightness(1.08) !important;
+}
+
+/* ── 8. GLOBAL MICRO-POLISH ── */
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(201,154,75,0.22);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(201,154,75,0.45); }
+/* Text selection */
+::selection {
+  background: rgba(201,154,75,0.3);
+  color: var(--parchment);
+}
+/* Universal smooth border transitions */
+.card-item, .level-btn, .opt, .side-panel, .topbar, .modal-box, .hud-chip, .back-btn {
+  transition-property: border-color, box-shadow, background, transform !important;
+  transition-duration: 0.2s !important;
+  transition-timing-function: cubic-bezier(0.16,1,0.3,1) !important;
+}
+/* Ghost / back buttons */
+.back-btn {
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+}
+.back-btn:hover {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: rgba(201,154,75,0.4) !important;
+  color: var(--brass-light) !important;
+}
+/* Modal boxes */
+.modal-box {
+  border-radius: 22px !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  box-shadow: 0 28px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+/* HUD chips */
+.hud-chip {
+  border-radius: 14px !important;
+  background: rgba(255,255,255,0.045) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+}
+/* Primary button */
+.btn.primary {
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(201,154,75,0.2) !important;
+}
+.btn.primary:hover {
+  box-shadow: 0 8px 24px rgba(201,154,75,0.35) !important;
+  transform: translateY(-1px) !important;
+}
+/* Light theme adjustments so everything above still looks right */
+body.theme-light .card-item,
+body.theme-light .side-panel,
+body.theme-light .level-btn.unlocked {
+  background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(244,239,228,0.98) 100%) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+}
+body.theme-light .topbar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,235,224,0.98) 100%) !important;
+}
+body.theme-light .brand-text h1,
+body.theme-light .home-stats-row .stat .num,
+body.theme-light .resume-hero-body h3,
+body.theme-light .title-wrap h2 {
+  background: linear-gradient(135deg, var(--brass) 0%, var(--ink) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* ── STANDARD SELECTOR (intro modal) ── */
+.std-selector-wrap {
+  margin: 16px 0 20px;
+  text-align: left;
+}
+.std-selector-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--parchment-dim);
+  margin-bottom: 10px;
+  opacity: 0.75;
+}
+.std-selector-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.std-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.03);
+  color: var(--parchment-dim);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+  overflow: hidden;
+}
+.std-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(201,154,75,0.18), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.std-btn:hover { border-color: rgba(201,154,75,0.45); color: var(--parchment); }
+.std-btn:hover::before { opacity: 1; }
+.std-btn.active {
+  border-color: var(--brass);
+  background: rgba(201,154,75,0.14);
+  color: var(--parchment);
+  box-shadow: 0 0 0 2px rgba(201,154,75,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.std-btn.active::before { opacity: 1; }
+.std-btn-num {
+  font-family: 'Fraunces', serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--brass-light);
+  line-height: 1;
+}
+.std-btn:not(.active) .std-btn-num { color: var(--parchment-dim); }
+.std-btn-num sup {
+  font-size: 0.55em;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  vertical-align: super;
+}
+.std-btn-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.4px;
+  color: var(--parchment-dim);
+  text-align: center;
+  line-height: 1.4;
+  opacity: 0.7;
+}
+.std-btn.active .std-btn-sub { opacity: 1; color: var(--brass); }
+/* ===================================================================
+   END VISUAL POLISH LAYER
+   =================================================================== */
 </style>
 
 
@@ -1335,8 +1879,8 @@ body.has-sidebar .fp-subtitle { display: block; }
 <div class="intro-modal" id="introModal">
   <div class="intro-bg"></div>
   <div class="intro-content">
-    <h1>Expedition <span>11</span></h1>
-    <p>
+    <h1>Expedition <span id="introStdSpan">11</span></h1>
+    <p id="introSubtitleText">
       The ultimate interactive learning platform for Class 11.<br>
       Explore the full curriculum of <strong>Mathematics, Physics, and Chemistry</strong>.<br>
       Conquer 15 progressive levels per chapter. You've got 2 hearts per level — guard them well. Prepare for the JEE Arena.
@@ -1344,7 +1888,23 @@ body.has-sidebar .fp-subtitle { display: block; }
     <div class="intro-form">
       <input type="text" id="explorerNameInput" class="intro-input" placeholder="Choose your Explorer Codename..." maxlength="18">
       <div id="usernameFeedback" style="color:var(--coral); font-size:0.85rem; margin-bottom:10px; display:none; font-family:'Space Mono',monospace;">Explorer Codename cannot be empty!</div>
-      <button class="intro-btn" onclick="registerExplorer()">Start Expedition</button>
+
+      <!-- Standard selector ── choose 11th or 12th before starting -->
+      <div class="std-selector-wrap">
+        <div class="std-selector-label">I am in</div>
+        <div class="std-selector-strip">
+          <button class="std-btn active" data-std="11" onclick="selectStandard(this)">
+            <span class="std-btn-num">11<sup>th</sup></span>
+            <span class="std-btn-sub">Sets · Trig · Kinematics</span>
+          </button>
+          <button class="std-btn" data-std="12" onclick="selectStandard(this)">
+            <span class="std-btn-num">12<sup>th</sup></span>
+            <span class="std-btn-sub">Calculus · Electro · Organic</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="intro-btn" id="introStartBtn" onclick="registerExplorer()">Start Expedition →</button>
     </div>
   </div>
 </div>
@@ -2826,6 +3386,75 @@ const SUBJECT_ICON_SVG = {
   mixed: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--brass-light)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg>'
 };
 
+/* ── CLASS 12 CURRICULUM ─────────────────────────────────────────────────── */
+const DATA_12 = [
+  {
+    id: 'math', name: 'Mathematics', icon: '📐', theme: 'theme-math',
+    chapters: [
+      { id: '12_relations', name: 'Relations and Functions', icon: '🔗', blurb: 'Types of relations, Invertible functions, Composition' },
+      { id: '12_inverse_trig', name: 'Inverse Trigonometric Functions', icon: '🔺', blurb: 'Domains, Principal values, Identities' },
+      { id: '12_matrices', name: 'Matrices', icon: '🔲', blurb: 'Operations, Transpose, Elementary row ops' },
+      { id: '12_determinants', name: 'Determinants', icon: '🧮', blurb: 'Properties, Cofactors, Cramers Rule' },
+      { id: '12_continuity', name: 'Continuity and Differentiability', icon: '∂', blurb: 'Chain rule, Mean Value Theorem, Rolles Theorem' },
+      { id: '12_apps_deriv', name: 'Applications of Derivatives', icon: '📈', blurb: 'Rate of change, Tangents, Maxima & Minima' },
+      { id: '12_integrals', name: 'Integrals', icon: '∫', blurb: 'Substitution, Parts, Partial fractions' },
+      { id: '12_apps_integ', name: 'Applications of Integrals', icon: '📐', blurb: 'Area under curves, Between two curves' },
+      { id: '12_diff_eq', name: 'Differential Equations', icon: '🌊', blurb: 'Order, Degree, Variable separable, Homogeneous' },
+      { id: '12_vectors', name: 'Vector Algebra', icon: '➡️', blurb: 'Dot product, Cross product, Scalar triple' },
+      { id: '12_3d', name: '3D Geometry', icon: '🧊', blurb: 'Direction cosines, Planes, Shortest distance' },
+      { id: '12_lpp', name: 'Linear Programming', icon: '⚖️', blurb: 'Corner point method, Feasible region' },
+      { id: '12_probability', name: 'Probability', icon: '🎲', blurb: "Bayes' theorem, Bernoulli trials, Binomial distribution" }
+    ]
+  },
+  {
+    id: 'physics', name: 'Physics', icon: '⚛️', theme: 'theme-physics',
+    chapters: [
+      { id: '12_electrostatics', name: 'Electric Charges and Fields', icon: '⚡', blurb: "Coulomb's law, Gauss's law, Dipole" },
+      { id: '12_potential', name: 'Electrostatic Potential & Capacitance', icon: '🔋', blurb: 'Potential energy, Capacitors, Dielectrics' },
+      { id: '12_current', name: 'Current Electricity', icon: '💡', blurb: "Ohm's law, Kirchhoff's laws, Wheatstone bridge" },
+      { id: '12_magnetic_effect', name: 'Moving Charges and Magnetism', icon: '🧲', blurb: 'Biot-Savart, Ampere, Cyclotron' },
+      { id: '12_magnetism', name: 'Magnetism and Matter', icon: '🔮', blurb: 'Bar magnet, Earth magnetism, Hysteresis' },
+      { id: '12_emi', name: 'Electromagnetic Induction', icon: '🔄', blurb: "Faraday's law, Lenz's law, Eddy currents" },
+      { id: '12_ac', name: 'Alternating Current', icon: '〰️', blurb: 'RMS, LC circuits, Resonance, Transformers' },
+      { id: '12_emw', name: 'Electromagnetic Waves', icon: '📡', blurb: 'Maxwell equations, EM spectrum, Properties' },
+      { id: '12_optics', name: 'Ray Optics and Optical Instruments', icon: '🔭', blurb: 'Reflection, Refraction, Lenses, Microscopes' },
+      { id: '12_wave_optics', name: 'Wave Optics', icon: '🌈', blurb: 'Huygens principle, Interference, Diffraction, Polarisation' },
+      { id: '12_dual', name: 'Dual Nature of Radiation and Matter', icon: '🌓', blurb: 'Photoelectric effect, de Broglie, Davisson-Germer' },
+      { id: '12_atoms', name: 'Atoms', icon: '⚛️', blurb: "Rutherford, Bohr model, Hydrogen spectrum" },
+      { id: '12_nuclei', name: 'Nuclei', icon: '☢️', blurb: 'Binding energy, Radioactivity, Nuclear reactions' },
+      { id: '12_semiconductors', name: 'Semiconductor Electronics', icon: '💻', blurb: 'p-n junction, Diode, Transistor, Logic gates' }
+    ]
+  },
+  {
+    id: 'chemistry', name: 'Chemistry', icon: '⚗️', theme: 'theme-chemistry',
+    chapters: [
+      { id: '12_solid_state', name: 'The Solid State', icon: '🧱', blurb: 'Crystal systems, Defects, Electrical properties' },
+      { id: '12_solutions', name: 'Solutions', icon: '💧', blurb: "Colligative properties, Raoult's law, Osmosis" },
+      { id: '12_electrochem', name: 'Electrochemistry', icon: '⚡', blurb: "Nernst equation, EMF, Faraday's laws, Batteries" },
+      { id: '12_chem_kinetics', name: 'Chemical Kinetics', icon: '⏱️', blurb: 'Rate laws, Arrhenius, Order of reactions' },
+      { id: '12_surface', name: 'Surface Chemistry', icon: '🫧', blurb: 'Adsorption, Colloids, Emulsions, Catalysis' },
+      { id: '12_isolation', name: 'General Principles of Isolation', icon: '⚙️', blurb: 'Metallurgy, Refining, Thermodynamics of extraction' },
+      { id: '12_p_block2', name: 'The p-Block Elements (II)', icon: '🧱', blurb: 'Group 15–18, Ozone, Halogens, Noble gases' },
+      { id: '12_d_block', name: 'd and f Block Elements', icon: '🔩', blurb: 'Transition metals, Lanthanoids, Actinoids' },
+      { id: '12_coordination', name: 'Coordination Compounds', icon: '🔗', blurb: "Werner's theory, CFSE, Isomerism" },
+      { id: '12_haloalkanes', name: 'Haloalkanes and Haloarenes', icon: '🌿', blurb: 'Nucleophilic substitution, SN1/SN2, Aryl halides' },
+      { id: '12_alcohols', name: 'Alcohols, Phenols and Ethers', icon: '🍶', blurb: 'Preparation, Reactions, Acidic nature' },
+      { id: '12_aldehydes', name: 'Aldehydes, Ketones and Acids', icon: '🧪', blurb: 'Nucleophilic addition, Aldol, Cannizzaro' },
+      { id: '12_amines', name: 'Amines', icon: '🔵', blurb: 'Basicity, Diazonium salts, Coupling reactions' },
+      { id: '12_biomolecules', name: 'Biomolecules', icon: '🧬', blurb: 'Carbohydrates, Proteins, Nucleic acids, Vitamins' }
+    ]
+  },
+  {
+    id: 'mixed', name: 'Combined Arena', icon: '🌐', theme: 'theme-mixed',
+    chapters: [
+      { id: '12_mix_1', name: 'JEE Mains Mock I', icon: '📝', blurb: 'Randomized Class 12 Mixed Bag' },
+      { id: '12_mix_2', name: 'JEE Mains Mock II', icon: '🔥', blurb: 'Advanced Randomized Logic' },
+      { id: '12_mix_3', name: 'JEE Advanced Finale', icon: '🏆', blurb: 'The Ultimate Test' }
+    ]
+  }
+];
+
+/* ── CLASS 11 CURRICULUM ─────────────────────────────────────────────────── */
 const DATA = [
   {
     id: 'math', name: 'Mathematics', icon: '📐', theme: 'theme-math',
@@ -2892,14 +3521,23 @@ const DATA = [
   }
 ];
 
+/* Returns the curriculum dataset for the active student standard (11 or 12).
+   All rendering loops call this instead of DATA directly so switching standard
+   at registration instantly routes to the correct chapter list. */
+function getActiveData() {
+  return (state && state.standard === '12') ? DATA_12 : DATA;
+}
+window.getActiveData = getActiveData;
+
 let state = {
   xp: 0, streak: 0,
-  progress: {}, 
+  progress: {},
   mockHistory: [], // saved JEE mock attempts: {id, chapId, name, date, score, maxScore, accuracyPct}
   curSubj: null, curChap: null, curLvl: 1,
   qIdx: 0, currentQuestions: [], answered: false,
   qSelected: [],
   explorerName: "Explorer",
+  standard: '11', // '11' or '12' — set on first registration, persisted in save
   // Hearts system (per-level pool, replaces old per-question 2-attempt lives)
   hearts: LEVEL_MAX_HEARTS,
   levelStartTime: null,
@@ -2941,6 +3579,7 @@ function loadSave() {
       if(parsed.xp) state.xp = parsed.xp;
       if(parsed.streak) state.streak = parsed.streak;
       if(parsed.explorerName) state.explorerName = parsed.explorerName;
+      if(parsed.standard === '11' || parsed.standard === '12') state.standard = parsed.standard;
       if(typeof parsed.weeklyXp === 'number') state.weeklyXp = parsed.weeklyXp;
       if(parsed.weeklyXpWeekStart) state.weeklyXpWeekStart = parsed.weeklyXpWeekStart;
       if(Array.isArray(parsed.mockHistory)) state.mockHistory = parsed.mockHistory;
@@ -2949,7 +3588,7 @@ function loadSave() {
   // Roll over if the saved week is stale (app wasn't opened at all during a week boundary).
   const wk = getWeekKey();
   if (state.weeklyXpWeekStart !== wk) { state.weeklyXpWeekStart = wk; state.weeklyXp = 0; }
-  DATA.forEach(subj => {
+  getActiveData().forEach(subj => {
     subj.chapters.forEach(ch => {
       if(!state.progress[ch.id]) state.progress[ch.id] = { maxUnlocked: 1, stars: {} };
       if(!state.progress[ch.id].stars) state.progress[ch.id].stars = {};
@@ -2984,6 +3623,7 @@ function archiveCurrentProfile() {
   const archive = loadProfileArchive();
   archive[normalizeProfileName(state.explorerName)] = {
     displayName: state.explorerName,
+    standard: state.standard,
     xp: state.xp, progress: state.progress, streak: state.streak,
     weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart,
     savedAt: Date.now()
@@ -3004,7 +3644,8 @@ function restoreProfileIfExists(name) {
   state.streak = saved.streak || 0;
   state.weeklyXp = saved.weeklyXp || 0;
   state.weeklyXpWeekStart = saved.weeklyXpWeekStart || null;
-  DATA.forEach(subj => subj.chapters.forEach(ch => {
+  if (saved.standard === '11' || saved.standard === '12') state.standard = saved.standard;
+  getActiveData().forEach(subj => subj.chapters.forEach(ch => {
     if (!state.progress[ch.id]) state.progress[ch.id] = { maxUnlocked: 1, stars: {} };
     if (!state.progress[ch.id].stars) state.progress[ch.id].stars = {};
   }));
@@ -3023,6 +3664,7 @@ function doSave() {
   archiveCurrentProfile();
   localStorage.setItem('math_expedition_v9', JSON.stringify({
     xp: state.xp, progress: state.progress, streak: state.streak, explorerName: state.explorerName,
+    standard: state.standard,
     weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart,
     mockHistory: state.mockHistory
   }));
@@ -3127,7 +3769,7 @@ function closeBackupPopup() { document.getElementById('backupPopup').classList.r
    one-tap "practice this next" suggestion on the dashboard. */
 function computeWeakChapter() {
   let worst = null;
-  DATA.forEach(sub => sub.chapters.forEach(ch => {
+  getActiveData().forEach(sub => sub.chapters.forEach(ch => {
     const p = state.progress[ch.id];
     if (!p || p.maxUnlocked <= 1 || !p.stars) return; // hasn't really started this chapter yet
     const attempted = Object.keys(p.stars).length;
@@ -3571,6 +4213,27 @@ function containsProfanity(name) {
 }
 
 /* ================= EXPLORER & DASHBOARD INITIALIZERS ================= */
+/* Handles the 11/12 pill toggle in the intro modal. */
+function selectStandard(btn) {
+  document.querySelectorAll('.std-selector-strip .std-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const std = btn.dataset.std;
+  state.standard = std;
+  const spanEl = document.getElementById('introStdSpan');
+  if (spanEl) spanEl.textContent = std;
+  const subEl = document.getElementById('introSubtitleText');
+  if (subEl) {
+    if (std === '12') {
+      subEl.innerHTML = 'The ultimate interactive learning platform for Class 12.<br>Master <strong>Mathematics, Physics, and Chemistry</strong> at JEE level.<br>Conquer 15 progressive levels per chapter. Guard your hearts. Aim for the top.';
+    } else {
+      subEl.innerHTML = 'The ultimate interactive learning platform for Class 11.<br>Explore the full curriculum of <strong>Mathematics, Physics, and Chemistry</strong>.<br>Conquer 15 progressive levels per chapter. You\'ve got 2 hearts per level — guard them well. Prepare for the JEE Arena.';
+    }
+  }
+  const startBtn = document.getElementById('introStartBtn');
+  if (startBtn) startBtn.textContent = 'Start Class ' + std + ' Expedition \u2192';
+}
+window.selectStandard = selectStandard;
+
 function registerExplorer() {
   const inputEl = document.getElementById('explorerNameInput');
   const nameVal = inputEl.value.trim();
@@ -3596,6 +4259,10 @@ function registerExplorer() {
   inputEl.classList.remove('border-error');
   feedbackEl.style.display = 'none';
   state.explorerName = nameVal;
+  // Lock in the chosen standard from the pill toggle (state.standard is already
+  // set by selectStandard(), but confirm from DOM as a fallback).
+  const activeStdBtn = document.querySelector('.std-selector-strip .std-btn.active');
+  if (activeStdBtn) state.standard = activeStdBtn.dataset.std || '11';
   // If this device has a saved profile under this exact name (e.g. this
   // candidate played here before, then someone else used Switch Player),
   // resume their XP/streak/progress instead of starting them at zero.
@@ -4172,7 +4839,7 @@ function closeResolutionsPopup() { document.getElementById('resolutionsPopup').c
 function confirmResetProgress() {
   localStorage.removeItem('math_expedition_v9');
   state.xp = 0; state.streak = 0; state.progress = {}; state.weeklyXp = 0; state.weeklyXpWeekStart = getWeekKey();
-  DATA.forEach(subj => subj.chapters.forEach(ch => state.progress[ch.id] = { maxUnlocked: 1 }));
+  getActiveData().forEach(subj => subj.chapters.forEach(ch => state.progress[ch.id] = { maxUnlocked: 1 }));
   updateStats(); 
   if(window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
   closeResetModal(); 
@@ -4962,7 +5629,7 @@ function computeBadges() {
   const dailyStreak = getDailyChallengeState().streak || 0;
   if (dailyStreak >= 3) earned.add('daily_devotee');
   // Chapter Master: every level in some chapter has all 3 stars.
-  DATA.forEach(sub => sub.chapters.forEach(ch => {
+  getActiveData().forEach(sub => sub.chapters.forEach(ch => {
     const p = state.progress[ch.id];
     if (!p || !p.stars) return;
     let allThree = true;
@@ -5048,7 +5715,7 @@ function setDailyChallengeState(s) {
 // once-a-day gating and streak/bonus-XP mechanics are.
 async function buildDailyQuestionSet() {
   const allChapters = [];
-  DATA.forEach(sub => {
+  getActiveData().forEach(sub => {
     if (sub.id === 'mixed') return;
     sub.chapters.forEach(ch => allChapters.push({ subj: sub, ch }));
   });
@@ -6682,6 +7349,13 @@ function startApp() {
   parseIncomingChallenge();
   loadSave();
   applyReferralWelcomeBonusIfEligible();
+  // Reflect standard in sidebar logo and page <title>
+  const std = state.standard || '11';
+  const sbLogo = document.querySelector('#sidebarNav .sb-logo');
+  if (sbLogo) sbLogo.textContent = std;
+  const sbBrandSpan = document.querySelector('#sidebarNav .sb-brand span');
+  if (sbBrandSpan) sbBrandSpan.textContent = 'Expedition ' + std;
+  document.title = 'Expedition ' + std + ' — Class ' + std + ' Math, Physics & Chemistry';
   goToSubjects();
   if (typeof renderHomeScreen === 'function') renderHomeScreen({ skipHistory: true });
   // Safety net: abortGame()/levelComplete() already save on their own, but if
@@ -6789,7 +7463,7 @@ function escapeHtml(s) {
 // left off" shortcut instead of navigating subject -> chapter -> level.
 function findResumeTarget() {
   let best = null;
-  DATA.forEach(subj => {
+  getActiveData().forEach(subj => {
     subj.chapters.forEach(ch => {
       const prog = state.progress[ch.id];
       if (!prog) return;
@@ -7078,12 +7752,315 @@ const FORMULA_SHEET = {
   },
 };
 
+/* ── CLASS 12 FORMULA SHEET ─────────────────────────────────────────────── */
+const FORMULA_SHEET_12 = {
+  math: {
+    label: '📘 Math',
+    groups: [
+      { title: 'Relations and Functions', items: [
+        'Reflexive: $aRa$ for all $a$ · Symmetric: $aRb \\Rightarrow bRa$ · Transitive: $aRb,bRc \\Rightarrow aRc$',
+        'Equivalence relation: reflexive + symmetric + transitive',
+        'One-one (injective): $f(x_1)=f(x_2)\\Rightarrow x_1=x_2$',
+        'Onto (surjective): range of $f$ = co-domain',
+        'Bijective: one-one + onto; invertible iff bijective',
+        '$(f\\circ g)(x)=f(g(x))$ · $(f\\circ g)^{-1}=g^{-1}\\circ f^{-1}$',
+      ]},
+      { title: 'Inverse Trigonometric Functions', items: [
+        '$\\sin^{-1}x \\in [-\\pi/2,\\pi/2]$ · $\\cos^{-1}x \\in [0,\\pi]$ · $\\tan^{-1}x \\in (-\\pi/2,\\pi/2)$',
+        '$\\sin^{-1}(-x)=-\\sin^{-1}x$ · $\\cos^{-1}(-x)=\\pi-\\cos^{-1}x$ · $\\tan^{-1}(-x)=-\\tan^{-1}x$',
+        '$\\sin^{-1}x+\\cos^{-1}x=\\dfrac{\\pi}{2}$ · $\\tan^{-1}x+\\cot^{-1}x=\\dfrac{\\pi}{2}$',
+        '$2\\tan^{-1}x=\\sin^{-1}\\dfrac{2x}{1+x^2}=\\cos^{-1}\\dfrac{1-x^2}{1+x^2}=\\tan^{-1}\\dfrac{2x}{1-x^2}$',
+        '$\\tan^{-1}x+\\tan^{-1}y=\\tan^{-1}\\dfrac{x+y}{1-xy}$ (if $xy<1$)',
+      ]},
+      { title: 'Matrices', items: [
+        'Order $m\\times n$: $m$ rows, $n$ columns; element $a_{ij}$ in row $i$, column $j$',
+        '$(AB)^T = B^T A^T$ · $(A^T)^T = A$ · $(kA)^T = kA^T$',
+        'Symmetric: $A^T=A$ · Skew-symmetric: $A^T=-A$ (diagonal elements $=0$)',
+        'Every square matrix $A = \\frac{1}{2}(A+A^T) + \\frac{1}{2}(A-A^T)$ (sym + skew-sym)',
+        'Identity: $IA=AI=A$ · $A\\cdot A^{-1}=I$ (if $A$ invertible)',
+      ]},
+      { title: 'Determinants', items: [
+        '$|AB|=|A||B|$ · $|A^T|=|A|$ · $|kA|=k^n|A|$ for order $n$',
+        '$|A^{-1}|=\\dfrac{1}{|A|}$ · $A^{-1}=\\dfrac{1}{|A|}\\,\\text{adj}(A)$',
+        '$\\text{adj}(A)=$ transpose of cofactor matrix',
+        'Consistent system $AX=B$: unique solution $X=A^{-1}B$ when $|A|\\neq0$',
+        'Area of triangle: $\\dfrac{1}{2}\\left|\\begin{smallmatrix}x_1&y_1&1\\\\x_2&y_2&1\\\\x_3&y_3&1\\end{smallmatrix}\\right|$',
+      ]},
+      { title: 'Continuity and Differentiability', items: [
+        '$f$ continuous at $a$: $\\lim_{x\\to a}f(x)=f(a)$ (LHL = RHL = value)',
+        'Chain rule: $\\dfrac{dy}{dx}=\\dfrac{dy}{du}\\cdot\\dfrac{du}{dx}$',
+        'Implicit: differentiate both sides w.r.t. $x$; treat $y$ as function of $x$',
+        'Parametric: $\\dfrac{dy}{dx}=\\dfrac{dy/dt}{dx/dt}$',
+        "Rolle's theorem: $f$ continuous on $[a,b]$, differentiable on $(a,b)$, $f(a)=f(b)\\Rightarrow\\exists c$ s.t. $f'(c)=0$",
+        "MVT: $f'(c)=\\dfrac{f(b)-f(a)}{b-a}$ for some $c\\in(a,b)$",
+        '$\\dfrac{d}{dx}(\\sin^{-1}x)=\\dfrac{1}{\\sqrt{1-x^2}}$ · $\\dfrac{d}{dx}(\\tan^{-1}x)=\\dfrac{1}{1+x^2}$',
+        '$\\dfrac{d}{dx}(e^x)=e^x$ · $\\dfrac{d}{dx}(\\ln x)=\\dfrac{1}{x}$ · $\\dfrac{d}{dx}(a^x)=a^x\\ln a$',
+      ]},
+      { title: 'Applications of Derivatives', items: [
+        'Rate of change: $\\dfrac{dy}{dx}$ is rate of $y$ w.r.t. $x$',
+        'Increasing on $(a,b)$: $f\'(x)>0$ · Decreasing: $f\'(x)<0$',
+        'Tangent slope $=f\'(x_0)$ · Normal slope $=-\\dfrac{1}{f\'(x_0)}$',
+        'First derivative test: sign change of $f\'$ at $c$ ⟹ local extremum',
+        'Second derivative test: $f\'\'(c)>0\\Rightarrow$ local min · $f\'\'(c)<0\\Rightarrow$ local max',
+        'Approximation: $\\Delta y \\approx f\'(x)\\,\\Delta x$',
+      ]},
+      { title: 'Integrals', items: [
+        '$\\int x^n\\,dx=\\dfrac{x^{n+1}}{n+1}+C$ $(n\\ne-1)$ · $\\int e^x\\,dx=e^x+C$ · $\\int\\dfrac{1}{x}dx=\\ln|x|+C$',
+        '$\\int\\sin x\\,dx=-\\cos x+C$ · $\\int\\cos x\\,dx=\\sin x+C$ · $\\int\\sec^2x\\,dx=\\tan x+C$',
+        'By parts: $\\int u\\,dv = uv-\\int v\\,du$ (ILATE order)',
+        'Definite integral properties: $\\int_a^b f = -\\int_b^a f$ · $\\int_a^b f(x)\\,dx=\\int_a^b f(a+b-x)\\,dx$',
+        '$\\int_0^{2a}f(x)\\,dx=2\\int_0^a f(x)\\,dx$ if $f(2a-x)=f(x)$; $=0$ if $f(2a-x)=-f(x)$',
+      ]},
+      { title: 'Applications of Integrals', items: [
+        'Area under $y=f(x)$, $x\\in[a,b]$: $A=\\int_a^b |f(x)|\\,dx$',
+        'Area between $y=f(x)$ and $y=g(x)$: $A=\\int_a^b |f(x)-g(x)|\\,dx$',
+      ]},
+      { title: 'Differential Equations', items: [
+        'Order = highest derivative · Degree = power of highest derivative (when rational)',
+        'Variable separable: $\\dfrac{dy}{dx}=f(x)g(y)\\Rightarrow\\int\\dfrac{dy}{g(y)}=\\int f(x)\\,dx$',
+        'Homogeneous: $\\dfrac{dy}{dx}=F(y/x)$; substitute $y=vx$',
+        'Linear first-order: $\\dfrac{dy}{dx}+P(x)y=Q(x)$; IF $=e^{\\int P\\,dx}$; solution $y\\cdot\\text{IF}=\\int Q\\cdot\\text{IF}\\,dx$',
+      ]},
+      { title: 'Vector Algebra', items: [
+        '$|\\vec{a}\\times\\vec{b}|=|\\vec{a}||\\vec{b}|\\sin\\theta$ · $\\vec{a}\\cdot\\vec{b}=|\\vec{a}||\\vec{b}|\\cos\\theta$',
+        '$\\hat{i}\\cdot\\hat{i}=1,\\hat{i}\\cdot\\hat{j}=0$ · $\\hat{i}\\times\\hat{j}=\\hat{k},\\hat{j}\\times\\hat{k}=\\hat{i},\\hat{k}\\times\\hat{i}=\\hat{j}$',
+        'Scalar triple product: $[\\vec{a}\\,\\vec{b}\\,\\vec{c}]=\\vec{a}\\cdot(\\vec{b}\\times\\vec{c})$ (volume of parallelepiped)',
+        'Projection of $\\vec{a}$ on $\\vec{b}$: $\\dfrac{\\vec{a}\\cdot\\vec{b}}{|\\vec{b}|}$',
+        '$\\vec{a}\\times\\vec{b}=\\begin{vmatrix}\\hat{i}&\\hat{j}&\\hat{k}\\\\a_1&a_2&a_3\\\\b_1&b_2&b_3\\end{vmatrix}$',
+      ]},
+      { title: '3D Geometry', items: [
+        'Direction cosines: $l^2+m^2+n^2=1$; $l=\\dfrac{a}{\\sqrt{a^2+b^2+c^2}}$',
+        'Equation of line through $(x_1,y_1,z_1)$ with direction $(a,b,c)$: $\\dfrac{x-x_1}{a}=\\dfrac{y-y_1}{b}=\\dfrac{z-z_1}{c}$',
+        'Equation of plane: $ax+by+cz+d=0$; normal vector $(a,b,c)$',
+        'Distance from point $(x_1,y_1,z_1)$ to plane $ax+by+cz+d=0$: $\\dfrac{|ax_1+by_1+cz_1+d|}{\\sqrt{a^2+b^2+c^2}}$',
+        'Angle between planes: $\\cos\\theta=\\dfrac{|a_1a_2+b_1b_2+c_1c_2|}{\\sqrt{a_1^2+b_1^2+c_1^2}\\sqrt{a_2^2+b_2^2+c_2^2}}$',
+      ]},
+      { title: 'Linear Programming', items: [
+        'Feasible region: set of all points satisfying all constraints',
+        'Optimal value occurs at a corner (vertex) of the feasible region',
+        'If feasible region is unbounded, check whether optimal value is truly attained',
+      ]},
+      { title: 'Probability', items: [
+        'Conditional: $P(A|B)=\\dfrac{P(A\\cap B)}{P(B)}$',
+        'Multiplication theorem: $P(A\\cap B)=P(A)\\cdot P(B|A)$',
+        "Bayes': $P(E_i|A)=\\dfrac{P(E_i)\\,P(A|E_i)}{\\sum_j P(E_j)\\,P(A|E_j)}$",
+        'Binomial distribution: $P(X=r)={}^nC_r\\,p^r(1-p)^{n-r}$ · Mean $=np$ · Variance $=npq$',
+      ]},
+    ],
+  },
+  physics: {
+    label: '🧲 Physics',
+    groups: [
+      { title: 'Electric Charges and Fields', items: [
+        "Coulomb's law: $F=\\dfrac{1}{4\\pi\\varepsilon_0}\\dfrac{q_1q_2}{r^2}$ · $\\varepsilon_0=8.85\\times10^{-12}$ C²/Nm²",
+        'Electric field: $E=\\dfrac{F}{q_0}=\\dfrac{kq}{r^2}$ (point charge)',
+        'Superposition: $\\vec{E}_{net}=\\sum\\vec{E}_i$',
+        "Gauss's law: $\\oint\\vec{E}\\cdot d\\vec{A}=\\dfrac{q_{enc}}{\\varepsilon_0}$",
+        'Dipole moment: $\\vec{p}=q\\cdot 2\\vec{a}$ (from $-q$ to $+q$)',
+      ]},
+      { title: 'Electrostatic Potential and Capacitance', items: [
+        'Potential: $V=\\dfrac{kq}{r}$ · $V=-\\int_\\infty^r\\vec{E}\\cdot d\\vec{l}$',
+        '$W=q(V_A-V_B)$ · $U=\\dfrac{kq_1q_2}{r}$',
+        'Parallel plate capacitor: $C=\\dfrac{\\varepsilon_0 A}{d}$',
+        'With dielectric: $C=\\dfrac{K\\varepsilon_0 A}{d}$ ($K=$ dielectric constant)',
+        'Series: $\\dfrac{1}{C}=\\dfrac{1}{C_1}+\\dfrac{1}{C_2}$ · Parallel: $C=C_1+C_2$',
+        'Energy stored: $U=\\dfrac{Q^2}{2C}=\\dfrac{1}{2}CV^2$',
+      ]},
+      { title: 'Current Electricity', items: [
+        "$Ohm's law: $V=IR$ · Resistivity: $R=\\dfrac{\\rho L}{A}$",
+        'Kirchhoff\'s laws: $\\sum I=0$ at junction · $\\sum V=0$ in loop',
+        'Wheatstone bridge balanced: $\\dfrac{P}{Q}=\\dfrac{R}{S}$',
+        'Power: $P=VI=I^2R=V^2/R$',
+        'EMF $\\varepsilon$, internal resistance $r$: $V=\\varepsilon - Ir$',
+      ]},
+      { title: 'Moving Charges and Magnetism', items: [
+        'Lorentz force: $\\vec{F}=q(\\vec{v}\\times\\vec{B})$ · $F=qvB\\sin\\theta$',
+        "Biot-Savart: $dB=\\dfrac{\\mu_0}{4\\pi}\\dfrac{I\\,dl\\sin\\theta}{r^2}$",
+        "Ampere's law: $\\oint\\vec{B}\\cdot d\\vec{l}=\\mu_0 I_{enc}$",
+        'Solenoid: $B=\\mu_0 nI$ · Toroid: $B=\\dfrac{\\mu_0 NI}{2\\pi r}$',
+        'Force on current-carrying conductor: $F=BIL\\sin\\theta$',
+      ]},
+      { title: 'Magnetism and Matter', items: [
+        'Magnetic dipole moment: $M=NIA$ · Torque $\\tau=MB\\sin\\theta$',
+        '$B_H = B\\cos\\delta$ (horizontal), $B_V = B\\sin\\delta$ (vertical)',
+        'Susceptibility $\\chi>0$: paramagnetic · $\\chi<0$: diamagnetic · $\\chi\\gg1$: ferromagnetic',
+        'Curie law: $\\chi\\propto\\dfrac{1}{T}$ (paramagnetic)',
+      ]},
+      { title: 'Electromagnetic Induction', items: [
+        "Faraday's law: $\\varepsilon=-\\dfrac{d\\Phi_B}{dt}$ · Flux $\\Phi_B=BA\\cos\\theta$",
+        "Lenz's law: induced current opposes change in flux",
+        'Motional EMF: $\\varepsilon=Bvl$ · Self-inductance: $\\varepsilon=-L\\dfrac{dI}{dt}$',
+        'Mutual inductance: $\\varepsilon_2=-M\\dfrac{dI_1}{dt}$',
+        'Energy stored in inductor: $U=\\dfrac{1}{2}LI^2$',
+      ]},
+      { title: 'Alternating Current', items: [
+        'Peak/RMS: $V_{rms}=\\dfrac{V_0}{\\sqrt{2}}$ · $I_{rms}=\\dfrac{I_0}{\\sqrt{2}}$',
+        'Inductive reactance: $X_L=\\omega L$ · Capacitive reactance: $X_C=\\dfrac{1}{\\omega C}$',
+        'Impedance: $Z=\\sqrt{R^2+(X_L-X_C)^2}$',
+        'Resonance: $\\omega_0=\\dfrac{1}{\\sqrt{LC}}$; $Z_{min}=R$',
+        'Power factor: $\\cos\\phi=\\dfrac{R}{Z}$ · Average power: $P=I_{rms}^2R$',
+        'Transformer: $\\dfrac{V_s}{V_p}=\\dfrac{N_s}{N_p}$ · Ideal: $V_pI_p=V_sI_s$',
+      ]},
+      { title: 'Electromagnetic Waves', items: [
+        'Speed of EM waves: $c=\\dfrac{1}{\\sqrt{\\mu_0\\varepsilon_0}}=3\\times10^8$ m/s',
+        'EM spectrum (increasing wavelength): $\\gamma$-rays, X-rays, UV, visible, IR, microwave, radio',
+        'In EM wave: $E$ and $B$ oscillate perpendicularly to each other and to direction of propagation',
+        'Intensity $I=\\dfrac{c\\varepsilon_0 E_0^2}{2}$',
+      ]},
+      { title: 'Ray Optics and Optical Instruments', items: [
+        'Snell\'s law: $n_1\\sin\\theta_1=n_2\\sin\\theta_2$ · $n=c/v$',
+        'Total internal reflection: $\\sin\\theta_c=\\dfrac{n_2}{n_1}$',
+        'Mirror formula: $\\dfrac{1}{v}+\\dfrac{1}{u}=\\dfrac{1}{f}$ · Magnification: $m=-v/u$',
+        'Lens formula: $\\dfrac{1}{v}-\\dfrac{1}{u}=\\dfrac{1}{f}$ · Lens maker: $\\dfrac{1}{f}=(n-1)\\left(\\dfrac{1}{R_1}-\\dfrac{1}{R_2}\\right)$',
+        'Microscope magnification: $m=m_o\\times m_e=-\\dfrac{L}{f_o}\\left(1+\\dfrac{D}{f_e}\\right)$',
+      ]},
+      { title: 'Wave Optics', items: [
+        "Huygens' principle: every point on wavefront is source of secondary wavelets",
+        "Young's double slit: fringe width $\\beta=\\dfrac{\\lambda D}{d}$ · path diff $=d\\sin\\theta$",
+        'Constructive: $\\Delta=n\\lambda$ · Destructive: $\\Delta=(2n-1)\\lambda/2$',
+        'Diffraction single slit: minima at $a\\sin\\theta=n\\lambda$',
+        'Brewster\'s law: $\\tan\\theta_p = n$ (for complete polarisation)',
+      ]},
+      { title: 'Dual Nature of Radiation and Matter', items: [
+        'Photoelectric effect: $KE_{max}=h\\nu-\\phi_0=eV_s$ · Threshold: $\\nu_0=\\phi_0/h$',
+        'de Broglie wavelength: $\\lambda=\\dfrac{h}{mv}=\\dfrac{h}{\\sqrt{2mK}}$',
+        'Planck: $E=h\\nu$ · $h=6.626\\times10^{-34}$ J·s',
+      ]},
+      { title: 'Atoms', items: [
+        'Bohr radius: $r_n=0.529\\,n^2/Z$ Å · Velocity: $v_n\\propto Z/n$',
+        'Energy: $E_n=-\\dfrac{13.6Z^2}{n^2}$ eV',
+        'Photon emitted: $h\\nu=E_i-E_f$ · Rydberg: $\\dfrac{1}{\\lambda}=R_H Z^2\\left(\\dfrac{1}{n_1^2}-\\dfrac{1}{n_2^2}\\right)$',
+      ]},
+      { title: 'Nuclei', items: [
+        'Mass defect: $\\Delta m=\\left[Zm_p+(A-Z)m_n\\right]-M_{nucleus}$',
+        'Binding energy: $BE=\\Delta m\\cdot c^2$ · BE/nucleon peaks near iron (Fe-56)',
+        'Radioactive decay: $N=N_0e^{-\\lambda t}$ · Half-life: $T_{1/2}=\\dfrac{0.693}{\\lambda}$',
+        '$Q$-value of reaction $=$ (total mass of reactants $-$ products)$\\times c^2$',
+      ]},
+      { title: 'Semiconductor Electronics', items: [
+        'Intrinsic: $n_e=n_h=n_i$ · n-type: $n_e\\gg n_h$ · p-type: $n_h\\gg n_e$',
+        '$n_e\\cdot n_h=n_i^2$ (mass action law)',
+        'p-n junction: forward bias $\\rightarrow$ diffusion current dominant; reverse bias $\\rightarrow$ drift current',
+        'Transistor in common emitter: $I_C=\\beta I_B$ · $\\beta=\\dfrac{I_C}{I_B}$',
+        'Logic gates: AND $=$ all inputs high; OR $=$ any input high; NOT inverts; NAND/NOR are universal',
+      ]},
+    ],
+  },
+  chemistry: {
+    label: '🧪 Chemistry',
+    groups: [
+      { title: 'The Solid State', items: [
+        'Packing efficiency: SCC 52.4%, BCC 68%, FCC/CCP 74%',
+        'No. of atoms per unit cell: SCC 1, BCC 2, FCC 4',
+        'Density: $\\rho=\\dfrac{ZM}{N_A a^3}$ ($Z$=atoms/cell, $M$=molar mass, $a$=edge length)',
+        'Defects: Schottky (missing ions, density decreases), Frenkel (ion displaced, density same)',
+      ]},
+      { title: 'Solutions', items: [
+        'Molarity $M=\\dfrac{n}{V(L)}$ · Molality $m=\\dfrac{n}{\\text{kg of solvent}}$',
+        "Raoult's law: $p_A=p_A^*x_A$ · $\\Delta p=p^*x_B$ (relative lowering of VP)",
+        'Elevation of BP: $\\Delta T_b=iK_b m$ · Depression of FP: $\\Delta T_f=iK_f m$',
+        'Osmotic pressure: $\\pi=iMRT$ · Van\'t Hoff factor $i=1+\\alpha(n-1)$ for degree of dissociation $\\alpha$',
+      ]},
+      { title: 'Electrochemistry', items: [
+        'Cell EMF: $E_{cell}=E_{cathode}-E_{anode}$',
+        'Nernst equation: $E=E^\\circ-\\dfrac{RT}{nF}\\ln Q=E^\\circ-\\dfrac{0.0592}{n}\\log Q$ (at 25°C)',
+        '$\\Delta G^\\circ=-nFE^\\circ=-RT\\ln K$',
+        "Faraday's 1st law: mass deposited $m=ZIt$ · $Z=\\dfrac{M}{nF}$",
+        'Kohlrausch law: $\\Lambda_m^\\circ=\\nu_+\\lambda_+^\\circ+\\nu_-\\lambda_-^\\circ$',
+      ]},
+      { title: 'Chemical Kinetics', items: [
+        'Rate $=k[A]^m[B]^n$ (rate law); overall order $=m+n$',
+        'Zero order: $[A]=[A]_0-kt$ · $t_{1/2}=\\dfrac{[A]_0}{2k}$',
+        'First order: $[A]=[A]_0e^{-kt}$ · $t_{1/2}=\\dfrac{0.693}{k}$ (independent of $[A]_0$)',
+        'Arrhenius: $k=Ae^{-E_a/RT}$ · $\\ln\\dfrac{k_2}{k_1}=\\dfrac{E_a}{R}\\left(\\dfrac{1}{T_1}-\\dfrac{1}{T_2}\\right)$',
+      ]},
+      { title: 'Surface Chemistry', items: [
+        'Freundlich isotherm: $\\dfrac{x}{m}=kp^{1/n}$ ($n>1$)',
+        'BET (multi-layer) vs Langmuir (mono-layer) adsorption',
+        'Lyophilic colloids: stable, can be reconstituted (gelatin, starch)',
+        'Lyophobic colloids: irreversible, coagulated by electrolytes (gold sol, As₂S₃)',
+        'Hardy-Schulze rule: higher valence ion more effective in coagulation',
+      ]},
+      { title: 'General Principles of Isolation', items: [
+        'Concentration methods: gravity, froth flotation, magnetic, leaching',
+        'Reduction: pyrometallurgy (coke), hydrometallurgy (displacement), electrolysis',
+        'Ellingham diagram: thermodynamic basis for choice of reducing agent',
+        'Refining: electrolytic (Cu), zone refining (Si/Ge), vapour phase (Ni via Mond process)',
+      ]},
+      { title: 'The p-Block Elements (Groups 15–18)', items: [
+        'Group 15 (N family): oxidation states $-3$ to $+5$ · $\\text{N}_2\\text{O}_5$ (acidic oxide) · $\\text{NH}_3$ pyramidal',
+        'Group 16 (O family): O $(-2)$ · $\\text{SO}_2$ (V-shape) · $\\text{H}_2\\text{SO}_4$: oily, diprotic acid',
+        'Group 17 (Halogens): $\\text{F}_2$ most electronegative · $\\text{HF}$ weakest acid among HX',
+        'Group 18 (Noble gases): zero electron affinity; Xe forms $\\text{XeF}_2, \\text{XeF}_4, \\text{XeOF}_4$',
+        'Oxoacids of P: H₃PO₃ (diprotic), H₃PO₄ (triprotic), H₄P₂O₇ (pyrophosphoric)',
+      ]},
+      { title: 'd and f Block Elements', items: [
+        'Electronic config: $[\\text{Ar}]\\,3d^{1-10}\\,4s^{0-2}$ (exceptions: Cr $=3d^54s^1$, Cu $=3d^{10}4s^1$)',
+        'Variable oxidation states due to similar energies of $3d$ and $4s$',
+        '$\\text{KMnO}_4$: Mn in $+7$ state; strong oxidising agent in acidic medium',
+        '$\\text{K}_2\\text{Cr}_2\\text{O}_7$: Cr in $+6$; reacts with $6\\text{Fe}^{2+}\\to6\\text{Fe}^{3+}+2\\text{Cr}^{3+}$',
+        'Lanthanoid contraction: steady decrease in ionic radii ($4f$ orbitals poorly shielded)',
+      ]},
+      { title: 'Coordination Compounds', items: [
+        'IUPAC: ligands (alphabetically) then metal then oxidation state (Roman)',
+        'EAN rule: Metal + donated electrons from ligands = noble gas config',
+        'VBT: hybridisation determines geometry; inner/outer orbital complex',
+        'CFT: crystal field splitting $\\Delta_o$ (octahedral) · strong field ligands: $\\text{CN}^-,\\text{CO},\\text{NO}^+$',
+        'Magnetic moment: $\\mu=\\sqrt{n(n+2)}$ BM where $n=$ unpaired electrons',
+      ]},
+      { title: 'Haloalkanes and Haloarenes', items: [
+        'SN1: carbocation intermediate, rate $\\propto[R-X]$, racemisation',
+        'SN2: inversion of configuration, rate $\\propto[R-X][Nu]$, favoured by primary halide',
+        'E2 (elimination): anti-periplanar arrangement, Zaitsev product preferred',
+        'Grignard reagent $\\text{RMgX}$: reacts with water, aldehydes, ketones, CO₂',
+        'Wurtz reaction: $2\\text{RX}+2\\text{Na}\\to\\text{R-R}+2\\text{NaX}$',
+      ]},
+      { title: 'Alcohols, Phenols and Ethers', items: [
+        'Acidity order: Carboxylic acid > Phenol > Water > Alcohol',
+        'Lucas test: ZnCl₂/conc. HCl — tertiary reacts immediately, secondary slowly, primary last',
+        'Phenol: electrophilic aromatic substitution (OH is ortho/para directing)',
+        'Williamson synthesis (ether): $\\text{R-ONa}+\\text{R\'X}\\to\\text{R-O-R\'}+\\text{NaX}$ (SN2)',
+      ]},
+      { title: 'Aldehydes, Ketones and Carboxylic Acids', items: [
+        'Nucleophilic addition (RCHO/RCOR\') with HCN, NaHSO₃, Grignard, H₂O (hydrate)',
+        'Aldol condensation: $\\beta$-hydroxy carbonyl, then dehydration to $\\alpha,\\beta$-unsaturated compound',
+        'Cannizzaro reaction: non-enolisable aldehydes + conc. NaOH → disproportionation',
+        'Tollens test (silver mirror): aldehydes only · Fehling solution: aliphatic aldehydes',
+        'Acidity of RCOOH: $-\\text{I}$ groups increase acidity · $+\\text{I}$ groups decrease acidity',
+      ]},
+      { title: 'Amines', items: [
+        'Basicity: aliphatic > aniline; lone pair availability on N',
+        'Hoffman\'s bromamide: $\\text{RCONH}_2\\xrightarrow{\\text{Br}_2/\\text{NaOH}}\\text{RNH}_2$ (amine one C fewer)',
+        'Diazonium salt: $\\text{ArNH}_2\\xrightarrow{\\text{NaNO}_2/\\text{HCl}}\\text{ArN}_2^+\\text{Cl}^-$ (0–5°C)',
+        'Coupling reaction: $\\text{ArN}_2^++\\text{Ar\'H}\\to\\text{Ar-N=N-Ar\'}$ (at alkaline pH)',
+        'Carbylamine test: primary amines + CHCl₃ + KOH → isocyanide (foul smell)',
+      ]},
+      { title: 'Biomolecules', items: [
+        'Carbohydrates: $(\\text{CH}_2\\text{O})_n$ · glucose open-chain $\\alpha$-D and $\\beta$-D (Haworth structures)',
+        'Sucrose = glucose + fructose (non-reducing, no free aldehyde/keto group)',
+        'Proteins: amino acids linked by peptide bonds $(-\\text{CO}-\\text{NH}-)$',
+        'Enzymes are globular proteins; substrate-specific; denatured by heat/pH change',
+        'DNA double helix: A-T (2 H-bonds), G-C (3 H-bonds); antiparallel strands',
+        'Vitamins: fat-soluble (A, D, E, K) vs water-soluble (B-complex, C)',
+      ]},
+    ],
+  },
+};
+
+/* Returns the formula sheet appropriate for the active standard (11 or 12). */
+function getActiveFormulaSheet() {
+  return (state && state.standard === '12') ? FORMULA_SHEET_12 : FORMULA_SHEET;
+}
+
 let formulaSheetSubject = 'math';
 
 function openFormulaSheet() {
+  // Reset to math tab whenever sheet is opened so subject tab matches current standard
+  formulaSheetSubject = 'math';
+  const sheet = getActiveFormulaSheet();
   const tabRow = document.getElementById('formulaTabRow');
-  tabRow.innerHTML = Object.keys(FORMULA_SHEET).map(key => `
-    <button class="lb-tab ${key === formulaSheetSubject ? 'active' : ''}" onclick="setFormulaSheetSubject('${key}')">${FORMULA_SHEET[key].label}</button>
+  tabRow.innerHTML = Object.keys(sheet).map(key => `
+    <button class="lb-tab ${key === formulaSheetSubject ? 'active' : ''}" onclick="setFormulaSheetSubject('${key}')">${sheet[key].label}</button>
   `).join('');
   renderFormulaSheet();
   document.getElementById('formulaSheetModal').classList.add('show');
@@ -7092,15 +8069,16 @@ function closeFormulaSheet() { document.getElementById('formulaSheetModal').clas
 
 function setFormulaSheetSubject(key) {
   formulaSheetSubject = key;
+  const sheet = getActiveFormulaSheet();
   document.querySelectorAll('#formulaTabRow .lb-tab').forEach((btn, i) => {
-    btn.classList.toggle('active', Object.keys(FORMULA_SHEET)[i] === key);
+    btn.classList.toggle('active', Object.keys(sheet)[i] === key);
   });
   renderFormulaSheet();
 }
 
 function renderFormulaSheet() {
   const body = document.getElementById('formulaSheetBody');
-  const subj = FORMULA_SHEET[formulaSheetSubject];
+  const subj = getActiveFormulaSheet()[formulaSheetSubject];
   body.innerHTML = subj.groups.map(g => `
     <div class="fs-card">
       <div class="fs-card-label">${g.title}</div>
@@ -7270,7 +8248,7 @@ function goToSubjects(navOpts) {
   state.curSubj = null;
   const grid = document.getElementById('subjectGrid');
   grid.innerHTML = '';
-  DATA.forEach(sub => {
+  getActiveData().forEach(sub => {
     let card = document.createElement('div');
     card.className = 'card-item';
     card.innerHTML = `<div class="ico">${SUBJECT_ICON_SVG[sub.id] || sub.icon}</div><h3>${sub.name}</h3><p>${sub.chapters.length} Chapters</p>`;
@@ -7647,13 +8625,14 @@ function renderBattleResults(room) {
 
 function renderHomeScreen(navOpts) {
   AudioSys.startPeacefulAmbient();
-  document.getElementById('appTitleText').textContent = 'Expedition Hub';
+  const std = state.standard || '11';
+  document.getElementById('appTitleText').textContent = 'Expedition ' + std + ' Hub';
   setBodyThemeClass('');
   const nameEl = document.getElementById('homeWelcomeText');
   if (nameEl) nameEl.textContent = 'Welcome back, ' + (state.explorerName || 'Explorer');
   const badgeCount = (typeof getEarnedBadges === 'function') ? getEarnedBadges().length : (state.badges ? state.badges.length : 0);
   const subEl = document.getElementById('homeSubText');
-  if (subEl) subEl.textContent = badgeCount + ' badges earned';
+  if (subEl) subEl.textContent = 'Class ' + std + ' · ' + badgeCount + ' badges earned';
   const xpEl = document.getElementById('homeXpVal'); if (xpEl) xpEl.textContent = state.xp || 0;
   const streakEl = document.getElementById('homeStreakVal'); if (streakEl) streakEl.textContent = state.streak || 0;
   const badgesEl = document.getElementById('homeBadgesVal'); if (badgesEl) badgesEl.textContent = badgeCount;
@@ -7666,7 +8645,7 @@ function renderHomeScreen(navOpts) {
     // as a hand-tuned map legend rather than a generic progress widget.
     const subjColors = { math: 'var(--brass)', physics: '#9b8ecb', chemistry: 'var(--sea)', mixed: 'var(--brass-light)' };
     if (!window._homeExpandedSubjects) window._homeExpandedSubjects = new Set();
-    progWrap.innerHTML = DATA.map(sub => {
+    progWrap.innerHTML = getActiveData().map(sub => {
       let cleared = 0, total = 0;
       sub.chapters.forEach(ch => {
         const p = state.progress[ch.id];
@@ -9540,7 +10519,7 @@ function toggleLightTheme() {
    ============================================================ */
 // Build a flat list of {topic, formula} cards from the FORMULA_SHEET
 function buildFlashcardDeck(subjKey) {
-  const subj = FORMULA_SHEET[subjKey];
+  const subj = getActiveFormulaSheet()[subjKey];
   if (!subj) return [];
   const deck = [];
   subj.groups.forEach(g => {
@@ -9556,13 +10535,15 @@ let fcIdx = 0;
 let fcFlipped = false;
 
 function openFlashcardModal() {
-  // Populate subject selector
+  // Rebuild subject selector every time so it reflects the active standard
   const sel = document.getElementById('flashcardSubjSelect');
-  if (sel && sel.options.length === 0) {
-    Object.keys(FORMULA_SHEET).forEach(k => {
+  if (sel) {
+    sel.innerHTML = '';
+    const sheet = getActiveFormulaSheet();
+    Object.keys(sheet).forEach(k => {
       const opt = document.createElement('option');
       opt.value = k;
-      opt.textContent = FORMULA_SHEET[k].label;
+      opt.textContent = sheet[k].label;
       sel.appendChild(opt);
     });
   }
@@ -9671,7 +10652,7 @@ function renderAnalyticsDashboard() {
 
   let chapterRows = '';
   let bestChap = null, worstChap = null;
-  DATA.forEach(sub => {
+  getActiveData().forEach(sub => {
     if (sub.id === 'mixed') return;
     sub.chapters.forEach(ch => {
       const p = state.progress[ch.id];
@@ -10183,7 +11164,10 @@ function openStudyPlan() {
   body.innerHTML = `
     <div class="sp-form-section">
       <span class="sp-form-label">Exam / Target Date</span>
-      <input type="date" id="studyPlanExamDate" class="input-field" style="width:100%;">
+      <div class="sp-date-wrap">
+        <input type="date" id="studyPlanExamDate">
+        <span class="sp-date-icon">📅</span>
+      </div>
     </div>
     <div class="sp-form-section">
       <span class="sp-form-label">Subjects to include</span>
@@ -10191,14 +11175,15 @@ function openStudyPlan() {
     </div>
     <div class="sp-form-section">
       <span class="sp-form-label">Study hours per day</span>
-      <select id="studyPlanHours" class="input-field" style="width:100%;">
-        <option value="1">1 hour</option>
-        <option value="2" selected>2 hours</option>
-        <option value="3">3 hours</option>
-        <option value="4">4 hours</option>
-        <option value="5">5 hours</option>
-        <option value="6">6 hours</option>
-      </select>
+      <div class="sp-hours-strip" id="studyPlanHoursStrip">
+        <button class="sp-hours-btn" data-h="1" onclick="selectStudyHours(this)">1h<span class="sp-h-sub">light</span></button>
+        <button class="sp-hours-btn active" data-h="2" onclick="selectStudyHours(this)">2h<span class="sp-h-sub">steady</span></button>
+        <button class="sp-hours-btn" data-h="3" onclick="selectStudyHours(this)">3h<span class="sp-h-sub">solid</span></button>
+        <button class="sp-hours-btn" data-h="4" onclick="selectStudyHours(this)">4h<span class="sp-h-sub">intense</span></button>
+        <button class="sp-hours-btn" data-h="5" onclick="selectStudyHours(this)">5h<span class="sp-h-sub">heavy</span></button>
+        <button class="sp-hours-btn" data-h="6" onclick="selectStudyHours(this)">6h<span class="sp-h-sub">grind</span></button>
+      </div>
+      <input type="hidden" id="studyPlanHours" value="2">
     </div>
     <div class="sp-form-section">
       <span class="sp-form-label">Study style</span>
@@ -10242,6 +11227,14 @@ function openStudyPlan() {
 
   document.getElementById('studyPlanModal').classList.add('show');
 }
+
+function selectStudyHours(el) {
+  document.querySelectorAll('#studyPlanHoursStrip .sp-hours-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const hidden = document.getElementById('studyPlanHours');
+  if (hidden) hidden.value = el.dataset.h;
+}
+window.selectStudyHours = selectStudyHours;
 
 function selectStudyStyle(el) {
   document.querySelectorAll('#studyStyleGrid .sp-style-btn').forEach(b => b.classList.remove('active'));
@@ -10397,7 +11390,7 @@ function renderParentDash() {
 
   let subjRows = '';
   let totalCleared = 0, totalLevels = 0;
-  DATA.forEach(sub => {
+  getActiveData().forEach(sub => {
     if (sub.id === 'mixed') return;
     let cleared = 0;
     sub.chapters.forEach(ch => {
@@ -10647,11 +11640,11 @@ if ('serviceWorker' in navigator) {
       </div>
       <div class="form-group">
         <label>Focus on (subjects)</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="studyPlanSubjPills"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="studyPlanSubjPillsLegacy"></div>
       </div>
       <div class="form-group">
         <label>Daily study hours</label>
-        <select id="studyPlanHours">
+        <select id="studyPlanHoursLegacy">
           <option value="1">1 hour</option>
           <option value="2" selected>2 hours</option>
           <option value="3">3 hours</option>
