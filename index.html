@@ -2028,7 +2028,7 @@ function sbNav(which) {
     <div class="brand">
       <div class="brand-text">
         <h1 id="appTitleText">Expedition Hub</h1>
-        <p>Class 11 Science & Mathematics</p>
+        <p id="classSubtitleText">Class 11 Science & Mathematics</p>
       </div>
     </div>
     <div class="stats">
@@ -2037,6 +2037,7 @@ function sbNav(which) {
       <div id="badgesRow" class="badges-row" onclick="openBadgesPopup()" title="View badges"></div>
       <div id="examCountdownChip" class="exam-countdown-chip" onclick="openExamCountdownSettings()" title="Click to set/edit your exam date"></div>
       <div class="hud-chip" id="topbarFocusChip" onclick="openFocusTimer()" style="display:none; cursor:pointer;" title="Focus timer running — click to open">⏱️ <span id="topbarFocusTime">25:00</span></div>
+      <button class="back-btn" id="switchClassBtn" style="font-size:0.8rem;padding:8px 14px;" onclick="switchClass()" title="Switch between Class 11 and Class 12 content">🔀 Switch to Class 12</button>
       <button class="back-btn" style="font-size:0.8rem;padding:8px 14px;" onclick="openResetModal()" title="Reset all progress">↺ Reset</button>
       <button class="back-btn" style="font-size:0.8rem;padding:8px 14px;" onclick="openSwitchPlayerModal()" title="Not you? Switch to a different profile on this device">👤 Switch Player</button>
     </div>
@@ -3441,7 +3442,9 @@ const DATA_12 = [
       { id: '12_alcohols', name: 'Alcohols, Phenols and Ethers', icon: '🍶', blurb: 'Preparation, Reactions, Acidic nature' },
       { id: '12_aldehydes', name: 'Aldehydes, Ketones and Acids', icon: '🧪', blurb: 'Nucleophilic addition, Aldol, Cannizzaro' },
       { id: '12_amines', name: 'Amines', icon: '🔵', blurb: 'Basicity, Diazonium salts, Coupling reactions' },
-      { id: '12_biomolecules', name: 'Biomolecules', icon: '🧬', blurb: 'Carbohydrates, Proteins, Nucleic acids, Vitamins' }
+      { id: '12_biomolecules', name: 'Biomolecules', icon: '🧬', blurb: 'Carbohydrates, Proteins, Nucleic acids, Vitamins' },
+      { id: '12_polymers', name: 'Polymers', icon: '🧵', blurb: 'Classification, Types of polymerization, Rubber, Biodegradable polymers' },
+      { id: '12_chem_everyday', name: 'Chemistry in Everyday Life', icon: '💊', blurb: 'Drugs, Medicines, Food additives, Cleansing agents' }
     ]
   },
   {
@@ -4233,6 +4236,35 @@ function selectStandard(btn) {
   if (startBtn) startBtn.textContent = 'Start Class ' + std + ' Expedition \u2192';
 }
 window.selectStandard = selectStandard;
+
+/* Runtime Class 11 <-> Class 12 switch, available any time from the top bar
+   (separate from selectStandard(), which only drives the one-time pill
+   toggle shown in the first-run intro modal). Chapter ids are namespaced
+   per class (e.g. '12_relations' vs the Class 11 'relations'), so progress
+   for each class is stored independently under its own ids in
+   state.progress — switching never overwrites or loses the other class's
+   progress, even where two chapters share the same display name (e.g. both
+   classes have a "Probability" chapter, but under different ids). */
+function updateClassSwitchUI() {
+  const std = state.standard || '11';
+  const other = std === '11' ? '12' : '11';
+  const btn = document.getElementById('switchClassBtn');
+  if (btn) btn.textContent = '🔀 Switch to Class ' + other;
+  const subEl = document.getElementById('classSubtitleText');
+  if (subEl) subEl.textContent = 'Class ' + std + ' Science & Mathematics';
+}
+window.updateClassSwitchUI = updateClassSwitchUI;
+
+function switchClass() {
+  state.standard = (state.standard === '12') ? '11' : '12';
+  doSave();
+  updateClassSwitchUI();
+  // Any in-progress subject/chapter/level view belongs to the class you're
+  // leaving (chapter ids don't carry over), so land back on the home
+  // screen, which is already standard-aware via getActiveData().
+  renderHomeScreen();
+}
+window.switchClass = switchClass;
 
 function registerExplorer() {
   const inputEl = document.getElementById('explorerNameInput');
@@ -8627,6 +8659,7 @@ function renderHomeScreen(navOpts) {
   AudioSys.startPeacefulAmbient();
   const std = state.standard || '11';
   document.getElementById('appTitleText').textContent = 'Expedition ' + std + ' Hub';
+  updateClassSwitchUI();
   setBodyThemeClass('');
   const nameEl = document.getElementById('homeWelcomeText');
   if (nameEl) nameEl.textContent = 'Welcome back, ' + (state.explorerName || 'Explorer');
