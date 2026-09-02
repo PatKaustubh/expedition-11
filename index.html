@@ -1027,6 +1027,16 @@ body.sidebar-collapsed #sidebarCollapseBtn .sb-icon { transform: rotate(180deg);
   body.has-sidebar .modal-box.list-popup .widget-hdr .popup-close {
     position: absolute; top: 30px; right: 34px;
   }
+  /* The rule above assumes exactly one .popup-close per header, which holds
+     everywhere except the PYQ Viewer — its header has TWO buttons side by
+     side (Reset + Close) in their own flex row. Without this override both
+     get pinned to the same absolute coordinates and render on top of each
+     other (garbled/overlapping text). #pyqViewerModal's id gives this rule
+     higher specificity than the general one above, so it reliably wins and
+     keeps both buttons laid out normally in their flex row instead. */
+  #pyqViewerModal .modal-box.list-popup .widget-hdr .popup-close {
+    position: static;
+  }
   body.has-sidebar .modal-box.list-popup .lb-tab-row { margin-bottom: 22px; }
   body.has-sidebar .modal-box.list-popup .lb-tab {
     border-radius: 4px; padding: 9px 18px; font-family: 'Space Mono', monospace; font-weight: 600; letter-spacing: 0.3px;
@@ -2505,7 +2515,7 @@ function sbNav(which) {
     <div class="modal-box list-popup" style="max-width: 720px; text-align: left;">
       <div class="widget-hdr">
         <h3 id="pyqViewerTitle" class="pyq-modal-title">📚 PYQ Viewer</h3>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; align-self:flex-end;">
           <button class="popup-close" id="pyqResetBtn" onclick="resetPyqQuiz()" title="Clear progress and start this set over from question 1" style="display:none;">🔄 Reset</button>
           <button class="popup-close" onclick="closePyqViewerModal()">✕ Close</button>
         </div>
@@ -6790,8 +6800,12 @@ async function startPyqPracticeSingle() {
     data.pages.forEach(p => allPages.push({ ...p, year: y, subject: subj.name }));
   }
 
-  if (allQuestions.length) {
-    startPyqQuiz(`${subj.icon} ${subj.name} — ${years.join(', ')}`, allQuestions);
+  // Only ever hand well-formed questions to the interactive quiz — anything
+  // that looks OCR-garbled (see isPyqQuestionUsable) falls back to the
+  // honest read-only page viewer instead of a broken-looking quiz.
+  const usableQuestions = allQuestions.filter(isPyqQuestionUsable);
+  if (usableQuestions.length) {
+    startPyqQuiz(`${subj.icon} ${subj.name} — ${years.join(', ')}`, usableQuestions);
   } else {
     renderPyqViewer(`${subj.icon} ${subj.name} — ${years.join(', ')}`, allPages);
   }
@@ -6882,8 +6896,12 @@ async function startPyqPracticeMixed() {
       data.pages.forEach(p => allPages.push({ ...p, year: y, subject: subj.name }));
     }
   }
-  if (allQuestions.length) {
-    startPyqQuiz('🌐 Mixed Practice — All Subjects', allQuestions);
+  // Only ever hand well-formed questions to the interactive quiz — anything
+  // that looks OCR-garbled (see isPyqQuestionUsable) falls back to the
+  // honest read-only page viewer instead of a broken-looking quiz.
+  const usableQuestions = allQuestions.filter(isPyqQuestionUsable);
+  if (usableQuestions.length) {
+    startPyqQuiz('🌐 Mixed Practice — All Subjects', usableQuestions);
   } else {
     renderPyqViewer('🌐 Mixed Practice — All Subjects', allPages);
   }
@@ -7155,6 +7173,54 @@ function isPyqSolutionUsable(text) {
   const junkMarkers = /\b(allen answer|bonus|typing mistake|official ans\.?\s*by\s*nta)\b/i;
   if (junkMarkers.test(clean)) return false;
 
+  return true;
+}
+
+// Same idea as isPyqSolutionUsable() above, but for the question stem +
+// options themselves — some sets (e.g. 2021) have a `questions` array that's
+// structurally complete (a stem, 4 options, an answer index) but whose text
+// got mangled during PDF/OCR extraction: fraction bars, exponents, and
+// integral bounds collapse into a flat run of stray digits, e.g.
+// "2 2 d y 10 11 dx =" instead of d²y/dx². Rather than showing that as a
+// broken quiz, this flags it so the caller can fall back to the honest
+// read-only page viewer for just the affected questions.
+//
+// Stem and options are checked separately (not combined into one ratio):
+// plenty of legitimate JEE questions have plain single-token numeric answers
+// ("0", "20", "25", "10"), which would otherwise get unfairly penalized by a
+// combined digit-density check. A single clean token is always fine — the
+// actual garbling signal is a *multi-token* option/stem where several of
+// those tokens are bare, consecutive digits (a flattened equation object),
+// not just "this option happens to be a number."
+function pyqOptionLooksGarbled(opt) {
+  const tokens = String(opt).split(/\s+/).filter(Boolean);
+  if (tokens.length <= 1) return false; // single clean numeric/text answer
+  let maxRun = 0, curRun = 0, digitCount = 0;
+  tokens.forEach(t => {
+    if (/^\d+$/.test(t)) { digitCount++; curRun++; maxRun = Math.max(maxRun, curRun); }
+    else curRun = 0;
+  });
+  if (maxRun >= 2) return true;
+  if (digitCount / tokens.length > 0.4) return true;
+  return false;
+}
+function pyqStemLooksGarbled(stem) {
+  const tokens = String(stem).split(/\s+/).filter(Boolean);
+  let maxRun = 0, curRun = 0;
+  tokens.forEach(t => {
+    if (/^\d+$/.test(t)) { curRun++; maxRun = Math.max(maxRun, curRun); }
+    else curRun = 0;
+  });
+  return maxRun >= 3;
+}
+function isPyqQuestionUsable(q) {
+  if (!q || typeof q.q !== 'string') return false;
+  const text = q.q.trim();
+  if (text.length < 10) return false;
+  if (!Array.isArray(q.opts) || q.opts.length < 2) return false;
+  if (typeof q.ans !== 'number' || q.ans < 0 || q.ans >= q.opts.length) return false;
+  if (pyqStemLooksGarbled(text)) return false;
+  if (q.opts.some(pyqOptionLooksGarbled)) return false;
   return true;
 }
 
