@@ -2887,10 +2887,18 @@ let firestoreReady = false;
           if (window.__resolveAuthReady) { window.__resolveAuthReady(user.uid); window.__resolveAuthReady = null; }
         }
       });
-      firebase.auth().signInAnonymously().catch((e) => {
-        console.warn('[Explorer] Anonymous sign-in failed — writes will be rejected by security rules until this succeeds:', e);
-        if (window.__resolveAuthReady) { window.__resolveAuthReady(null); window.__resolveAuthReady = null; }
-      });
+      // Explicitly request LOCAL persistence (survives tab close/reopen) before
+      // signing in. This is Firebase's default in most browsers, but setting it
+      // explicitly protects against browsers/profiles where it silently falls
+      // back to SESSION or NONE, which would mint a brand-new anonymous uid on
+      // every visit — the single biggest cause of duplicate leaderboard entries.
+      firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .catch((e) => console.warn('[Explorer] Could not set LOCAL auth persistence (falling back to default):', e))
+        .then(() => firebase.auth().signInAnonymously())
+        .catch((e) => {
+          console.warn('[Explorer] Anonymous sign-in failed — writes will be rejected by security rules until this succeeds:', e);
+          if (window.__resolveAuthReady) { window.__resolveAuthReady(null); window.__resolveAuthReady = null; }
+        });
     } catch (e) {
       console.warn('[Explorer] Firebase Auth unavailable:', e);
     }
@@ -3086,6 +3094,28 @@ function updateSyncBanner(status) {
 }
 
 window.DB_Engine = {
+  // Looks for an existing leaderboard entry with the same username but a
+  // DIFFERENT uid. This is the signature of a lost/reset Firebase Auth
+  // session (see comment in syncPlayerScore below). Returns the matching
+  // record (with its uid) or null.
+  async _findDuplicateByUsername(name, currentUid) {
+    if (!dbReady || !name) return null;
+    try {
+      const snap = await db.ref('leaderboard').once('value');
+      const val = snap.val() || {};
+      let best = null;
+      Object.keys(val).forEach((uid) => {
+        const rec = val[uid];
+        if (!rec || rec.username !== name || uid === currentUid) return;
+        if (!best || (rec.xp || 0) > (best.xp || 0)) best = { uid, ...rec };
+      });
+      return best;
+    } catch (e) {
+      console.warn('[Explorer] Duplicate lookup failed (non-fatal):', e);
+      return null;
+    }
+  },
+
   async syncPlayerScore(name, xp) {
     localStorage.setItem('local_xp_record', xp); // always keep a local fallback copy
     // Once an educator has removed this candidate, stop writing to the shared
@@ -3095,6 +3125,35 @@ window.DB_Engine = {
     await ensureAnonymousAuth();
     const uid = getPlayerUid();
     const key = safeKeyPart(uid);
+
+    // Self-healing reconciliation: if the Firebase Auth session was lost
+    // (private browsing ended, storage evicted, etc.), getPlayerUid() above
+    // may have just minted a brand-new uid. Without this check, that shows
+    // up as a second leaderboard row for the same student starting at 0 XP,
+    // while their real progress sits orphaned under the old uid. Instead,
+    // detect that case here and merge forward automatically.
+    if (dbReady) {
+      const dup = await this._findDuplicateByUsername(name, key);
+      if (dup && (dup.xp || 0) > xp) {
+        // The old record has more progress than what we're about to write —
+        // adopt it locally so the student's own screen also reflects it,
+        // rather than silently overwriting it with a lower/zero value.
+        xp = dup.xp;
+        if (typeof state !== 'undefined') {
+          state.xp = dup.xp;
+          if (dup.weeklyXp) state.weeklyXp = dup.weeklyXp;
+        }
+        localStorage.setItem('local_xp_record', xp);
+      }
+      if (dup) {
+        // Either way, the stale duplicate row is now redundant — remove it
+        // so it never reaches the educator panel as something to clean up
+        // manually.
+        try { await db.ref('leaderboard/' + safeKeyPart(dup.uid)).remove(); }
+        catch (e) { console.warn('[Explorer] Could not clean up stale duplicate uid', dup.uid, e); }
+      }
+    }
+
     const payload = {
       uid, username: name, xp, badges: (typeof computeBadges === 'function' ? computeBadges() : []), timestamp: Date.now(),
       weeklyXp: state.weeklyXp || 0, weeklyXpWeekStart: state.weeklyXpWeekStart || getWeekKey()
