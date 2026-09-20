@@ -2004,6 +2004,7 @@ function sbNav(which) {
       case 'leaderboard': if (typeof openLeaderboardPopup === 'function') openLeaderboardPopup(); break;
       case 'invite': if (typeof shareInviteLink === 'function') shareInviteLink(); break;
       case 'backup': if (typeof openBackupPopup === 'function') openBackupPopup(); break;
+      case 'login': if (typeof openLoginPopup === 'function') openLoginPopup(); break;
       case 'analytics': if (typeof openAnalyticsModal === 'function') openAnalyticsModal(); break;
       case 'flashcards': if (typeof openFlashcardModal === 'function') openFlashcardModal(); break;
       case 'timedquiz': if (typeof openTimedQuizSetup === 'function') openTimedQuizSetup(); break;
@@ -2244,6 +2245,15 @@ function sbNav(which) {
         <div class="panel-hint">Open backup options</div>
       </div>
 
+      <!-- SAVE PROGRESS / LOGIN — also kept always-visible for the same
+           reason as backup above: a returning user on a new device needs to
+           log in immediately, without needing prior level progress. -->
+      <div class="side-panel login-panel" onclick="openLoginPopup()" style="margin-bottom:14px;">
+        <div class="widget-hdr"><span class="panel-icon" style="background:rgba(42,157,143,0.18); color:#5fd6c4;">🔐</span><h3 id="loginPanelTitle">Save Progress</h3></div>
+        <div class="panel-body-text" id="loginPanelBodyText">Add an email &amp; password so your progress is never lost</div>
+        <div class="panel-hint" id="loginPanelHint">Save or log in</div>
+      </div>
+
       <div class="tools-section-label">Quick Tools</div>
       <div class="side-panels-grid" id="advancedPanelsGrid">
         <div class="side-panel resolutions-panel" onclick="openResolutionsPopup()">
@@ -2367,6 +2377,106 @@ function sbNav(which) {
         </label>
       </div>
       <div id="backupStatusMsg" style="margin-top:12px; font-size:0.8rem; display:none;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="loginPopup" onclick="if(event.target===this) closeLoginPopup()">
+    <div class="modal-box list-popup" style="max-width:420px; text-align:left;">
+      <div class="widget-hdr">
+        <h3 id="loginPopupTitle">🔐 Save Your Progress</h3>
+        <button class="popup-close" onclick="closeLoginPopup()">✕ Close</button>
+      </div>
+      <p id="loginPopupSubtext" style="font-size:0.85rem; color:var(--parchment-dim); margin-top:0;">
+        Add an email and password so your XP, badges, and streak are safe even if you clear your browser or switch devices.
+      </p>
+
+      <button class="btn ghost" onclick="handleGoogleLoginSubmit()" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; margin-top:14px;">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+        Continue with Google
+      </button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--parchment-dim); font-size:0.75rem;">
+        <div style="flex:1; height:1px; background:var(--glass-border,rgba(255,255,255,0.15));"></div>
+        <span>OR</span>
+        <div style="flex:1; height:1px; background:var(--glass-border,rgba(255,255,255,0.15));"></div>
+      </div>
+
+      <div id="loginModeSignup">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <input type="email" id="loginEmailInput" class="intro-input" placeholder="Email address" autocomplete="email">
+          <input type="password" id="loginPasswordInput" class="intro-input" placeholder="Create a password (min 6 characters)" autocomplete="new-password">
+          <button class="btn primary" onclick="handleSaveProgressSubmit()">Save My Progress</button>
+        </div>
+        <p style="font-size:0.78rem; color:var(--parchment-dim); margin-top:12px;">
+          Already saved progress on another device?
+          <a href="#" onclick="switchLoginPopupToLoginMode(); return false;" style="color:var(--brass-light,#c99c51); text-decoration:underline;">Log in instead</a>
+        </p>
+      </div>
+
+      <div id="loginModeLogin" style="display:none;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <input type="email" id="loginEmailInputExisting" class="intro-input" placeholder="Email address" autocomplete="email">
+          <input type="password" id="loginPasswordInputExisting" class="intro-input" placeholder="Password" autocomplete="current-password">
+          <button class="btn primary" onclick="handleExistingLoginSubmit()">Log In</button>
+        </div>
+        <p style="font-size:0.78rem; color:var(--parchment-dim); margin-top:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+          <a href="#" onclick="switchLoginPopupToSignupMode(); return false;" style="color:var(--brass-light,#c99c51); text-decoration:underline;">New here? Create a save instead</a>
+          <a href="#" onclick="switchLoginPopupToResetMode(); return false;" style="color:var(--parchment-dim); text-decoration:underline;">Forgot password?</a>
+        </p>
+      </div>
+
+      <div id="loginModeReset" style="display:none;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <input type="email" id="resetEmailInput" class="intro-input" placeholder="Email address" autocomplete="email">
+          <button class="btn primary" onclick="handlePasswordResetSubmit()">Send Reset Link</button>
+        </div>
+        <p style="font-size:0.78rem; color:var(--parchment-dim); margin-top:12px;">
+          <a href="#" onclick="switchLoginPopupToLoginMode(); return false;" style="color:var(--brass-light,#c99c51); text-decoration:underline;">&larr; Back to log in</a>
+        </p>
+      </div>
+
+      <div id="loginPopupStatusMsg" style="margin-top:12px; font-size:0.8rem; display:none;"></div>
+    </div>
+  </div>
+
+  <!-- PROTECT YOUR PROGRESS — auto-appearing modal (not tucked in a side
+       panel). Shown once the student actually has something worth
+       protecting (has cleared at least one level) and hasn't linked an
+       account yet. Offers three ways out: Google, email, or just a backup
+       file — so there's always a low-friction option, never a hard gate. -->
+  <div class="modal-backdrop" id="protectProgressModal">
+    <div class="modal-box list-popup" style="max-width:440px; text-align:left;">
+      <div class="widget-hdr">
+        <h3>🛡️ Protect Your Progress</h3>
+        <button class="popup-close" onclick="dismissProtectProgressModal()">✕ Not now</button>
+      </div>
+      <p style="font-size:0.85rem; color:var(--parchment-dim); margin-top:0;">
+        You've earned <b id="protectProgressXp">0</b> XP so far. Right now it only lives in this browser — pick one option below to make sure you never lose it.
+      </p>
+
+      <button class="btn ghost" onclick="handleGoogleLoginFromProtectModal()" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; margin-top:14px;">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+        Continue with Google
+      </button>
+
+      <button class="btn ghost" onclick="switchToEmailFromProtectModal()" style="width:100%; margin-top:10px;">
+        ✉️ Save with Email &amp; Password
+      </button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--parchment-dim); font-size:0.75rem;">
+        <div style="flex:1; height:1px; background:var(--glass-border,rgba(255,255,255,0.15));"></div>
+        <span>OR</span>
+        <div style="flex:1; height:1px; background:var(--glass-border,rgba(255,255,255,0.15));"></div>
+      </div>
+
+      <button class="btn primary" onclick="handleBackupFromProtectModal()" style="width:100%;">
+        ⬇ Just download a backup file
+      </button>
+      <p style="font-size:0.72rem; color:var(--parchment-dim); margin-top:8px; text-align:center;">
+        No account needed — save a file you can restore later on any device.
+      </p>
+
+      <div id="protectProgressStatusMsg" style="margin-top:12px; font-size:0.8rem; display:none;"></div>
     </div>
   </div>
 
@@ -2613,6 +2723,9 @@ function sbNav(which) {
       
       <div class="qtag" id="qTag">Level X · Question Y</div>
       <div class="qtext" id="qText">Question Text Goes Here</div>
+      <div id="qHintBox" style="display:none; margin-top:10px; padding:10px 14px; border-radius:10px; background:rgba(201,156,81,0.1); border:1px solid rgba(201,156,81,0.35); font-size:0.85rem; color:var(--parchment-dim,#c5bba8);">
+        <span style="color:var(--brass-light,#e8c382); font-weight:600;">💡 Hint:</span> <span id="qHintText"></span>
+      </div>
       <div class="opt-grid" id="optGrid"></div>
       <div class="feedback" id="qFeedback"></div>
       <div class="btn-row" id="qNextRow" style="display:none;">
@@ -3040,6 +3153,164 @@ function getPlayerUid() {
   }
   return uid;
 }
+// ---------------------------------------------------------------------
+// Account Linking — "Save your progress" login
+//
+// Every student is already a Firebase Anonymous Auth user with a real uid,
+// and ALL progress (leaderboard, xp, badges) is keyed by that uid. So the
+// goal here is NOT to migrate data to a new account — it's to attach real
+// login credentials to the SAME uid that already has all their progress.
+//
+// Two flows:
+//  1. First-time signup (the common case): linkWithCredential upgrades the
+//     current anonymous user in place. uid never changes. No merge needed
+//     — the same leaderboard/progress record just gains an email+password.
+//  2. Login from a device that's currently a DIFFERENT anonymous user (e.g.
+//     student made an account on their phone, now opening a laptop that has
+//     its own fresh anonymous session): linking will fail with
+//     auth/email-already-in-use. In that case we sign into the real account
+//     instead, then reconcile local progress against whatever's saved on
+//     the real account using the same higher-XP-wins logic already built
+//     into DB_Engine._findDuplicateByUsername.
+// ---------------------------------------------------------------------
+
+async function linkAccountWithEmail(email, password) {
+  await ensureAnonymousAuth();
+  const credential = firebase.auth.EmailAuthProvider.credential(email, password);
+  const currentUser = firebase.auth().currentUser;
+  try {
+    const result = await currentUser.linkWithCredential(credential);
+    // Same uid as before linking — nothing else needs to happen.
+    return { status: 'linked', user: result.user };
+  } catch (e) {
+    if (e.code === 'auth/email-already-in-use' || e.code === 'auth/credential-already-in-use') {
+      // This email is already a real account elsewhere. Preserve whatever
+      // progress exists on THIS device/session before switching identity,
+      // so it can be reconciled against the real account below.
+      const localXpBeforeSwitch = state.xp || 0;
+      const localNameBeforeSwitch = state.explorerName;
+
+      const signInResult = await firebase.auth().signInWithEmailAndPassword(email, password);
+      const realUid = signInResult.user.uid;
+
+      // Pull the real account's saved progress and reconcile: whichever
+      // side has more XP wins, exactly like the duplicate-uid fix already
+      // does for lost-session cases.
+      let remote = null;
+      if (dbReady) {
+        try {
+          const snap = await db.ref('leaderboard/' + safeKeyPart(realUid)).once('value');
+          remote = snap.val();
+        } catch (err) {
+          console.warn('[Explorer] Could not fetch existing account progress:', err);
+        }
+      }
+      const remoteXp = remote?.xp || 0;
+      if (localXpBeforeSwitch > remoteXp) {
+        // Local session (this device) was ahead — keep it, write forward
+        // under the real uid.
+        state.xp = localXpBeforeSwitch;
+      } else if (remote) {
+        // The real account already has equal/more progress — adopt it.
+        state.xp = remoteXp;
+        if (remote.weeklyXp) state.weeklyXp = remoteXp.weeklyXp;
+      }
+      state.explorerName = remote?.username || localNameBeforeSwitch;
+      saveGame();
+      if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+
+      return { status: 'linked_existing', user: signInResult.user, mergedXp: state.xp };
+    }
+    throw e;
+  }
+}
+
+async function loginToExistingAccount(email, password) {
+  const localXpBeforeSwitch = state.xp || 0;
+  const signInResult = await firebase.auth().signInWithEmailAndPassword(email, password);
+  const realUid = signInResult.user.uid;
+
+  let remote = null;
+  if (dbReady) {
+    try {
+      const snap = await db.ref('leaderboard/' + safeKeyPart(realUid)).once('value');
+      remote = snap.val();
+    } catch (err) {
+      console.warn('[Explorer] Could not fetch account progress on login:', err);
+    }
+  }
+  const remoteXp = remote?.xp || 0;
+  // Higher-XP-wins reconciliation — same rule used everywhere else in the app.
+  state.xp = Math.max(localXpBeforeSwitch, remoteXp);
+  if (remote?.username) state.explorerName = remote.username;
+  if (remote?.progress) state.progress = { ...state.progress, ...remote.progress };
+  saveGame();
+  if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+  return signInResult.user;
+}
+
+// Google Sign-In — works for BOTH first-time signup and returning login in
+// a single flow, since Google's popup itself handles "does this account
+// exist yet" on Google's side. Mirrors the email/password linking pattern:
+//  1. Try linking the Google credential to the current anonymous user (uid
+//     stays the same, no merge needed) — this is the common first-time case.
+//  2. If that Google account is ALREADY linked to a different Firebase user
+//     (e.g. they signed up with Google on their phone, this is a new
+//     device's fresh anonymous session), Firebase's error object hands back
+//     a ready-to-use `credential` — no password re-entry needed, unlike the
+//     email flow — so we just sign in with that directly, then reconcile
+//     progress the same higher-XP-wins way.
+async function linkAccountWithGoogle() {
+  await ensureAnonymousAuth();
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const currentUser = firebase.auth().currentUser;
+  try {
+    const result = await currentUser.linkWithPopup(provider);
+    return { status: 'linked', user: result.user };
+  } catch (e) {
+    if (e.code === 'auth/credential-already-in-use') {
+      const localXpBeforeSwitch = state.xp || 0;
+      const localNameBeforeSwitch = state.explorerName;
+
+      // e.credential is the Google credential Firebase already validated —
+      // sign in with it directly instead of asking the user to re-auth.
+      const signInResult = await firebase.auth().signInWithCredential(e.credential);
+      const realUid = signInResult.user.uid;
+
+      let remote = null;
+      if (dbReady) {
+        try {
+          const snap = await db.ref('leaderboard/' + safeKeyPart(realUid)).once('value');
+          remote = snap.val();
+        } catch (err) {
+          console.warn('[Explorer] Could not fetch existing account progress:', err);
+        }
+      }
+      const remoteXp = remote?.xp || 0;
+      if (localXpBeforeSwitch > remoteXp) {
+        state.xp = localXpBeforeSwitch;
+      } else if (remote) {
+        state.xp = remoteXp;
+        if (remote.weeklyXp) state.weeklyXp = remote.weeklyXp;
+      }
+      state.explorerName = remote?.username || localNameBeforeSwitch;
+      saveGame();
+      if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+
+      return { status: 'linked_existing', user: signInResult.user, mergedXp: state.xp };
+    }
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      return { status: 'cancelled' };
+    }
+    throw e;
+  }
+}
+
+function isAccountLinked() {
+  const user = firebase.auth().currentUser;
+  return !!(user && user.providerData && user.providerData.length > 0);
+}
+
 // Resolves once Firebase Anonymous Auth has produced a signed-in user, so
 // writes that need auth.uid to match ($uid rules) don't race the sign-in
 // call that kicks off in initFirebase(). Safe to call many times.
@@ -3835,6 +4106,248 @@ function openBackupPopup() {
   document.getElementById('backupPopup').classList.add('show');
 }
 function closeBackupPopup() { document.getElementById('backupPopup').classList.remove('show'); }
+
+/* ================= SAVE PROGRESS / LOGIN ================= */
+
+function refreshLoginPanelDisplay() {
+  const titleEl = document.getElementById('loginPanelTitle');
+  const bodyEl = document.getElementById('loginPanelBodyText');
+  const hintEl = document.getElementById('loginPanelHint');
+  if (!titleEl) return;
+  if (isAccountLinked()) {
+    const email = firebase.auth().currentUser && firebase.auth().currentUser.email;
+    titleEl.textContent = 'Progress Saved';
+    bodyEl.textContent = email ? `Linked to ${email}` : 'Your progress is backed up to your account';
+    hintEl.textContent = 'Manage login';
+  } else {
+    titleEl.textContent = 'Save Progress';
+    bodyEl.textContent = 'Add an email & password so your progress is never lost';
+    hintEl.textContent = 'Save or log in';
+  }
+}
+
+// PROTECT YOUR PROGRESS — auto-popping modal (see HTML comment above the
+// modal markup for the full rationale). Shows once real progress exists
+// and no account is linked yet, then respects a dismiss cooldown so it
+// nudges rather than nags. Checking isAccountLinked() requires Firebase
+// Auth state to have resolved first, hence the ensureAnonymousAuth() wait.
+function maybeShowProtectProgressModal() {
+  ensureAnonymousAuth().then(() => {
+    const modal = document.getElementById('protectProgressModal');
+    if (!modal) return;
+    if (isAccountLinked()) { modal.classList.remove('show'); return; } // already saved — never show
+    if (!hasClearedAnyLevel() && (state.xp || 0) === 0) return; // nothing worth protecting yet
+    const dismissedUntil = Number(localStorage.getItem('protect_progress_dismissed_until') || 0);
+    if (Date.now() < dismissedUntil) return;
+    const xpEl = document.getElementById('protectProgressXp');
+    if (xpEl) xpEl.textContent = state.xp || 0;
+    modal.classList.add('show');
+  });
+}
+
+function dismissProtectProgressModal() {
+  // 3-day cooldown, same pattern as the existing backup reminder banner —
+  // nudges again later rather than never, but never on every single visit.
+  const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+  localStorage.setItem('protect_progress_dismissed_until', Date.now() + THREE_DAYS);
+  const modal = document.getElementById('protectProgressModal');
+  if (modal) modal.classList.remove('show');
+}
+
+function showProtectProgressStatus(msg, isError) {
+  const el = document.getElementById('protectProgressStatusMsg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? '#e07a5f' : 'var(--sea, #2A9D8F)';
+  el.style.display = 'block';
+}
+
+async function handleGoogleLoginFromProtectModal() {
+  showProtectProgressStatus('Opening Google sign-in...', false);
+  try {
+    const result = await linkAccountWithGoogle();
+    if (result.status === 'cancelled') {
+      document.getElementById('protectProgressStatusMsg').style.display = 'none';
+      return;
+    }
+    const xp = result.status === 'linked_existing' ? result.mergedXp : state.xp;
+    showProtectProgressStatus(`✅ Progress saved! Synced to ${xp} XP.`, false);
+    updateHomeStats && updateHomeStats();
+    if (typeof refreshLoginPanelDisplay === 'function') refreshLoginPanelDisplay();
+    localStorage.removeItem('protect_progress_dismissed_until'); // resolved — no need for future cooldowns
+    setTimeout(() => document.getElementById('protectProgressModal').classList.remove('show'), 1600);
+  } catch (e) {
+    console.warn('[Explorer] Google sign-in failed:', e);
+    let msg = 'Google sign-in failed. Please try again.';
+    if (e.code === 'auth/popup-blocked') msg = 'Your browser blocked the popup — please allow popups and try again.';
+    if (e.code === 'auth/account-exists-with-different-credential') msg = 'This email is already saved with a password — use "Save with Email" instead.';
+    showProtectProgressStatus(msg, true);
+  }
+}
+
+function switchToEmailFromProtectModal() {
+  // Hand off to the existing, fuller login modal (signup mode) rather than
+  // duplicating the email/password form here.
+  document.getElementById('protectProgressModal').classList.remove('show');
+  openLoginPopup();
+}
+
+function handleBackupFromProtectModal() {
+  exportProgressBackup();
+  localStorage.setItem('last_backup_export_at', String(Date.now()));
+  showProtectProgressStatus('✅ Backup downloaded — keep that file somewhere safe.', false);
+  setTimeout(dismissProtectProgressModal, 1600);
+}
+
+function openLoginPopup() {
+  document.getElementById('loginPopupStatusMsg').style.display = 'none';
+  // If this session already has real credentials linked, show login mode by
+  // default (they're likely trying to get onto a new device), otherwise
+  // default to signup mode.
+  if (isAccountLinked()) {
+    switchLoginPopupToLoginMode();
+  } else {
+    switchLoginPopupToSignupMode();
+  }
+  document.getElementById('loginPopup').classList.add('show');
+}
+function closeLoginPopup() { document.getElementById('loginPopup').classList.remove('show'); }
+
+function switchLoginPopupToSignupMode() {
+  document.getElementById('loginModeSignup').style.display = '';
+  document.getElementById('loginModeLogin').style.display = 'none';
+  document.getElementById('loginModeReset').style.display = 'none';
+  document.getElementById('loginPopupTitle').textContent = '🔐 Save Your Progress';
+  document.getElementById('loginPopupSubtext').textContent =
+    'Add an email and password so your XP, badges, and streak are safe even if you clear your browser or switch devices.';
+  document.getElementById('loginPopupStatusMsg').style.display = 'none';
+}
+function switchLoginPopupToLoginMode() {
+  document.getElementById('loginModeSignup').style.display = 'none';
+  document.getElementById('loginModeLogin').style.display = '';
+  document.getElementById('loginModeReset').style.display = 'none';
+  document.getElementById('loginPopupTitle').textContent = '🔓 Log In';
+  document.getElementById('loginPopupSubtext').textContent =
+    'Log in to bring your saved progress onto this device.';
+  document.getElementById('loginPopupStatusMsg').style.display = 'none';
+}
+function switchLoginPopupToResetMode() {
+  document.getElementById('loginModeSignup').style.display = 'none';
+  document.getElementById('loginModeLogin').style.display = 'none';
+  document.getElementById('loginModeReset').style.display = '';
+  document.getElementById('loginPopupTitle').textContent = '🔑 Reset Password';
+  document.getElementById('loginPopupSubtext').textContent =
+    "Enter your email and we'll send you a link to reset your password.";
+  document.getElementById('loginPopupStatusMsg').style.display = 'none';
+  // Pre-fill from whichever field the student was already typing in, so
+  // they don't have to retype an email they just entered.
+  const prefill = document.getElementById('loginEmailInputExisting').value.trim()
+    || document.getElementById('loginEmailInput').value.trim();
+  if (prefill) document.getElementById('resetEmailInput').value = prefill;
+}
+
+async function handlePasswordResetSubmit() {
+  const email = document.getElementById('resetEmailInput').value.trim();
+  if (!email) { showLoginPopupStatus('Please enter your email address.', true); return; }
+
+  showLoginPopupStatus('Sending reset link...', false);
+  try {
+    await firebase.auth().sendPasswordResetEmail(email);
+    // Deliberately the same success message whether or not the email
+    // actually has an account — Firebase's default behavior reveals which
+    // emails are registered otherwise, which is a privacy/enumeration risk
+    // for students. Whatever the case, this message is accurate: if an
+    // account exists, they'll get the email; if not, nothing harmful happens.
+    showLoginPopupStatus('✅ If an account exists for that email, a reset link has been sent. Check your inbox.', false);
+  } catch (e) {
+    console.warn('[Explorer] Password reset failed:', e);
+    let msg = 'Something went wrong. Please try again.';
+    if (e.code === 'auth/invalid-email') msg = 'That email address looks invalid.';
+    if (e.code === 'auth/too-many-requests') msg = 'Too many attempts — please wait a bit before trying again.';
+    showLoginPopupStatus(msg, true);
+  }
+}
+
+function showLoginPopupStatus(msg, isError) {
+  const el = document.getElementById('loginPopupStatusMsg');
+  el.textContent = msg;
+  el.style.color = isError ? '#e07a5f' : 'var(--sea, #2A9D8F)';
+  el.style.display = 'block';
+}
+
+async function handleSaveProgressSubmit() {
+  const email = document.getElementById('loginEmailInput').value.trim();
+  const password = document.getElementById('loginPasswordInput').value;
+  if (!email || !password) { showLoginPopupStatus('Please enter both an email and a password.', true); return; }
+  if (password.length < 6) { showLoginPopupStatus('Password must be at least 6 characters.', true); return; }
+
+  showLoginPopupStatus('Saving...', false);
+  try {
+    const result = await linkAccountWithEmail(email, password);
+    if (result.status === 'linked') {
+      showLoginPopupStatus('✅ Progress saved! Your XP and badges are now backed up.', false);
+    } else if (result.status === 'linked_existing') {
+      showLoginPopupStatus(`✅ Logged in — synced to ${result.mergedXp} XP from your saved account.`, false);
+    }
+    updateHomeStats && updateHomeStats();
+    refreshLoginPanelDisplay();
+    setTimeout(closeLoginPopup, 1600);
+  } catch (e) {
+    console.warn('[Explorer] Save progress failed:', e);
+    let msg = 'Something went wrong. Please try again.';
+    if (e.code === 'auth/invalid-email') msg = 'That email address looks invalid.';
+    if (e.code === 'auth/weak-password') msg = 'Please choose a stronger password (6+ characters).';
+    if (e.code === 'auth/wrong-password') msg = 'Incorrect password for that email — try "Log in instead".';
+    showLoginPopupStatus(msg, true);
+  }
+}
+
+async function handleExistingLoginSubmit() {
+  const email = document.getElementById('loginEmailInputExisting').value.trim();
+  const password = document.getElementById('loginPasswordInputExisting').value;
+  if (!email || !password) { showLoginPopupStatus('Please enter both an email and a password.', true); return; }
+
+  showLoginPopupStatus('Logging in...', false);
+  try {
+    await loginToExistingAccount(email, password);
+    showLoginPopupStatus(`✅ Welcome back! Synced to ${state.xp} XP.`, false);
+    updateHomeStats && updateHomeStats();
+    refreshLoginPanelDisplay();
+    setTimeout(closeLoginPopup, 1600);
+  } catch (e) {
+    console.warn('[Explorer] Login failed:', e);
+    let msg = 'Login failed. Please check your email and password.';
+    if (e.code === 'auth/user-not-found') msg = 'No account found with that email — try "Create a save instead".';
+    if (e.code === 'auth/wrong-password') msg = 'Incorrect password.';
+    showLoginPopupStatus(msg, true);
+  }
+}
+
+async function handleGoogleLoginSubmit() {
+  showLoginPopupStatus('Opening Google sign-in...', false);
+  try {
+    const result = await linkAccountWithGoogle();
+    if (result.status === 'cancelled') {
+      showLoginPopupStatus('', false);
+      document.getElementById('loginPopupStatusMsg').style.display = 'none';
+      return;
+    }
+    if (result.status === 'linked') {
+      showLoginPopupStatus('✅ Progress saved with Google! Your XP and badges are now backed up.', false);
+    } else if (result.status === 'linked_existing') {
+      showLoginPopupStatus(`✅ Logged in with Google — synced to ${result.mergedXp} XP from your saved account.`, false);
+    }
+    updateHomeStats && updateHomeStats();
+    refreshLoginPanelDisplay();
+    setTimeout(closeLoginPopup, 1600);
+  } catch (e) {
+    console.warn('[Explorer] Google sign-in failed:', e);
+    let msg = 'Google sign-in failed. Please try again.';
+    if (e.code === 'auth/popup-blocked') msg = 'Your browser blocked the Google sign-in popup — please allow popups and try again.';
+    if (e.code === 'auth/account-exists-with-different-credential') msg = 'This email is already saved with a password — try logging in with email instead.';
+    showLoginPopupStatus(msg, true);
+  }
+}
 
 /* ================= WEAK CHAPTER SUGGESTION =================
    Looks across every chapter the student has actually started and
@@ -7518,6 +8031,11 @@ function startApp() {
   parseIncomingChallenge();
   loadSave();
   applyReferralWelcomeBonusIfEligible();
+  // ensureAnonymousAuth() resolves once Firebase Auth state is known, which
+  // is when isAccountLinked() becomes accurate — call it once resolved so
+  // a returning logged-in user sees "Progress Saved" rather than the
+  // default "Save Progress" prompt for a moment.
+  ensureAnonymousAuth().then(() => { if (typeof refreshLoginPanelDisplay === 'function') refreshLoginPanelDisplay(); });
   // Reflect standard in sidebar logo and page <title>
   const std = state.standard || '11';
   const sbLogo = document.querySelector('#sidebarNav .sb-logo');
@@ -8425,7 +8943,7 @@ function goToSubjects(navOpts) {
     card.onclick = () => { setBodyThemeClass(sub.theme); state.curSubj = sub; loadChapters(); };
     grid.appendChild(card);
   });
-  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); toggleAdvancedPanels(); renderStreakRiskBanner(); renderBackupReminderBanner(); renderFreshSessionBanner(); renderChallengeBanner(); renderReferralWelcomeToast(); showScreen('screen-subjects', navOpts);
+  updateStats(); renderLeaderboard(); renderDailyPanel(); renderActivityPanel(); renderExamCountdownChip(); renderWeeklyGoalPanel(); renderPyqSubjectGrid(); renderResumePanel(); renderQuickNotesPreview(); renderWeakChapterPanel(); toggleAdvancedPanels(); renderStreakRiskBanner(); renderBackupReminderBanner(); renderFreshSessionBanner(); renderChallengeBanner(); renderReferralWelcomeToast(); maybeShowProtectProgressModal(); showScreen('screen-subjects', navOpts);
 }
 
 // HOME DASHBOARD — distinct from the Subjects (discipline picker) screen.
@@ -8990,6 +9508,15 @@ async function startGame() {
   qCount = state.currentQuestions.length; 
   state.qSelected = Array(qCount).fill(null);
   state.examSubmitted = false;
+  // Time-per-question tracking: qTimeSpentMs[i] accumulates milliseconds
+  // actually spent on question i (handles back/forward navigation by
+  // accumulating rather than overwriting). qTimerActiveIdx + qTimerStartedAt
+  // track the currently "running" question so renderQuestion() can flush
+  // elapsed time into the array whenever the student moves to another
+  // question. Used for the post-exam speed diagnostics report.
+  state.qTimeSpentMs = Array(qCount).fill(0);
+  state.qTimerActiveIdx = null;
+  state.qTimerStartedAt = null;
   let submitBtnReset = document.getElementById('submitExamBtn');
   if (submitBtnReset) { submitBtnReset.disabled = false; submitBtnReset.textContent = 'SUBMIT EXAM'; }
   
@@ -9334,12 +9861,83 @@ async function tryOcrEnhanceQuestion(qData, qIdxAtCallTime) {
   }
 }
 
+// Flushes elapsed time for whichever question was previously active into
+// qTimeSpentMs (accumulating, so revisiting a question via Previous/palette
+// adds to its running total rather than resetting it), then starts the
+// clock for `newIdx`. Called at the top of renderQuestion on every
+// navigation, and once more at submit time to flush the final question.
+function trackQuestionTimeOnNavigate(newIdx) {
+  if (!state.qTimeSpentMs) return; // guard for screens that don't use this (daily challenge, etc.)
+  if (state.qTimerActiveIdx !== null && state.qTimerStartedAt !== null) {
+    const elapsed = Date.now() - state.qTimerStartedAt;
+    state.qTimeSpentMs[state.qTimerActiveIdx] = (state.qTimeSpentMs[state.qTimerActiveIdx] || 0) + elapsed;
+  }
+  state.qTimerActiveIdx = newIdx;
+  state.qTimerStartedAt = Date.now();
+}
+
+// Call right before building the post-exam report so time on the very last
+// question (which never triggers another renderQuestion navigation) is
+// captured too.
+function flushActiveQuestionTimer() {
+  trackQuestionTimeOnNavigate(null);
+  state.qTimerActiveIdx = null;
+}
+
+// ---------------------------------------------------------------------
+// Auto-hint after 90 seconds (Practice Mode only)
+//
+// Practice mode (single-chapter, untimed levels) gets a hint automatically
+// revealed if the student is stuck on a question for 90+ seconds. This is
+// intentionally NOT active in JEE Arena / timed mock exams — hints during
+// a timed exam simulation would undermine the point of practicing under
+// real exam conditions, matching how real NTA exams work.
+//
+// Uses q.hint if the question data provides one; otherwise falls back to a
+// generic nudge derived from the explanation text (first sentence only, so
+// it points toward the right idea without just handing over the answer).
+// This means it works immediately with the existing question bank with no
+// data migration required.
+const HINT_DELAY_MS = 90 * 1000;
+let hintTimerId = null;
+
+function getHintTextForQuestion(q) {
+  if (q.hint) return q.hint;
+  if (q.exp) {
+    // Use only the first sentence of the explanation as a nudge, not the
+    // full solution — keeps it a genuine hint rather than the answer.
+    const firstSentence = String(q.exp).split(/(?<=[.?!])\s/)[0];
+    return `Think about: ${firstSentence}`;
+  }
+  return `Re-read the question carefully and consider the core concept for this chapter.`;
+}
+
+function scheduleHintTimer(qData) {
+  clearHintTimer();
+  const hintBox = document.getElementById('qHintBox');
+  if (hintBox) hintBox.style.display = 'none';
+  hintTimerId = setTimeout(() => {
+    if (state.answered) return; // already answered before the timer fired — no need for a hint
+    const hintTextEl = document.getElementById('qHintText');
+    if (hintTextEl) hintTextEl.textContent = getHintTextForQuestion(qData);
+    if (hintBox) hintBox.style.display = 'block';
+  }, HINT_DELAY_MS);
+}
+
+function clearHintTimer() {
+  if (hintTimerId) { clearTimeout(hintTimerId); hintTimerId = null; }
+  const hintBox = document.getElementById('qHintBox');
+  if (hintBox) hintBox.style.display = 'none';
+}
+
 function renderQuestion() {
   state.answered = false;
   state.eliminatedOpts = [];
   let isJee = state.curSubj.id === 'mixed';
   let qCount = state.currentQuestions.length;
-  
+
+  trackQuestionTimeOnNavigate(state.qIdx);
+
   updateGameHud();
   updateLifelineHud();
   
@@ -9348,6 +9946,10 @@ function renderQuestion() {
   
   // Use innerHTML so img tags and HTML-based LaTeX render properly
   document.getElementById('qText').innerHTML = qData.q;
+
+  // Auto-hint after 90s — practice mode only (see comment above scheduleHintTimer).
+  if (isJee) clearHintTimer();
+  else scheduleHintTimer(qData);
 
   // Image-based JEE dataset questions: if we've already OCR'd this question
   // on a previous view, reuse the extracted text immediately. Otherwise,
@@ -9422,6 +10024,7 @@ function handleAnswer(selIdx, btnNode) {
   
   if(state.answered) return;
   
+  clearHintTimer();
   let qData = state.currentQuestions[state.qIdx];
   let isCorrect = (selIdx === qData.ans);
   const grid = document.getElementById('optGrid');
@@ -9549,20 +10152,41 @@ function buildJeeReportHtml(correctCount, incorrectCount, qCount, accuracyPct, q
     </div>
   `;
 
+  // Speed diagnostics summary — only shown if we actually have timing data
+  // (older saved attempts won't have timeSpentSec, so this degrades
+  // gracefully rather than showing a misleading all-zero breakdown).
+  const hasTimingData = (questionReports || []).some(r => typeof r.timeSpentSec === 'number' && r.timeSpentSec > 0);
+  if (hasTimingData) {
+    const fastCount = questionReports.filter(r => r.speedTag === 'fast').length;
+    const overtimeCount = questionReports.filter(r => r.speedTag === 'overtime').length;
+    const wastedCount = questionReports.filter(r => r.speedTag === 'wasted').length;
+    html += `
+      <div class="jee-report-summary-bar" style="margin-top:-4px;">
+        <span class="srb-pill" style="color:var(--sea);">⚡ ${fastCount} Correct &amp; Fast</span>
+        <span class="srb-pill" style="color:var(--brass-light);">⏱ ${overtimeCount} Correct but Overtime</span>
+        <span class="srb-pill" style="color:var(--coral);">⚠ ${wastedCount} Wasted Time</span>
+      </div>
+    `;
+  }
+
   (questionReports || []).forEach((r) => {
     let statusColor = r.isUnattempted ? "var(--parchment-dim)" : (r.isCorrect ? "var(--sea)" : "var(--coral)");
     let statusLabel = r.isUnattempted ? "SKIPPED" : (r.isCorrect ? "CORRECT" : "INCORRECT");
     let tags = [r.subject, r.difficulty].filter(Boolean).map(t => `<span class="jsc-tag">${t}</span>`).join('');
 
+    const speedLabels = { fast: '⚡ Fast', overtime: '⏱ Overtime', wasted: '⚠ Wasted Time' };
+    const speedBadge = r.speedTag ? `<span class="jsc-tag" title="Spent ${r.timeSpentSec}s (ideal: ~${r.idealTimeSec}s)">${speedLabels[r.speedTag]}</span>` : '';
+
     html += `
       <div class="jee-solution-card" style="border-left-color:${statusColor};">
         <div class="jsc-head">
           <span class="jsc-qnum">Question ${r.idx + 1}</span>
-          <div class="jsc-tags">${tags}<span class="jsc-status" style="color:${statusColor}; background:rgba(255,255,255,0.06);">${statusLabel}</span></div>
+          <div class="jsc-tags">${tags}${speedBadge}<span class="jsc-status" style="color:${statusColor}; background:rgba(255,255,255,0.06);">${statusLabel}</span></div>
         </div>
         <div class="jsc-q">${r.q}${r.ocrStem ? `<div style="margin-top:8px;">${r.ocrStem}</div>` : ''}</div>
         <div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Your Answer:</span> <b style="color:${statusColor};">${r.uAnsText}</b></div>
         ${!r.isCorrect ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Correct Answer:</span> <b style="color:var(--sea);">${r.cAnsText}</b></div>` : ''}
+        ${typeof r.timeSpentSec === 'number' && r.timeSpentSec > 0 ? `<div class="jsc-ans-row"><span style="color:var(--parchment-dim);">Time Spent:</span> <b>${r.timeSpentSec}s</b> <span style="color:var(--parchment-dim); font-size:0.85em;">(ideal: ~${r.idealTimeSec}s)</span></div>` : ''}
         <div class="jsc-exp"><strong>Explanation:</strong><br>${r.exp}<br><em>In short: the correct answer is ${r.cAnsText}.</em></div>
         <div class="jsc-footer">
           <button class="jsc-share-btn" onclick="shareJeeSolution(${r.idx}, this)">🔗 Share Solution</button>
@@ -9610,6 +10234,7 @@ function closeMockReportModal() {
 
 function submitJeeExam() {
   state.examSubmitted = true;
+  flushActiveQuestionTimer();
   let submitBtn = document.getElementById('submitExamBtn');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'EXAM SUBMITTED'; }
   clearInterval(timerInt);
@@ -9630,6 +10255,20 @@ function submitJeeExam() {
     if (isCorr) correctCount++;
     else if (!isUn) incorrectCount++;
 
+    // Speed diagnostics: classify each question by time spent vs. an ideal
+    // benchmark. Falls back to a sensible default (90s — typical JEE MCQ
+    // pace) when a question doesn't carry its own idealTimeSec, so this
+    // works immediately without any question-bank changes.
+    const timeSpentMs = (state.qTimeSpentMs && state.qTimeSpentMs[i]) || 0;
+    const timeSpentSec = Math.round(timeSpentMs / 1000);
+    const idealTimeSec = q.idealTimeSec || 90;
+    let speedTag = null;
+    if (timeSpentSec > 0) {
+      if (isCorr && timeSpentSec <= idealTimeSec) speedTag = 'fast';
+      else if (isCorr && timeSpentSec > idealTimeSec) speedTag = 'overtime';
+      else if (timeSpentSec > idealTimeSec * 2) speedTag = 'wasted'; // spent way over ideal AND still wrong/skipped
+    }
+
     questionReports.push({
       idx: i,
       q: q.q,
@@ -9642,7 +10281,10 @@ function submitJeeExam() {
       subject: q.subject || '',
       difficulty: q.difficulty || '',
       imgUrl: q.imgUrl || null,
-      ocrStem: q.ocrStem || null
+      ocrStem: q.ocrStem || null,
+      timeSpentSec,
+      idealTimeSec,
+      speedTag
     });
   });
 
