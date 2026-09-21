@@ -966,20 +966,30 @@ body::after {
   .mobile-nav-toggle:active { border-color: var(--brass, #c99c51); }
 
   #mobileNavBackdrop {
-    display: none; position: fixed; inset: 0; z-index: 39;
+    display: none; position: fixed; inset: 0; z-index: 5650;
     background: rgba(0,0,0,0.55); backdrop-filter: blur(2px);
   }
   body.mobile-nav-open #mobileNavBackdrop { display: block; }
 
+  /* Belt-and-suspenders on top of the z-index fix above: several home-
+     screen elements (.side-panel etc.) use a translucent "glass" background
+     by design, so even with correct z-index ordering they can visually
+     bleed through a drawer that's merely stacked above them. Fully hiding
+     the content layer while the drawer is open removes any possibility of
+     that overlap, and also stops the home screen from being tappable
+     underneath the open drawer. */
+  body.mobile-nav-open .app { visibility: hidden; }
+
   body.mobile-nav-open #sidebarNav {
     display: flex; flex-direction: column; gap: 2px;
-    position: fixed; top: 0; left: 0; bottom: 0; z-index: 40;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 5700;
     width: min(78vw, 280px); padding: 20px 14px;
     background: var(--navy-deep);
     border-right: 1px solid var(--line, rgba(244,239,228,0.14));
     box-sizing: border-box; overflow-y: auto;
     box-shadow: 8px 0 28px rgba(0,0,0,0.4);
     animation: mobileNavSlideIn 0.22s ease both;
+    visibility: visible; /* must stay visible even though .app is hidden above */
   }
   @keyframes mobileNavSlideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 
