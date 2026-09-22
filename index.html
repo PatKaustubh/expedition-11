@@ -1769,6 +1769,122 @@ body.theme-light .title-wrap h2 {
 </style>
 
 
+
+<style>
+/* ===== 3-TIER HINT SYSTEM ===== */
+#qHintBox { animation: expeditionHintIn 0.28s ease-out; }
+@keyframes expeditionHintIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+
+/* Hint tier buttons (locked until timer fires) */
+.hint-tier-row {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 2px;
+}
+.hint-tier-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 600;
+  padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(201,156,81,0.3);
+  background: rgba(201,156,81,0.06); color: var(--parchment-dim); cursor: not-allowed;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.hint-tier-btn.unlocked {
+  cursor: pointer; border-color: rgba(201,156,81,0.6);
+  background: rgba(201,156,81,0.12); color: var(--brass-light);
+}
+.hint-tier-btn.unlocked:hover { background: rgba(201,156,81,0.22); }
+.hint-tier-btn.used { border-color: rgba(127,160,111,0.5); background: rgba(127,160,111,0.1); color: var(--sea); cursor: default; }
+.hint-tier-btn .hint-lock-icon { font-size: 0.75rem; opacity: 0.6; }
+.hint-tier-btn.unlocked .hint-lock-icon { opacity: 1; }
+.hint-countdown {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem;
+  color: var(--parchment-dim); margin-left: 3px; opacity: 0.7;
+}
+/* XP penalty badge shown on hint buttons */
+.hint-xp-badge {
+  font-size: 0.6rem; background: rgba(196,87,63,0.18); color: var(--coral);
+  border-radius: 4px; padding: 1px 5px; margin-left: 2px;
+}
+/* Hint content box — tiers have distinct left border colors */
+.hint-content-box {
+  margin-top: 8px; padding: 12px 14px; border-radius: 10px;
+  background: rgba(201,156,81,0.08); border: 1px solid rgba(201,156,81,0.3);
+  border-left: 3px solid var(--brass); font-size: 0.85rem;
+  color: var(--parchment-dim); animation: expeditionHintIn 0.28s ease-out;
+}
+.hint-content-box.tier-2 { border-left-color: #9b8ecb; background: rgba(155,142,203,0.08); border-color: rgba(155,142,203,0.3); }
+.hint-content-box.tier-3 { border-left-color: var(--coral); background: rgba(196,87,63,0.08); border-color: rgba(196,87,63,0.3); }
+.hint-tier-label { font-weight: 700; font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px; }
+.hint-content-box.tier-1 .hint-tier-label { color: var(--brass-light); }
+.hint-content-box.tier-2 .hint-tier-label { color: #c3b9e8; }
+.hint-content-box.tier-3 .hint-tier-label { color: var(--coral); }
+
+/* ===== XP BREAKDOWN STRIP ===== */
+.xp-breakdown-strip {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 8px; font-family: 'Space Mono', monospace; font-size: 0.72rem;
+}
+.xp-breakdown-strip .xb-base { color: var(--brass-light); }
+.xp-breakdown-strip .xb-pen  { color: var(--coral); }
+.xp-breakdown-strip .xb-final{ color: var(--sea); font-weight: 700; font-size: 0.82rem; }
+.xp-breakdown-strip .xb-sep  { color: var(--parchment-dim); opacity: 0.5; }
+
+/* ===== POST-QUESTION REFLECTION MODAL ===== */
+.reflection-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(5,9,20,0.75);
+  backdrop-filter: blur(6px); z-index: 5700;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.reflection-modal-backdrop.show { display: flex; }
+.reflection-modal-box {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 16px;
+  padding: 28px 24px; max-width: 380px; width: 100%; text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45); backdrop-filter: blur(20px);
+  animation: fadeIn 0.3s ease;
+}
+.reflection-modal-box h4 {
+  font-family: 'Fraunces', serif; color: var(--brass-light); font-size: 1.15rem; margin: 0 0 6px;
+}
+.reflection-modal-box p { color: var(--parchment-dim); font-size: 0.85rem; margin: 0 0 18px; }
+.reflection-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+.reflection-row label { font-family: 'Space Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--parchment-dim); margin-bottom: 6px; display: block; }
+.refl-option {
+  flex: 0 0 auto; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.04); color: var(--parchment); font-size: 0.82rem;
+  font-family: 'Space Mono', monospace; cursor: pointer; transition: all 0.15s;
+}
+.refl-option:hover { border-color: var(--brass); }
+.refl-option.selected { background: rgba(201,156,81,0.18); border-color: var(--brass-light); color: var(--brass-light); }
+.reflection-section-label { font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--parchment-dim); margin-bottom: 6px; margin-top: 4px; text-align: left; }
+
+/* ===== NO-HINT STREAK WIDGET ===== */
+.no-hint-streak-widget { text-align: center; }
+.no-hint-streak-fire { font-size: 1.5rem; display: block; margin-bottom: 2px; }
+.no-hint-streak-num { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--brass-light); }
+.no-hint-streak-lbl { font-size: 0.62rem; color: var(--parchment-dim); font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; }
+.no-hint-milestone-bar { margin-top: 6px; }
+
+/* ===== HINT ANALYTICS CARD ===== */
+.hint-analytics-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--glass-border); font-size: 0.78rem; }
+.hint-analytics-row:last-child { border-bottom: none; }
+.hint-analytics-row .har-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--parchment); }
+.hint-analytics-row .har-pct { font-family: 'Space Mono', monospace; font-size: 0.72rem; flex-shrink: 0; margin-left: 8px; }
+.hint-analytics-row .har-bar { flex: 0 0 60px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin-left: 8px; }
+.hint-analytics-row .har-bar-fill { height: 100%; border-radius: 2px; }
+.har-warn { color: var(--coral); }
+.har-ok   { color: var(--sea); }
+.har-great{ color: var(--brass-light); }
+
+/* Hint available popup toast */
+.hint-available-toast {
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+  z-index: 5800; background: var(--glass); border: 1px solid rgba(201,156,81,0.5);
+  border-radius: 12px; padding: 12px 20px; font-family: 'Space Mono', monospace;
+  font-size: 0.82rem; color: var(--brass-light); backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none;
+  animation: expeditionHintIn 0.28s ease-out;
+  white-space: nowrap;
+}
+.hint-available-toast.show { display: block; }
+</style>
 </head>
 <body>
 <div class="install-nudge" id="installNudge" role="dialog" aria-label="Install Expedition 11">
@@ -1928,6 +2044,59 @@ body.theme-light .title-wrap h2 {
 
 <div id="pdfExpRenderHolder"></div>
 <div id="shareCardRenderHolder"></div>
+
+<!-- ===== HINT AVAILABLE TOAST ===== -->
+<div class="hint-available-toast" id="hintAvailableToast">💡 Hint available! Tap a hint button to reveal it.</div>
+
+<!-- ===== POST-QUESTION REFLECTION MODAL ===== -->
+<div class="reflection-modal-backdrop" id="reflectionModal">
+  <div class="reflection-modal-box">
+    <h4>Quick Reflection</h4>
+    <p>Optional — takes 5 seconds. Helps us personalise your learning.</p>
+    <div class="reflection-section-label">How confident were you?</div>
+    <div class="reflection-row" id="reflConfidenceRow">
+      <button class="refl-option" data-val="low"   onclick="selectReflOption('confidence','low',this)">😬 Low</button>
+      <button class="refl-option" data-val="medium" onclick="selectReflOption('confidence','medium',this)">🙂 Medium</button>
+      <button class="refl-option" data-val="high"   onclick="selectReflOption('confidence','high',this)">💪 High</button>
+    </div>
+    <div class="reflection-section-label">How difficult was this question?</div>
+    <div class="reflection-row" id="reflDifficultyRow">
+      <button class="refl-option" data-val="easy"   onclick="selectReflOption('difficulty','easy',this)">🟢 Easy</button>
+      <button class="refl-option" data-val="medium" onclick="selectReflOption('difficulty','medium',this)">🟡 Medium</button>
+      <button class="refl-option" data-val="hard"   onclick="selectReflOption('difficulty','hard',this)">🔴 Hard</button>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:6px;">
+      <button class="btn primary" onclick="submitReflection()" style="padding:10px 22px; font-size:0.85rem;">Submit</button>
+      <button class="btn ghost"   onclick="dismissReflection()" style="padding:10px 16px; font-size:0.85rem;">Not now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PHASE 2A: REVISION QUEUE MODAL ===== -->
+<div class="modal-backdrop" id="revisionQueueModal" onclick="if(event.target===this)closeRevisionQueueModal()">
+  <div class="modal-box list-popup" style="max-width:520px;">
+    <div class="widget-hdr">
+      <h3>📅 Revision Queue</h3>
+      <button class="popup-close" onclick="closeRevisionQueueModal()">✕ Close</button>
+    </div>
+    <div class="popup-list" id="revisionQueueModalBody" style="max-height:70vh;">
+      <div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PHASE 2A: QUICK REVISION QUESTION MODAL ===== -->
+<div class="modal-backdrop" id="revisionQuickModal" onclick="if(event.target===this)closeRevisionQuickModal()">
+  <div class="modal-box" style="max-width:560px; text-align:left; padding:28px 24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h3 style="margin:0; font-family:'Fraunces',serif; color:var(--brass-light); font-size:1.15rem;">🔁 Revision Practice</h3>
+      <button class="popup-close" onclick="closeRevisionQuickModal()">✕</button>
+    </div>
+    <div id="revisionQuickBody"></div>
+    <div id="revisionQuickFeedback" style="display:none; margin-top:10px;"></div>
+    <button id="revisionQuickCloseBtn" class="btn primary" style="display:none; width:100%; margin-top:14px;" onclick="closeRevisionQuickModal()">Done ✓</button>
+  </div>
+</div>
 
 <div class="focus-mode-banner" id="focusModeBanner">🔒 FOCUS MODE ACTIVE — <span class="fmb-time" id="focusModeBannerTime">25:00</span> remaining. Stay in it.</div>
 
@@ -2107,6 +2276,7 @@ function sbNav(which) {
       case 'studyplan': if (typeof openStudyPlan === 'function') openStudyPlan(); break;
       case 'parentdash': if (typeof openParentDash === 'function') openParentDash(); break;
       case 'doubtsolver': if (typeof openDoubtSolver === 'function') openDoubtSolver(); break;
+      case 'viz3d': if (typeof open3DVisualizer === 'function') { document.getElementById('viz3dModal').classList.add('show'); _loadThreeAndStart('projectile'); } break;
     }
   } catch (err) {
     console.error('[sbNav] failed to open "' + which + '":', err);
@@ -2175,11 +2345,41 @@ function sbNav(which) {
         <div class="resume-hero-arrow" id="resumePanelHint">→</div>
       </div>
 
-      <div class="side-panel" onclick="openBattleModal()" style="margin-bottom:20px; display:flex; align-items:center; gap:16px; cursor:pointer;">
+      <div class="side-panel" onclick="openBattleModal()" style="margin-bottom:12px; display:flex; align-items:center; gap:16px; cursor:pointer;">
         <div style="flex-shrink:0; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(201,154,75,0.12); font-size:1.3rem;">⚔️</div>
         <div style="flex:1;">
           <div style="font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; margin-bottom:2px;">Battle Arena</div>
           <div style="font-size:0.82rem; color:var(--parchment-dim);">Race a friend head-to-head — create a room or join one with a code</div>
+        </div>
+        <div style="flex-shrink:0; color:var(--parchment-dim);">→</div>
+      </div>
+
+      <!-- SQUADS PANEL -->
+      <div class="side-panel" onclick="openSquadsModal()" style="margin-bottom:20px; display:flex; align-items:center; gap:16px; cursor:pointer;">
+        <div style="flex-shrink:0; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(42,157,143,0.15); font-size:1.3rem;">🛡️</div>
+        <div style="flex:1;">
+          <div style="font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; margin-bottom:2px;">Study Squads</div>
+          <div id="squadPanelStatus" style="font-size:0.82rem; color:var(--parchment-dim);">Form a squad, earn XP together &amp; climb the squad leaderboard</div>
+        </div>
+        <div style="flex-shrink:0; color:var(--parchment-dim);">→</div>
+      </div>
+
+      <!-- MINI-GAMES PANEL -->
+      <div class="side-panel" onclick="openMiniGamesModal()" style="margin-bottom:20px; display:flex; align-items:center; gap:16px; cursor:pointer;">
+        <div style="flex-shrink:0; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(255,93,143,0.12); font-size:1.3rem;">🎮</div>
+        <div style="flex:1;">
+          <div style="font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; margin-bottom:2px;">Concept Mini-Games</div>
+          <div style="font-size:0.82rem; color:var(--parchment-dim);">Apply JEE concepts in interactive simulations — earn bonus XP</div>
+        </div>
+        <div style="flex-shrink:0; color:var(--parchment-dim);">→</div>
+      </div>
+
+      <!-- 3D CONCEPTS EXPLORER PANEL -->
+      <div class="side-panel" onclick="document.getElementById('viz3dModal').classList.add('show'); _loadThreeAndStart('projectile');" style="margin-bottom:20px; display:flex; align-items:center; gap:16px; cursor:pointer;">
+        <div style="flex-shrink:0; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(155,142,203,0.15); font-size:1.3rem;">🔭</div>
+        <div style="flex:1;">
+          <div style="font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; margin-bottom:2px;">3D Concept Explorer</div>
+          <div style="font-size:0.82rem; color:var(--parchment-dim);">Visualize Projectile Motion, EM Waves, Circular Motion, Molecular Orbitals &amp; more</div>
         </div>
         <div style="flex-shrink:0; color:var(--parchment-dim);">→</div>
       </div>
@@ -2421,6 +2621,43 @@ function sbNav(which) {
           <div class="panel-body-text">Quick reference for Math, Physics & Chemistry</div>
           <div class="panel-hint">Open formula sheet</div>
         </div>
+
+        <!-- NO-HINT STREAK WIDGET -->
+        <div class="side-panel" style="grid-column: 1 / -1; cursor:default;">
+          <div class="widget-hdr" style="border-bottom:none; padding-bottom:0; margin-bottom:6px;">
+            <span class="panel-icon" style="background:rgba(255,180,84,0.18); color:#ffb454;">🔥</span>
+            <h3>No-Hint Streak</h3>
+          </div>
+          <div class="no-hint-streak-widget" id="noHintStreakWidget">
+            <span class="no-hint-streak-fire">💪</span>
+            <span class="no-hint-streak-num">0</span>
+            <span class="no-hint-streak-lbl">Consecutive questions without hints</span>
+            <span style="font-size:0.62rem; color:var(--parchment-dim); font-family:'Space Mono',monospace;">Best: 0 · Next milestone: 5 (+100 XP)</span>
+          </div>
+        </div>
+
+        <!-- HINT ANALYTICS WIDGET -->
+        <div class="side-panel" style="grid-column: 1 / -1; cursor:default;">
+          <div class="widget-hdr" style="margin-bottom:10px;">
+            <span class="panel-icon" style="background:rgba(155,142,203,0.18); color:#c3b9e8;">💡</span>
+            <h3>Hint Analytics</h3>
+          </div>
+          <div id="hintAnalyticsBody">
+            <div style="color:var(--parchment-dim); font-size:0.75rem; text-align:center; padding:8px 0;">Start practising to see hint data here.</div>
+          </div>
+        </div>
+
+        <!-- REVISION QUEUE WIDGET (Phase 2A) -->
+        <div class="side-panel" style="grid-column: 1 / -1; cursor:pointer;" onclick="openRevisionQueueModal()">
+          <div class="widget-hdr" style="border-bottom:none; padding-bottom:0; margin-bottom:6px;">
+            <span class="panel-icon" style="background:rgba(42,157,143,0.18); color:#6fe4d6;">📅</span>
+            <h3>Revision Queue</h3>
+          </div>
+          <div id="revisionQueueBody" style="font-size:0.72rem; color:var(--parchment-dim);">
+            Questions where you needed 2+ hints will appear here for scheduled review.
+          </div>
+          <div class="panel-hint">Open revision queue</div>
+        </div>
       </div>
 
       <!-- FIRST-SESSION PLACEHOLDER — shown instead of the 10-panel advanced
@@ -2445,7 +2682,7 @@ function sbNav(which) {
           <button class="popup-close" onclick="closeLeaderboardPopup()">✕ Close</button>
         </div>
       </div>
-      <div class="lb-tab-row">
+      <div class="lb-tab-row" id="lbTabRow">
         <button class="lb-tab active" id="lbTabAll" onclick="setLeaderboardMode('alltime')">🏆 All-time</button>
         <button class="lb-tab" id="lbTabWeek" onclick="setLeaderboardMode('weekly')">📅 This Week</button>
       </div>
@@ -2821,11 +3058,45 @@ function sbNav(which) {
       
       <div class="qtag" id="qTag">Level X · Question Y</div>
       <div class="qtext" id="qText">Question Text Goes Here</div>
-      <div id="qHintBox" style="display:none; margin-top:10px; padding:10px 14px; border-radius:10px; background:rgba(201,156,81,0.1); border:1px solid rgba(201,156,81,0.35); font-size:0.85rem; color:var(--parchment-dim,#c5bba8);">
-        <span style="color:var(--brass-light,#e8c382); font-weight:600;">💡 Hint:</span> <span id="qHintText"></span>
+      <!-- 3D Visualizer trigger — shown for relevant physics/chemistry topics -->
+      <div id="viz3dTrigger" style="display:none; margin:8px 0;">
+        <button class="btn ghost" style="font-size:0.75rem; padding:5px 12px; border-color:rgba(155,142,203,0.5); color:#c3b9e8;" onclick="open3DVisualizer()">
+          🔭 Visualize this concept in 3D
+        </button>
       </div>
+      <!-- 3-Tier Hint System -->
+      <div id="qHintSystem" style="margin-top:10px;">
+        <div class="hint-tier-row" id="hintTierRow">
+          <button class="hint-tier-btn" id="hintBtn1" onclick="viewHintTier(1)" disabled>
+            <span class="hint-lock-icon">🔒</span> Hint 1
+            <span class="hint-xp-badge">−25%</span>
+            <span class="hint-countdown" id="hintCountdown1"></span>
+          </button>
+          <button class="hint-tier-btn" id="hintBtn2" onclick="viewHintTier(2)" disabled>
+            <span class="hint-lock-icon">🔒</span> Hint 2
+            <span class="hint-xp-badge">−25%</span>
+            <span class="hint-countdown" id="hintCountdown2"></span>
+          </button>
+          <button class="hint-tier-btn" id="hintBtn3" onclick="viewHintTier(3)" disabled>
+            <span class="hint-lock-icon">🔒</span> Hint 3
+            <span class="hint-xp-badge">−25%</span>
+            <span class="hint-countdown" id="hintCountdown3"></span>
+          </button>
+        </div>
+        <div id="hintContentArea"></div>
+      </div>
+      <!-- Legacy hidden element kept so old code refs to qHintBox don't throw -->
+      <div id="qHintBox" style="display:none;"><div id="qHintText"></div></div>
       <div class="opt-grid" id="optGrid"></div>
       <div class="feedback" id="qFeedback"></div>
+      <!-- Peer Hints Strip (shown after answering) -->
+      <div id="peerHintStrip" style="display:none; margin:10px 0; padding:10px 12px; background:rgba(155,142,203,0.08); border:1px solid rgba(155,142,203,0.25); border-radius:10px; font-size:0.8rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-weight:600; color:#c3b9e8;">💬 Community Hints</span>
+          <button class="btn ghost" style="font-size:0.7rem; padding:4px 8px;" onclick="openPeerHintContribute()">+ Contribute</button>
+        </div>
+        <div id="peerHintList" style="font-size:0.78rem; color:var(--parchment-dim);">Loading…</div>
+      </div>
       <div class="btn-row" id="qNextRow" style="display:none;">
         <button class="btn primary" onclick="nextQuestion()">Continue &rarr;</button>
       </div>
@@ -3026,6 +3297,8 @@ function getQuestionsForLevel(subject, chapter, level) {
   return slice.length === 10 ? slice : pool.slice(0, 10);
 }
 </script>
+<!-- Three.js r128 — loaded async only when 3D visualizer is opened -->
+<script id="threeJsLoader" data-src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -3994,7 +4267,19 @@ let state = {
   eliminatedOpts: [],
   ocrCache: {},
   weeklyXp: 0,
-  weeklyXpWeekStart: null
+  weeklyXpWeekStart: null,
+  // ── Phase 1: Progressive Hint System ────────────────────────────────────
+  noHintStreak: 0,         // consecutive questions solved without any hint
+  bestNoHintStreak: 0,     // all-time best
+  totalNoHintSolves: 0,    // lifetime count
+  hintAnalytics: {},       // { [topicId]: { total, withHints } }
+  reflectionHistory: [],   // [ { qKey, confidence, difficulty, correct, hintsUsed, ts } ]
+  // ── Phase 2B: Adaptive hint timing ──────────────────────────────────────
+  adaptiveHintTimes: null, // [t1,t2,t3] overrides HINT_UNLOCK_TIMES when set
+  // ── Phase 3: Squads & Peer Hints ─────────────────────────────────────────
+  squadId: null,           // Firebase squad ID this user belongs to
+  squadName: null,         // display name of squad
+  peerHintVotes: {},       // { [hintId]: 'up'|'down' } voted hints by this user
 };
 let timerInt = null;
 let activeReports = []; 
@@ -4025,6 +4310,16 @@ function loadSave() {
       if(typeof parsed.weeklyXp === 'number') state.weeklyXp = parsed.weeklyXp;
       if(parsed.weeklyXpWeekStart) state.weeklyXpWeekStart = parsed.weeklyXpWeekStart;
       if(Array.isArray(parsed.mockHistory)) state.mockHistory = parsed.mockHistory;
+      // Phase 1 hint/reflection fields
+      if(typeof parsed.noHintStreak === 'number') state.noHintStreak = parsed.noHintStreak;
+      if(typeof parsed.bestNoHintStreak === 'number') state.bestNoHintStreak = parsed.bestNoHintStreak;
+      if(typeof parsed.totalNoHintSolves === 'number') state.totalNoHintSolves = parsed.totalNoHintSolves;
+      if(parsed.hintAnalytics && typeof parsed.hintAnalytics === 'object') state.hintAnalytics = parsed.hintAnalytics;
+      if(Array.isArray(parsed.reflectionHistory)) state.reflectionHistory = parsed.reflectionHistory;
+      if(Array.isArray(parsed.adaptiveHintTimes)) state.adaptiveHintTimes = parsed.adaptiveHintTimes;
+      if(parsed.squadId) state.squadId = parsed.squadId;
+      if(parsed.squadName) state.squadName = parsed.squadName;
+      if(parsed.peerHintVotes && typeof parsed.peerHintVotes === 'object') state.peerHintVotes = parsed.peerHintVotes;
     } catch(e) {}
   }
   // Roll over if the saved week is stale (app wasn't opened at all during a week boundary).
@@ -4108,7 +4403,16 @@ function doSave() {
     xp: state.xp, progress: state.progress, streak: state.streak, explorerName: state.explorerName,
     standard: state.standard,
     weeklyXp: state.weeklyXp, weeklyXpWeekStart: state.weeklyXpWeekStart,
-    mockHistory: state.mockHistory
+    mockHistory: state.mockHistory,
+    noHintStreak: state.noHintStreak,
+    bestNoHintStreak: state.bestNoHintStreak,
+    totalNoHintSolves: state.totalNoHintSolves,
+    hintAnalytics: state.hintAnalytics,
+    reflectionHistory: (state.reflectionHistory || []).slice(-200),
+    adaptiveHintTimes: state.adaptiveHintTimes || null,
+    squadId: state.squadId || null,
+    squadName: state.squadName || null,
+    peerHintVotes: state.peerHintVotes || {}
   }));
 }
 
@@ -4121,11 +4425,9 @@ const BACKUP_KEYS = [
   'math_expedition_v9', 'mistake_bank_v1', 'activity_log_v1', 'streak_freeze_v1',
   'daily_challenge_state_v1', 'exam_countdown_date_v1', 'weekly_xp_goal_v1',
   'expedition11_quickNotes', 'pyqSavedQuestions', 'resolution_resolved_since',
-  // Actual PYQ practice-quiz progress (scores/attempts) — distinct from
-  // pyqSavedQuestions above, which is only the bookmarked-question list.
-  // Without this, a restored profile would keep XP/level progress but lose
-  // all PYQ quiz attempt history, which is still "progress made platform-wide".
-  'pyq_quiz_progress_v1'
+  'pyq_quiz_progress_v1',
+  // Phase 2A: revision queue for hint-heavy questions
+  'expedition11_revision_queue_v1'
 ];
 
 function exportProgressBackup() {
@@ -5556,7 +5858,12 @@ function drawBg() {
 function openResetModal() { document.getElementById('resetModal').classList.add('show'); }
 function closeResetModal() { document.getElementById('resetModal').classList.remove('show'); }
 
-function openLeaderboardPopup() { renderLeaderboard(); document.getElementById('leaderboardPopup').classList.add('show'); }
+function openLeaderboardPopup() {
+  renderLeaderboard();
+  document.getElementById('leaderboardPopup').classList.add('show');
+  // Phase 2C: inject Confidence + Improvement tabs once
+  if (typeof renderLeaderboardExtendedTabs === 'function') renderLeaderboardExtendedTabs();
+}
 function closeLeaderboardPopup() { document.getElementById('leaderboardPopup').classList.remove('show'); }
 function openResolutionsPopup() { renderResolutionsInbox(); document.getElementById('resolutionsPopup').classList.add('show'); }
 function closeResolutionsPopup() { document.getElementById('resolutionsPopup').classList.remove('show'); }
@@ -5665,12 +5972,144 @@ const FIRESTORE_TOPICS = new Set(Object.keys(BANK_CHAPTER_KEY));
 // normalize all of those shapes to a plain array.
 function _normalizeQuestionData(val) {
   if (!val) return [];
-  if (Array.isArray(val)) return val;
+  if (Array.isArray(val)) return val.map(_normalizeQFields);
   if (typeof val === 'object') {
-    if (Array.isArray(val.questions)) return val.questions;
-    return Object.values(val);
+    if (Array.isArray(val.questions)) return val.questions.map(_normalizeQFields);
+    return Object.values(val).map(_normalizeQFields);
   }
   return [];
+}
+
+// Normalise a single question object from any schema into the canonical
+// { q, opts, ans, exp, hint_1, hint_2, hint_3 } shape the app expects.
+// Handles both the Firestore schema (q/opts/ans/exp) and the JSON bank
+// schema (question/options/answer/explanation) with letter answers like "B".
+function _normalizeQFields(q) {
+  if (!q || typeof q !== 'object') return q;
+  // Already normalised
+  if (q.q && q.opts && q.ans !== undefined) return q;
+
+  const out = { ...q };
+
+  // question text
+  if (!out.q && out.question) out.q = out.question;
+
+  // options — strip leading "A) " prefixes
+  if (!out.opts && out.options) {
+    out.opts = (out.options || []).map(o =>
+      String(o).replace(/^[A-Da-d][).\s]\s*/, '').trim()
+    );
+  }
+
+  // answer — convert letter to index
+  if (out.ans === undefined && out.answer !== undefined) {
+    const letter = String(out.answer).trim().toUpperCase().replace(/[).]/g, '');
+    if (/^[ABCD]$/.test(letter)) {
+      out.ans = 'ABCD'.indexOf(letter);
+    } else {
+      out.ans = parseInt(out.answer) || 0;
+    }
+  }
+
+  // explanation
+  if (!out.exp && out.explanation) out.exp = out.explanation;
+
+  // Auto-derive hints from explanation if not already present
+  if (!out.hint_1 && out.exp) {
+    const sentences = String(out.exp)
+      .replace(/\s+/g, ' ')
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    out.hint_1 = sentences[0]
+      ? (sentences[0].length > 150 ? sentences[0].slice(0, 147) + '…' : sentences[0])
+      : 'Think about the core concept this question is testing.';
+
+    out.hint_2 = sentences[1]
+      ? (sentences[1].length > 150 ? sentences[1].slice(0, 147) + '…' : sentences[1])
+      : 'Identify the relevant formula or method for this topic.';
+
+    const partial = sentences.slice(0, 2).join(' ');
+    out.hint_3 = partial.length > 220 ? partial.slice(0, 217) + '…' : (partial || 'Work step-by-step from the given values.');
+  }
+
+  return out;
+}
+
+// ── Local JSON bank loader ────────────────────────────────────────────────────
+// Lazily loads the local JSON question bank files (question_bank.json and
+// physics_question_bank.json) into memory so they can serve as an offline
+// fallback when Firestore/RTDB is unavailable. Results are cached.
+const _localBankCache = new Map(); // "physics" | "class12" → flat array of normalised Qs
+let _localBankLoading = null; // Promise<void> while loading
+
+async function _ensureLocalBanksLoaded() {
+  if (_localBankCache.size > 0) return;
+  if (_localBankLoading) return _localBankLoading;
+
+  _localBankLoading = (async () => {
+    const std = (typeof state !== 'undefined' && state.standard) || '11';
+    const files = std === '12'
+      ? [['class12', 'question_bank.json']]
+      : [['physics', 'physics_question_bank.json'], ['class12', 'question_bank.json']];
+
+    for (const [key, file] of files) {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) continue;
+        const data = await res.json();
+        const flat = [];
+        // question_bank.json: { subjects:[{ topics:[{ levels:[{ questions:[] }] }] }] }
+        if (data.subjects) {
+          data.subjects.forEach(subj =>
+            (subj.topics || []).forEach(topic =>
+              (topic.levels || []).forEach(level =>
+                (level.questions || []).forEach(q => {
+                  const nq = _normalizeQFields({ ...q, _topic: topic.topic_name || '', _level: level.level });
+                  flat.push(nq);
+                })
+              )
+            )
+          );
+        }
+        // physics_question_bank.json: { topics:[{ levels:[{ questions:[] }] }] }
+        else if (data.topics) {
+          data.topics.forEach(topic =>
+            (topic.levels || []).forEach(level =>
+              (topic.questions ? topic.questions : (level.questions || [])).forEach(q => {
+                const nq = _normalizeQFields({ ...q, _topic: topic.topic_name || '', _level: level.level });
+                flat.push(nq);
+              })
+            )
+          );
+        }
+        _localBankCache.set(key, flat);
+        console.log(`[LocalBank] Loaded ${flat.length} Qs from ${file}`);
+      } catch (e) {
+        console.warn('[LocalBank] Failed to load', file, e);
+      }
+    }
+  })();
+  return _localBankLoading;
+}
+
+// Get questions from local bank by topic name (fuzzy match) and tier
+function _getLocalBankQuestions(topicHint, tier, count = 10) {
+  const all = [...(_localBankCache.get('physics') || []), ...(_localBankCache.get('class12') || [])];
+  if (!all.length) return [];
+  const topicLower = (topicHint || '').toLowerCase();
+  const tierLevelMap = { basic: [1,5], intermediate: [6,10], advanced: [11,15] };
+  const [minL, maxL] = tierLevelMap[tier] || [1, 15];
+  const filtered = all.filter(q => {
+    const inTier = !q._level || (q._level >= minL && q._level <= maxL);
+    const inTopic = !topicLower || (q._topic || '').toLowerCase().includes(topicLower.split('_')[0].slice(0, 5));
+    return inTier && inTopic && q.q && q.opts && q.ans !== undefined;
+  });
+  if (!filtered.length) return all.filter(q => q.q && q.opts).slice(0, count);
+  // Shuffle and return
+  const shuffled = filtered.slice().sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
 }
 
 async function _fetchFromFirestore(chapId, tier) {
@@ -5706,6 +6145,14 @@ async function _fetchTier(topic, tier) {
   let questions = await _fetchFromFirestore(topic, tier);
   if (questions.length === 0) {
     questions = await _fetchFromRTDB(topic, tier);
+  }
+  // Phase 3: Local JSON bank as final offline fallback
+  if (questions.length === 0) {
+    await _ensureLocalBanksLoaded();
+    questions = _getLocalBankQuestions(topic, tier, 15);
+    if (questions.length > 0) {
+      console.log(`[LocalBank] Serving ${questions.length} Qs for ${topic}/${tier} from local JSON`);
+    }
   }
   _questionCache.set(cacheId, questions);
   return questions;
@@ -9477,6 +9924,10 @@ function renderHomeScreen(navOpts) {
   }
 
   updateStats(); renderLeaderboard(); renderResumePanel();
+  renderNoHintStreakWidget();
+  renderHintAnalyticsCard();
+  renderRevisionQueuePanel();
+  updateSquadPanelStatus();
   showScreen('screen-home', navOpts);
 }
 
@@ -9982,57 +10433,172 @@ function flushActiveQuestionTimer() {
   state.qTimerActiveIdx = null;
 }
 
-// ---------------------------------------------------------------------
-// Auto-hint after 90 seconds (Practice Mode only)
-//
-// Practice mode (single-chapter, untimed levels) gets a hint automatically
-// revealed if the student is stuck on a question for 90+ seconds. This is
-// intentionally NOT active in JEE Arena / timed mock exams — hints during
-// a timed exam simulation would undermine the point of practicing under
-// real exam conditions, matching how real NTA exams work.
-//
-// Uses q.hint if the question data provides one; otherwise falls back to a
-// generic nudge derived from the explanation text (first sentence only, so
-// it points toward the right idea without just handing over the answer).
-// This means it works immediately with the existing question bank with no
-// data migration required.
-const HINT_DELAY_MS = 90 * 1000;
-let hintTimerId = null;
+// =====================================================================
+// 3-TIER PROGRESSIVE HINT SYSTEM  (Phase 1)
+// =====================================================================
+// Tier 1 at 90s  — Conceptual nudge    (−25% XP if used)
+// Tier 2 at 120s — Formula/method cue  (−25% XP if used)
+// Tier 3 at 150s — Partial solution    (−25% XP if used)
+// Active ONLY in practice mode, never in JEE mock/timed exams.
+// =====================================================================
 
-function getHintTextForQuestion(q) {
-  if (q.hint) return q.hint;
-  if (q.exp) {
-    // Use only the first sentence of the explanation as a nudge, not the
-    // full solution — keeps it a genuine hint rather than the answer.
-    const firstSentence = String(q.exp).split(/(?<=[.?!])\s/)[0];
-    return `Think about: ${firstSentence}`;
-  }
-  return `Re-read the question carefully and consider the core concept for this chapter.`;
+const HINT_UNLOCK_TIMES = [90, 120, 150]; // seconds for each tier
+let hintTimerIds = [null, null, null];
+let hintUnlocked = [false, false, false];
+let hintUsed = [false, false, false];
+let hintCountdownInterval = null;
+let hintStartTime = null;
+// Compat shims so any old references don't throw
+let hintTimerId = null;
+let hintShownForQuestionKey = null;
+
+function getCurrentQuestionKey(q) {
+  return q && (q.id || q.questionId || q.q) ? String(q.id || q.questionId || q.q) : String(state.qIdx);
 }
+
+function getHintForTier(q, tier) {
+  const expText = (q.exp || q.explanation || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const sentences = expText ? expText.split(/(?<=[.?!])\s+/) : [];
+  if (tier === 1) return q.hint_1 || q.hint || (sentences[0] ? `Think about: ${sentences[0]}` : `Re-read the question and consider the core concept.`);
+  if (tier === 2) return q.hint_2 || (sentences[0] ? `Key approach — ${sentences[0]}` : `Identify the relevant formula or method for this topic.`);
+  return q.hint_3 || (sentences.slice(0,2).join(' ') || `Work through step-by-step from first principles.`);
+}
+
+function unlockHintTier(tierIdx) {
+  if (state.answered) return;
+  hintUnlocked[tierIdx] = true;
+  const btn = document.getElementById(`hintBtn${tierIdx + 1}`);
+  if (btn) {
+    btn.classList.add('unlocked');
+    btn.disabled = false;
+    const lockIcon = btn.querySelector('.hint-lock-icon');
+    if (lockIcon) lockIcon.textContent = '💡';
+  }
+  if (tierIdx === 0) showHintToast();
+}
+
+function showHintToast() {
+  const toast = document.getElementById('hintAvailableToast');
+  if (!toast) return;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+function viewHintTier(tier) {
+  const tierIdx = tier - 1;
+  if (!hintUnlocked[tierIdx] || state.answered) return;
+  hintUsed[tierIdx] = true;
+  const btn = document.getElementById(`hintBtn${tier}`);
+  if (btn) {
+    btn.classList.remove('unlocked');
+    btn.classList.add('used');
+    const lockIcon = btn.querySelector('.hint-lock-icon');
+    if (lockIcon) lockIcon.textContent = '✓';
+  }
+  const qData = state.currentQuestions[state.qIdx];
+  const tierLabels = ['Conceptual Nudge', 'Formula / Method Cue', 'Partial Solution'];
+  const tierClasses = ['tier-1', 'tier-2', 'tier-3'];
+  const area = document.getElementById('hintContentArea');
+  if (!area) return;
+
+  // Phase 3: If no stored hint and question has an exp field but no hints,
+  // try AI generation first (only if the question genuinely lacks a curated hint)
+  const hasStoredHint = tier === 1 ? !!(qData.hint_1 || qData.hint) : tier === 2 ? !!qData.hint_2 : !!qData.hint_3;
+  const hasExp = !!(qData.exp || qData.explanation);
+  if (!hasStoredHint && !hasExp) {
+    // Queue AI generation — show placeholder, then fill in
+    if (!document.getElementById(`hintBox${tier}`)) {
+      const box = document.createElement('div');
+      box.id = `hintBox${tier}`;
+      box.className = `hint-content-box ${tierClasses[tierIdx]}`;
+      box.innerHTML = `<div class="hint-tier-label">Hint ${tier}: ${tierLabels[tierIdx]}</div><div class="hint-body-text" style="font-style:italic; color:var(--parchment-dim);">🤖 Generating AI hint…</div>`;
+      area.appendChild(box);
+    }
+    tryAiHintFallback(tier, qData);
+    return;
+  }
+
+  const text = getHintForTier(qData, tier);
+  let box = document.getElementById(`hintBox${tier}`);
+  if (!box) {
+    box = document.createElement('div');
+    box.id = `hintBox${tier}`;
+    box.className = `hint-content-box ${tierClasses[tierIdx]}`;
+    box.innerHTML = `<div class="hint-tier-label">Hint ${tier}: ${tierLabels[tierIdx]}</div><div class="hint-body-text"></div>`;
+    area.appendChild(box);
+  }
+  box.querySelector('.hint-body-text').textContent = text;
+}
+window.viewHintTier = viewHintTier;
 
 function scheduleHintTimer(qData) {
   clearHintTimer();
-  const hintBox = document.getElementById('qHintBox');
-  if (hintBox) hintBox.style.display = 'none';
-  hintTimerId = setTimeout(() => {
-    if (state.answered) return; // already answered before the timer fired — no need for a hint
-    const hintTextEl = document.getElementById('qHintText');
-    if (hintTextEl) hintTextEl.textContent = getHintTextForQuestion(qData);
-    if (hintBox) hintBox.style.display = 'block';
-  }, HINT_DELAY_MS);
+  hintUnlocked = [false, false, false];
+  hintUsed = [false, false, false];
+  hintStartTime = Date.now();
+  for (let i = 1; i <= 3; i++) {
+    const btn = document.getElementById(`hintBtn${i}`);
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.remove('unlocked', 'used');
+      const lockIcon = btn.querySelector('.hint-lock-icon');
+      if (lockIcon) lockIcon.textContent = '🔒';
+    }
+  }
+  const area = document.getElementById('hintContentArea');
+  if (area) area.innerHTML = '';
+  const effectiveTimes = getEffectiveHintTimes();
+  effectiveTimes.forEach((secs, idx) => {
+    hintTimerIds[idx] = setTimeout(() => unlockHintTier(idx), secs * 1000);
+  });
+  hintCountdownInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - hintStartTime) / 1000);
+    for (let i = 0; i < 3; i++) {
+      const cdEl = document.getElementById(`hintCountdown${i + 1}`);
+      if (!cdEl) continue;
+      if (hintUnlocked[i]) { cdEl.textContent = ''; continue; }
+      const remaining = effectiveTimes[i] - elapsed;
+      cdEl.textContent = remaining > 0 ? `${remaining}s` : '';
+    }
+  }, 1000);
 }
 
 function clearHintTimer() {
-  if (hintTimerId) { clearTimeout(hintTimerId); hintTimerId = null; }
-  const hintBox = document.getElementById('qHintBox');
-  if (hintBox) hintBox.style.display = 'none';
+  hintTimerIds.forEach((id, i) => { if (id) { clearTimeout(id); hintTimerIds[i] = null; } });
+  if (hintCountdownInterval) { clearInterval(hintCountdownInterval); hintCountdownInterval = null; }
+  hintUnlocked = [false, false, false];
+  hintUsed = [false, false, false];
+  hintStartTime = null;
+  const area = document.getElementById('hintContentArea');
+  if (area) area.innerHTML = '';
+  const toast = document.getElementById('hintAvailableToast');
+  if (toast) toast.classList.remove('show');
 }
+
+function getHintXpMultiplier() {
+  return [1.0, 0.75, 0.50, 0.25][hintUsed.filter(Boolean).length] || 0.25;
+}
+
+function buildXpBreakdownHtml(baseXp, finalXp) {
+  const usedCount = hintUsed.filter(Boolean).length;
+  if (usedCount === 0) return '';
+  const penalties = hintUsed.map((used, i) => used ? `<span class="xb-pen">⚠ Hint ${i+1}: −25%</span>` : '').filter(Boolean);
+  return `<div class="xp-breakdown-strip"><span class="xb-base">Base +${baseXp}</span><span class="xb-sep">→</span>${penalties.join('')}<span class="xb-sep">→</span><span class="xb-final">+${finalXp} XP</span></div>`;
+}
+
+// Compat shim — kept so any old refs work silently
+function showAutoHint() {}
+function getHintTextForQuestion(q) { return getHintForTier(q, 1); }
 
 function renderQuestion() {
   state.answered = false;
   state.eliminatedOpts = [];
   let isJee = state.curSubj.id === 'mixed';
   let qCount = state.currentQuestions.length;
+
+  // Hide peer hints strip on new question
+  const peerStrip = document.getElementById('peerHintStrip');
+  if (peerStrip) peerStrip.style.display = 'none';
 
   trackQuestionTimeOnNavigate(state.qIdx);
 
@@ -10107,16 +10673,19 @@ function renderQuestion() {
 
   // Trigger MathJax re-render for fetched database questions containing LaTeX
   typesetMath(document.getElementById('qCard'));
+
+  // Phase 3: Show 3D visualizer button for relevant topics
+  update3DVizTrigger();
 }
 
 function handleAnswer(selIdx, btnNode) {
   let isJee = state.curSubj.id === 'mixed';
   
   if (isJee) {
-    if (state.examSubmitted) return; // Exam already submitted — answers are locked.
-    if (state.qSelected[state.qIdx] === selIdx) state.qSelected[state.qIdx] = null; 
+    if (state.examSubmitted) return;
+    if (state.qSelected[state.qIdx] === selIdx) state.qSelected[state.qIdx] = null;
     else state.qSelected[state.qIdx] = selIdx;
-    renderQuestion(); 
+    renderQuestion();
     return;
   }
   
@@ -10126,9 +10695,9 @@ function handleAnswer(selIdx, btnNode) {
   let qData = state.currentQuestions[state.qIdx];
   let isCorrect = (selIdx === qData.ans);
   const grid = document.getElementById('optGrid');
+  const hintsUsedCount = hintUsed.filter(Boolean).length;
+  const hintMult = getHintXpMultiplier();
   
-  // Single attempt per question now — the correct answer always reveals immediately,
-  // and mistakes draw from the level's shared heart pool instead of a per-question retry.
   state.answered = true;
   state.qSelected[state.qIdx] = selIdx;
   updateLifelineHud();
@@ -10137,12 +10706,30 @@ function handleAnswer(selIdx, btnNode) {
     if(i === qData.ans) b.classList.add('correct');
   });
   
+  // ── Update no-hint streak ────────────────────────────────────────────
+  if (hintsUsedCount === 0) {
+    state.noHintStreak++;
+    state.totalNoHintSolves++;
+    if (state.noHintStreak > state.bestNoHintStreak) state.bestNoHintStreak = state.noHintStreak;
+    checkNoHintMilestone(state.noHintStreak);
+  } else {
+    state.noHintStreak = 0;
+  }
+  renderNoHintStreakWidget();
+
+  // ── Update hint analytics ────────────────────────────────────────────
+  const topicId = state.curChap && state.curChap.id || 'unknown';
+  if (!state.hintAnalytics[topicId]) state.hintAnalytics[topicId] = { total: 0, withHints: 0, chapName: state.curChap && state.curChap.name || topicId };
+  state.hintAnalytics[topicId].total++;
+  if (hintsUsedCount > 0) state.hintAnalytics[topicId].withHints++;
+
   let fb = document.getElementById('qFeedback');
   
   if(isCorrect) {
     state.combo++;
     let mult = comboMultiplier(state.combo);
-    let xpGain = 15 * mult;
+    const baseXp = 15 * mult;
+    const xpGain = Math.max(1, Math.round(baseXp * hintMult));
     state.xp += xpGain; addWeeklyXp(xpGain); state.streak++;
     state.levelCorrectCount++;
     state.levelXpEarned += xpGain;
@@ -10151,7 +10738,9 @@ function handleAnswer(selIdx, btnNode) {
     if(window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
     clearMistakeIfPresent(state.curSubj.id, state.curChap.id, qData.q);
     
-    fb.innerHTML = mult > 1 ? `✓ Correct! +${xpGain} XP (x${mult} combo)` : `✓ Correct! +${xpGain} XP`;
+    const breakdownHtml = buildXpBreakdownHtml(baseXp, xpGain);
+    const comboLabel = mult > 1 ? ` (x${mult} combo)` : '';
+    fb.innerHTML = `✓ Correct! +${xpGain} XP${comboLabel}${breakdownHtml}`;
     fb.className = 'feedback show ok';
     updateStats();
     floatXpGain(xpGain);
@@ -10182,16 +10771,539 @@ function handleAnswer(selIdx, btnNode) {
       fb.innerHTML = `✗ Incorrect. The correct answer was <b>${qData.opts[qData.ans]}</b>`;
       fb.className = 'feedback show bad';
       AudioSys.fail();
-      
       if(window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
-      
       setTimeout(() => showFailOverlay(), 1000);
     }
-    
     typesetMath(fb);
   }
+
+  // Phase 2A: auto-queue for revision if 2+ hints were used
+  addToRevisionQueue(qData, hintsUsedCount);
+
+  // Phase 2B: update adaptive hint times from this level's solve data
+  updateAdaptiveHintTimes();
+
+  // Stash current question context for the reflection modal
+  window._pendingReflection = {
+    qKey: getCurrentQuestionKey(qData),
+    isCorrect,
+    hintsUsed: hintsUsedCount,
+    topicId
+  };
+  // Show reflection modal after a short delay (let feedback settle)
+  setTimeout(() => showReflectionModal(), 1800);
+
+  // Phase 3: Show peer hints strip after answering
+  const qKey = getCurrentQuestionKey(qData);
+  window._currentQKey = qKey;
+  loadPeerHintsStrip(qKey);
+
+  // Phase 3: Sync XP to squad (fire-and-forget, async)
+  syncXpToSquad();
+
   doSave();
 }
+
+// =====================================================================
+// NO-HINT STREAK — milestone XP awards & toast
+// =====================================================================
+const NO_HINT_MILESTONES = [
+  { count: 5,  xp: 100,  badge: null,          label: '5-question hint-free run! +100 XP 🎯' },
+  { count: 10, xp: 250,  badge: 'hint_free_10', label: '10 in a row without hints! +250 XP 🏅' },
+  { count: 20, xp: 500,  badge: 'hint_free_20', label: '20 hint-free questions! +500 XP 🔥' },
+  { count: 50, xp: 1500, badge: 'hint_free_50', label: '50 hint-free! LEGEND status! +1500 XP 🏆' },
+];
+
+function checkNoHintMilestone(streak) {
+  const milestone = NO_HINT_MILESTONES.find(m => m.count === streak);
+  if (!milestone) return;
+  state.xp += milestone.xp;
+  addWeeklyXp(milestone.xp);
+  floatXpGain(milestone.xp);
+  if(window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+  // Use existing toast/notification if available, else a brief alert-style overlay
+  const toast = document.getElementById('hintAvailableToast');
+  if (toast) {
+    toast.textContent = `🎯 ${milestone.label}`;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); toast.textContent = '💡 Hint available! Tap a hint button to reveal it.'; }, 4000);
+  }
+  updateStats();
+}
+
+function renderNoHintStreakWidget() {
+  const widget = document.getElementById('noHintStreakWidget');
+  if (!widget) return;
+  const streak = state.noHintStreak || 0;
+  const best = state.bestNoHintStreak || 0;
+  const nextMilestone = NO_HINT_MILESTONES.find(m => m.count > streak);
+  widget.innerHTML = `
+    <span class="no-hint-streak-fire">${streak >= 5 ? '🔥' : '💪'}</span>
+    <span class="no-hint-streak-num">${streak}</span>
+    <span class="no-hint-streak-lbl">No-Hint Streak</span>
+    <span style="font-size:0.62rem; color:var(--parchment-dim); font-family:'Space Mono',monospace;">Best: ${best}${nextMilestone ? ` · Next: ${nextMilestone.count} (+${nextMilestone.xp} XP)` : ' · Max reached!'}</span>
+  `;
+}
+
+// =====================================================================
+// POST-QUESTION REFLECTION MODAL
+// =====================================================================
+let _reflConfidence = null;
+let _reflDifficulty = null;
+
+function showReflectionModal() {
+  // Only show in practice mode, not JEE mock
+  if (!state.curSubj || state.curSubj.id === 'mixed') return;
+  _reflConfidence = null;
+  _reflDifficulty = null;
+  // Reset button selections
+  document.querySelectorAll('#reflConfidenceRow .refl-option, #reflDifficultyRow .refl-option').forEach(b => b.classList.remove('selected'));
+  const modal = document.getElementById('reflectionModal');
+  if (modal) modal.classList.add('show');
+}
+
+function selectReflOption(field, val, btn) {
+  const rowId = field === 'confidence' ? 'reflConfidenceRow' : 'reflDifficultyRow';
+  document.querySelectorAll(`#${rowId} .refl-option`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if (field === 'confidence') _reflConfidence = val;
+  else _reflDifficulty = val;
+}
+window.selectReflOption = selectReflOption;
+
+function submitReflection() {
+  const pending = window._pendingReflection;
+  if (pending && (_reflConfidence || _reflDifficulty)) {
+    const entry = {
+      qKey: pending.qKey,
+      confidence: _reflConfidence,
+      difficulty: _reflDifficulty,
+      correct: pending.isCorrect,
+      hintsUsed: pending.hintsUsed,
+      topicId: pending.topicId,
+      ts: Date.now()
+    };
+    if (!state.reflectionHistory) state.reflectionHistory = [];
+    state.reflectionHistory.push(entry);
+    // Write to Firebase if available
+    if (window.dbReady && window.db) {
+      try {
+        const uid = (typeof getPlayerUid === 'function') ? getPlayerUid() : null;
+        if (uid) window.db.ref(`reflections/${uid}`).push(entry).catch(()=>{});
+      } catch(e) {}
+    }
+  }
+  dismissReflection();
+  doSave();
+}
+window.submitReflection = submitReflection;
+
+function dismissReflection() {
+  const modal = document.getElementById('reflectionModal');
+  if (modal) modal.classList.remove('show');
+  window._pendingReflection = null;
+}
+window.dismissReflection = dismissReflection;
+
+// =====================================================================
+// HINT ANALYTICS — render dashboard card content
+// =====================================================================
+function renderHintAnalyticsCard() {
+  const el = document.getElementById('hintAnalyticsBody');
+  if (!el) return;
+  const analytics = state.hintAnalytics || {};
+  const topics = Object.values(analytics).filter(t => t.total > 0);
+  if (topics.length === 0) {
+    el.innerHTML = `<div style="color:var(--parchment-dim); font-size:0.75rem; text-align:center; padding:8px 0;">Start practising to see hint data here.</div>`;
+    return;
+  }
+  const overall = topics.reduce((a, t) => ({ total: a.total + t.total, withHints: a.withHints + t.withHints }), { total: 0, withHints: 0 });
+  const overallPct = Math.round((overall.withHints / overall.total) * 100);
+  const sorted = [...topics].sort((a, b) => (b.withHints / b.total) - (a.withHints / a.total)).slice(0, 5);
+  el.innerHTML = `
+    <div style="font-size:0.75rem; margin-bottom:8px; color:var(--parchment-dim);">Overall: You used hints in <strong style="color:${overallPct > 50 ? 'var(--coral)' : overallPct > 25 ? 'var(--brass-light)' : 'var(--sea)'};">${overallPct}%</strong> of questions</div>
+    ${sorted.map(t => {
+      const pct = Math.round((t.withHints / t.total) * 100);
+      const cls = pct > 50 ? 'har-warn' : (pct > 25 ? 'har-ok' : 'har-great');
+      const icon = pct > 50 ? '⚠️' : (pct > 25 ? '✓' : '✓✓');
+      return `<div class="hint-analytics-row">
+        <span class="har-name">${t.chapName || t.topicId || 'Topic'}</span>
+        <div class="har-bar"><div class="har-bar-fill" style="width:${pct}%; background:${pct > 50 ? 'var(--coral)' : pct > 25 ? 'var(--brass-light)' : 'var(--sea)'};"></div></div>
+        <span class="har-pct ${cls}">${pct}% ${icon}</span>
+      </div>`;
+    }).join('')}
+  `;
+}
+window.renderHintAnalyticsCard = renderHintAnalyticsCard;
+
+// =====================================================================
+// PHASE 2A — SPACED REPETITION REVISION QUEUE
+// Auto-queues questions where 2+ hints were used for review at
+// +3 days, +7 days, +30 days (stored in localStorage).
+// =====================================================================
+const REVISION_QUEUE_KEY = 'expedition11_revision_queue_v1';
+
+function getRevisionQueue() {
+  try { return JSON.parse(localStorage.getItem(REVISION_QUEUE_KEY) || '[]'); } catch(e) { return []; }
+}
+function setRevisionQueue(q) {
+  try { localStorage.setItem(REVISION_QUEUE_KEY, JSON.stringify(q)); } catch(e) {}
+}
+
+function addToRevisionQueue(qData, hintsUsed) {
+  if (hintsUsed < 2) return; // only auto-queue when 2+ hints were used
+  const now = Date.now();
+  const DAY = 86400000;
+  const key = getCurrentQuestionKey(qData);
+  const q = getRevisionQueue();
+  // Skip if already queued for this question
+  if (q.find(e => e.key === key && e.status1 === 'pending')) return;
+  q.push({
+    key,
+    q: qData.q,
+    opts: qData.opts,
+    ans: qData.ans,
+    exp: qData.exp || '',
+    chapId: state.curChap && state.curChap.id || '',
+    chapName: state.curChap && state.curChap.name || '',
+    subjId: state.curSubj && state.curSubj.id || '',
+    hintsUsed,
+    addedAt: now,
+    reviewDate1: now + 3 * DAY,
+    reviewDate2: now + 7 * DAY,
+    reviewDate3: now + 30 * DAY,
+    status1: 'pending', status2: 'pending', status3: 'pending'
+  });
+  setRevisionQueue(q);
+  renderRevisionQueuePanel();
+}
+
+function getDueRevisionItems() {
+  const now = Date.now();
+  return getRevisionQueue().filter(e =>
+    (e.status1 === 'pending' && e.reviewDate1 <= now) ||
+    (e.status2 === 'pending' && e.reviewDate2 <= now) ||
+    (e.status3 === 'pending' && e.reviewDate3 <= now)
+  );
+}
+
+function markRevisionDone(key, reviewNum) {
+  const q = getRevisionQueue();
+  const entry = q.find(e => e.key === key);
+  if (!entry) return;
+  if (reviewNum === 1) entry.status1 = 'completed';
+  else if (reviewNum === 2) entry.status2 = 'completed';
+  else if (reviewNum === 3) entry.status3 = 'completed';
+  setRevisionQueue(q);
+  renderRevisionQueuePanel();
+}
+
+function renderRevisionQueuePanel() {
+  const el = document.getElementById('revisionQueueBody');
+  if (!el) return;
+  const due = getDueRevisionItems();
+  const total = getRevisionQueue().length;
+  if (total === 0) {
+    el.innerHTML = `<span style="font-size:0.72rem; color:var(--parchment-dim);">Questions where you needed 2+ hints will appear here for scheduled review.</span>`;
+    return;
+  }
+  if (due.length === 0) {
+    el.innerHTML = `<span style="font-size:0.72rem; color:var(--sea);">✓ All caught up! ${total} question${total > 1 ? 's' : ''} in queue.</span>`;
+    return;
+  }
+  el.innerHTML = `<span style="font-size:0.72rem; color:var(--coral); font-weight:700;">📅 ${due.length} due for review</span>`;
+}
+
+function openRevisionQueueModal() {
+  const due = getDueRevisionItems();
+  const modal = document.getElementById('revisionQueueModal');
+  const body = document.getElementById('revisionQueueModalBody');
+  if (!modal || !body) return;
+  if (due.length === 0) {
+    body.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">
+      <div style="font-size:2rem; margin-bottom:10px;">✅</div>
+      <p>No revisions due right now — check back later!</p>
+      <button class="btn primary" onclick="closeRevisionQueueModal()" style="margin-top:10px;">Close</button>
+    </div>`;
+    modal.classList.add('show');
+    return;
+  }
+  body.innerHTML = `
+    <div style="margin-bottom:14px; font-size:0.82rem; color:var(--parchment-dim);">
+      <strong style="color:var(--brass-light);">${due.length}</strong> question${due.length > 1 ? 's' : ''} due for revision today.<br>
+      These are questions where you used 2+ hints. Solve them without hints for a <span style="color:var(--sea);">+50 XP bonus</span>!
+    </div>
+    ${due.map((e, i) => `
+      <div style="background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:12px; padding:14px; margin-bottom:10px;">
+        <div style="font-size:0.68rem; font-family:'Space Mono',monospace; color:var(--parchment-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">${e.chapName}</div>
+        <div style="font-size:0.9rem; margin-bottom:10px; line-height:1.5;">${e.q.replace(/<[^>]*>/g,' ').slice(0,200)}${e.q.length > 200 ? '…' : ''}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn primary" style="font-size:0.78rem; padding:7px 14px;" onclick="startRevisionItem('${e.key}')">Revise Now →</button>
+          <button class="btn ghost" style="font-size:0.78rem; padding:7px 14px;" onclick="snoozeRevisionItem('${e.key}')">Snooze 1 day</button>
+        </div>
+      </div>
+    `).join('')}
+    <button class="btn ghost" onclick="closeRevisionQueueModal()" style="width:100%; margin-top:8px; font-size:0.8rem;">Close</button>
+  `;
+  modal.classList.add('show');
+}
+window.openRevisionQueueModal = openRevisionQueueModal;
+
+function closeRevisionQueueModal() {
+  const modal = document.getElementById('revisionQueueModal');
+  if (modal) modal.classList.remove('show');
+}
+window.closeRevisionQueueModal = closeRevisionQueueModal;
+
+function snoozeRevisionItem(key) {
+  const q = getRevisionQueue();
+  const DAY = 86400000;
+  const entry = q.find(e => e.key === key);
+  if (!entry) return;
+  const now = Date.now();
+  if (entry.status1 === 'pending' && entry.reviewDate1 <= now) entry.reviewDate1 = now + DAY;
+  else if (entry.status2 === 'pending' && entry.reviewDate2 <= now) entry.reviewDate2 = now + DAY;
+  else if (entry.status3 === 'pending' && entry.reviewDate3 <= now) entry.reviewDate3 = now + DAY;
+  setRevisionQueue(q);
+  openRevisionQueueModal(); // re-render
+}
+window.snoozeRevisionItem = snoozeRevisionItem;
+
+// Launches a mini practice session for a single revision queue item
+function startRevisionItem(key) {
+  const q = getRevisionQueue();
+  const entry = q.find(e => e.key === key);
+  if (!entry) return;
+  closeRevisionQueueModal();
+
+  const now = Date.now();
+  // Mark which review number this satisfies
+  let reviewNum = 0;
+  if (entry.status1 === 'pending' && entry.reviewDate1 <= now) reviewNum = 1;
+  else if (entry.status2 === 'pending' && entry.reviewDate2 <= now) reviewNum = 2;
+  else if (entry.status3 === 'pending' && entry.reviewDate3 <= now) reviewNum = 3;
+
+  // Build a one-question quick session using the existing practice modal flow
+  const revModal = document.getElementById('revisionQuickModal');
+  const revBody = document.getElementById('revisionQuickBody');
+  const revFeedback = document.getElementById('revisionQuickFeedback');
+  if (!revModal || !revBody) return;
+
+  revFeedback.innerHTML = '';
+  revFeedback.style.display = 'none';
+  const labels = ['A', 'B', 'C', 'D'];
+  revBody.innerHTML = `
+    <div style="font-size:0.68rem; font-family:'Space Mono',monospace; color:var(--parchment-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">${entry.chapName} · Revision</div>
+    <div style="font-size:0.95rem; margin-bottom:14px; line-height:1.5;">${entry.q}</div>
+    <div style="display:flex; flex-direction:column; gap:8px;" id="revisionOptGrid">
+      ${entry.opts.map((opt, i) => `<button class="opt" onclick="answerRevisionItem('${key}', ${i}, ${reviewNum}, this)">${labels[i]}. ${opt}</button>`).join('')}
+    </div>
+  `;
+  typesetMath(revBody);
+  revModal.classList.add('show');
+}
+window.startRevisionItem = startRevisionItem;
+
+function answerRevisionItem(key, selIdx, reviewNum, btnNode) {
+  const q = getRevisionQueue();
+  const entry = q.find(e => e.key === key);
+  if (!entry) return;
+  const isCorrect = selIdx === entry.ans;
+  const fb = document.getElementById('revisionQuickFeedback');
+  const grid = document.getElementById('revisionOptGrid');
+  if (grid) grid.querySelectorAll('.opt').forEach((b, i) => {
+    b.disabled = true;
+    if (i === entry.ans) b.classList.add('correct');
+  });
+  if (!isCorrect && btnNode) btnNode.classList.add('wrong');
+
+  if (isCorrect) {
+    // Bonus XP for solving without hints (we track no hints in revision mode)
+    const bonus = 50;
+    state.xp += bonus; addWeeklyXp(bonus);
+    state.noHintStreak++;
+    if (state.noHintStreak > state.bestNoHintStreak) state.bestNoHintStreak = state.noHintStreak;
+    if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+    markRevisionDone(key, reviewNum);
+    fb.innerHTML = `<div style="color:var(--sea); font-weight:700; padding:10px 0;">✓ Correct! +${bonus} XP improvement bonus!<br><span style="font-size:0.8rem; font-weight:400; color:var(--parchment-dim);">Previously needed ${entry.hintsUsed} hint${entry.hintsUsed > 1 ? 's' : ''} — solved it clean this time.</span></div>`;
+    updateStats(); doSave();
+  } else {
+    fb.innerHTML = `<div style="color:var(--coral); font-weight:700; padding:10px 0;">✗ Not quite. The correct answer is <b>${entry.opts[entry.ans]}</b>.<br><span style="font-size:0.8rem; font-weight:400; color:var(--parchment-dim); line-height:1.5;">${(entry.exp || '').replace(/<[^>]*>/g,' ').slice(0,300)}</span></div>`;
+  }
+  fb.style.display = 'block';
+  typesetMath(fb);
+  setTimeout(() => { document.getElementById('revisionQuickCloseBtn').style.display = 'block'; }, 600);
+}
+window.answerRevisionItem = answerRevisionItem;
+
+function closeRevisionQuickModal() {
+  const modal = document.getElementById('revisionQuickModal');
+  if (modal) modal.classList.remove('show');
+  renderRevisionQueuePanel();
+}
+window.closeRevisionQuickModal = closeRevisionQuickModal;
+
+// =====================================================================
+// PHASE 2B — ADAPTIVE HINT TIMING
+// Adjusts unlock times based on rolling avg of last 20 solve times.
+// Stored in state.adaptiveHintTimes and recalculated after each answer.
+// =====================================================================
+function updateAdaptiveHintTimes() {
+  if (!state.qTimeSpentMs || !state.qTimeSpentMs.length) return;
+  // Use the last 20 non-zero solve times
+  const times = (state.qTimeSpentMs || []).filter(t => t > 500).slice(-20);
+  if (times.length < 3) return; // need at least 3 samples
+  const avgMs = times.reduce((a, b) => a + b, 0) / times.length;
+  const avgSec = Math.round(avgMs / 1000);
+  // Adjust tiers proportionally: fast solvers get earlier hints, slow solvers later
+  if (avgSec < 45) {
+    state.adaptiveHintTimes = [60, 90, 120];
+  } else if (avgSec > 120) {
+    state.adaptiveHintTimes = [120, 150, 180];
+  } else {
+    state.adaptiveHintTimes = [90, 120, 150]; // default
+  }
+}
+
+// Override HINT_UNLOCK_TIMES dynamically before scheduling — called from scheduleHintTimer
+function getEffectiveHintTimes() {
+  return state.adaptiveHintTimes || HINT_UNLOCK_TIMES;
+}
+
+// =====================================================================
+// PHASE 2C — CONFIDENCE-BASED + IMPROVEMENT-RATE LEADERBOARDS
+// Two extra tabs added to the leaderboard popup.
+// =====================================================================
+function buildConfidenceLeaderboard() {
+  // Calibration score: questions where (high confidence + correct) OR (low confidence + incorrect)
+  const history = state.reflectionHistory || [];
+  if (history.length < 3) return null;
+  const calibrated = history.filter(e =>
+    (e.confidence === 'high' && e.correct) || (e.confidence === 'low' && !e.correct)
+  ).length;
+  return Math.round((calibrated / history.length) * 100);
+}
+
+function buildImprovementRate() {
+  const analytics = state.hintAnalytics || {};
+  const topics = Object.values(analytics);
+  if (!topics.length) return null;
+  const overall = topics.reduce((a, t) => ({ total: a.total + t.total, withHints: a.withHints + t.withHints }), { total: 0, withHints: 0 });
+  if (!overall.total) return null;
+  return 100 - Math.round((overall.withHints / overall.total) * 100); // higher = better (fewer hints)
+}
+
+function renderLeaderboardExtendedTabs() {
+  const tabRow = document.getElementById('lbTabRow');
+  if (!tabRow) return;
+  // Only add extra tabs once
+  if (document.getElementById('lbTabConfidence')) return;
+  const confTab = document.createElement('button');
+  confTab.className = 'lb-tab';
+  confTab.id = 'lbTabConfidence';
+  confTab.textContent = '🎯 Confidence';
+  confTab.onclick = () => renderLeaderboardConfidenceView();
+  tabRow.appendChild(confTab);
+
+  const impTab = document.createElement('button');
+  impTab.className = 'lb-tab';
+  impTab.id = 'lbTabImprovement';
+  impTab.textContent = '📈 Improvement';
+  impTab.onclick = () => renderLeaderboardImprovementView();
+  tabRow.appendChild(impTab);
+}
+
+function renderLeaderboardConfidenceView() {
+  document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('lbTabConfidence');
+  if (tab) tab.classList.add('active');
+  const listEl = document.getElementById('leaderboardPopupList');
+  const top3El = document.getElementById('lbTop3Chart');
+  if (top3El) top3El.innerHTML = '';
+  if (!listEl) return;
+  const myScore = buildConfidenceLeaderboard();
+  const history = state.reflectionHistory || [];
+  if (history.length < 3) {
+    listEl.innerHTML = `<div style="padding:24px; text-align:center; color:var(--parchment-dim); font-size:0.85rem;">Answer <strong>3+ questions</strong> with the reflection modal to unlock Confidence Score.</div>`;
+    return;
+  }
+  // Build 2x2 matrix breakdown
+  const hc = history.filter(e => e.confidence === 'high' && e.correct).length;
+  const hw = history.filter(e => e.confidence === 'high' && !e.correct).length;
+  const lc = history.filter(e => e.confidence === 'low' && e.correct).length;
+  const lw = history.filter(e => e.confidence === 'low' && !e.correct).length;
+  const mc = history.filter(e => e.confidence === 'medium' && e.correct).length;
+  const mw = history.filter(e => e.confidence === 'medium' && !e.correct).length;
+  listEl.innerHTML = `
+    <div style="padding:4px 0 16px;">
+      <div style="font-size:0.75rem; color:var(--parchment-dim); margin-bottom:12px;">Your calibration score: <strong style="color:var(--brass-light); font-size:1.1rem;">${myScore}%</strong> of answered questions (${history.length} total)</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
+        <div style="background:rgba(127,160,111,0.15); border:1px solid rgba(127,160,111,0.4); border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:1.4rem; margin-bottom:4px;">✓</div>
+          <div style="font-size:0.72rem; font-weight:700; color:var(--sea); margin-bottom:2px;">MASTERY ZONE</div>
+          <div style="font-size:1.5rem; font-weight:700; color:var(--sea);">${hc}</div>
+          <div style="font-size:0.65rem; color:var(--parchment-dim);">High confidence + Correct</div>
+        </div>
+        <div style="background:rgba(196,87,63,0.15); border:1px solid rgba(196,87,63,0.4); border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:1.4rem; margin-bottom:4px;">⚠️</div>
+          <div style="font-size:0.72rem; font-weight:700; color:var(--coral); margin-bottom:2px;">OVERCONFIDENCE</div>
+          <div style="font-size:1.5rem; font-weight:700; color:var(--coral);">${hw}</div>
+          <div style="font-size:0.65rem; color:var(--parchment-dim);">High confidence + Wrong</div>
+        </div>
+        <div style="background:rgba(155,142,203,0.15); border:1px solid rgba(155,142,203,0.4); border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:1.4rem; margin-bottom:4px;">💪</div>
+          <div style="font-size:0.72rem; font-weight:700; color:#c3b9e8; margin-bottom:2px;">HIDDEN STRENGTH</div>
+          <div style="font-size:1.5rem; font-weight:700; color:#c3b9e8;">${lc}</div>
+          <div style="font-size:0.65rem; color:var(--parchment-dim);">Low confidence + Correct</div>
+        </div>
+        <div style="background:rgba(201,156,81,0.12); border:1px solid rgba(201,156,81,0.3); border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:1.4rem; margin-bottom:4px;">📈</div>
+          <div style="font-size:0.72rem; font-weight:700; color:var(--brass-light); margin-bottom:2px;">GROWTH AREA</div>
+          <div style="font-size:1.5rem; font-weight:700; color:var(--brass-light);">${lw}</div>
+          <div style="font-size:0.65rem; color:var(--parchment-dim);">Low confidence + Wrong</div>
+        </div>
+      </div>
+      <div style="font-size:0.75rem; color:var(--parchment-dim);">Medium confidence: ${mc} correct, ${mw} wrong</div>
+    </div>
+  `;
+}
+window.renderLeaderboardConfidenceView = renderLeaderboardConfidenceView;
+
+function renderLeaderboardImprovementView() {
+  document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('lbTabImprovement');
+  if (tab) tab.classList.add('active');
+  const listEl = document.getElementById('leaderboardPopupList');
+  const top3El = document.getElementById('lbTop3Chart');
+  if (top3El) top3El.innerHTML = '';
+  if (!listEl) return;
+  const analytics = state.hintAnalytics || {};
+  const topics = Object.values(analytics).filter(t => t.total >= 3);
+  if (!topics.length) {
+    listEl.innerHTML = `<div style="padding:24px; text-align:center; color:var(--parchment-dim); font-size:0.85rem;">Practice at least <strong>3 questions per topic</strong> to unlock your improvement data.</div>`;
+    return;
+  }
+  const sorted = [...topics].sort((a, b) => (b.withHints / b.total) - (a.withHints / a.total));
+  const score = buildImprovementRate();
+  listEl.innerHTML = `
+    <div style="padding:4px 0 16px;">
+      <div style="font-size:0.75rem; color:var(--parchment-dim); margin-bottom:12px;">Your hint-independence score: <strong style="color:var(--brass-light); font-size:1.1rem;">${score}%</strong> of questions solved without hints</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        ${sorted.map(t => {
+          const hintPct = Math.round((t.withHints / t.total) * 100);
+          const cleanPct = 100 - hintPct;
+          const color = hintPct > 50 ? 'var(--coral)' : hintPct > 25 ? 'var(--brass-light)' : 'var(--sea)';
+          return `<div style="display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; background:rgba(255,255,255,0.03);">
+            <div style="flex:1; font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.chapName || 'Topic'}</div>
+            <div style="flex:0 0 80px; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;"><div style="width:${cleanPct}%; height:100%; background:${color};"></div></div>
+            <div style="font-family:'Space Mono',monospace; font-size:0.72rem; flex-shrink:0; color:${color};">${cleanPct}% clean</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+window.renderLeaderboardImprovementView = renderLeaderboardImprovementView;
 
 function showFailOverlay() {
   let reviveBtn = document.getElementById('reviveBtn');
@@ -12282,6 +13394,725 @@ async function generateStudyPlan(btn) {
 }
 
 /* ============================================================
+   PHASE 3 — AI HINT GENERATION
+   Generates 3-tier hints on demand via the existing /api/ai-explain
+   endpoint using the question text + answer key as context.
+   ============================================================ */
+
+async function generateAiHints(qData) {
+  if (!qData || !qData.q) return null;
+  const prompt = `You are a JEE coaching expert. For this exam question, generate exactly 3 progressive hints in JSON.
+
+Question: ${qData.q}
+Options: ${(qData.opts || []).map((o,i) => String.fromCharCode(65+i)+'. '+o).join(' | ')}
+Correct answer: ${qData.opts ? qData.opts[qData.ans] || '' : ''}
+${qData.exp ? 'Solution notes: ' + qData.exp : ''}
+
+Return ONLY valid JSON in this exact format:
+{"hint_1":"Conceptual nudge in 1-2 sentences, no formulas","hint_2":"Mention the relevant formula or method name","hint_3":"Show the first 2-3 solving steps"}`;
+
+  try {
+    const res = await fetch('/api/ai-explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'doubt', question: prompt })
+    });
+    const data = await res.json();
+    const text = (data.answer || '').trim();
+    // Extract JSON from response (handle markdown code blocks)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const hints = JSON.parse(jsonMatch[0]);
+      if (hints.hint_1 && hints.hint_2 && hints.hint_3) return hints;
+    }
+  } catch (_) {}
+  return null;
+}
+
+// Called when a hint tier button is clicked and the question has no stored hints
+async function tryAiHintFallback(tier, qData) {
+  const contentArea = document.getElementById('hintContentArea');
+  if (!contentArea) return;
+  // Show loading state
+  contentArea.innerHTML = `<div style="padding:10px; font-size:0.78rem; color:var(--parchment-dim); font-style:italic;">🤖 Generating hint with AI…</div>`;
+  const hints = await generateAiHints(qData);
+  if (hints) {
+    // Store in the question object so subsequent tiers are instant
+    qData.hint_1 = hints.hint_1;
+    qData.hint_2 = hints.hint_2;
+    qData.hint_3 = hints.hint_3;
+    viewHintTier(tier); // re-run now that hints are populated
+  } else {
+    contentArea.innerHTML = `<div style="padding:10px; font-size:0.78rem; color:var(--coral);">⚠️ AI hint generation unavailable — check connection.</div>`;
+  }
+}
+
+/* ============================================================
+   PHASE 3 — PEER HINT LIBRARY
+   Firebase path: peerHints/{qKey}/{hintId}
+   Each hint: { text, tier, authorName, authorUid, upvotes, downvotes,
+                isApproved, createdAt }
+   ============================================================ */
+
+const PEER_HINT_ELIGIBILITY_XP = 500; // minimum XP to contribute hints
+
+function _peerQKey(qKey) {
+  // Firebase keys can't have . / # $ [ ] — sanitise
+  return String(qKey || 'unknown').replace(/[.#$\[\]/]/g, '_').slice(0, 120);
+}
+
+async function loadPeerHintsStrip(rawQKey) {
+  const strip = document.getElementById('peerHintStrip');
+  const listEl = document.getElementById('peerHintList');
+  if (!strip || !listEl) return;
+
+  strip.style.display = 'block';
+  listEl.textContent = 'Loading community hints…';
+
+  if (!window.db || window.explorerBackendStatus !== 'live') {
+    listEl.innerHTML = '<span style="color:var(--parchment-dim);">Community hints need a live connection.</span>';
+    return;
+  }
+
+  try {
+    const qKey = _peerQKey(rawQKey);
+    const snap = await db.ref('peerHints/' + qKey).orderByChild('isApproved').equalTo(true).once('value');
+    const hints = [];
+    snap.forEach(child => hints.push({ id: child.key, ...child.val() }));
+    // Sort by net votes descending
+    hints.sort((a, b) => ((b.upvotes||0)-(b.downvotes||0)) - ((a.upvotes||0)-(a.downvotes||0)));
+
+    if (!hints.length) {
+      listEl.innerHTML = '<span style="color:var(--parchment-dim);">No community hints yet — be the first to contribute!</span>';
+      return;
+    }
+
+    const tierLabels = { '1': '💭 Nudge', '2': '📐 Formula cue', '3': '🔢 First steps' };
+    listEl.innerHTML = hints.slice(0, 5).map(h => {
+      const net = (h.upvotes||0) - (h.downvotes||0);
+      const myVote = (state.peerHintVotes || {})[h.id];
+      const uid = window._battleMyUid || 'anon';
+      return `
+        <div style="padding:7px 0; border-bottom:1px solid rgba(155,142,203,0.15); display:flex; gap:8px; align-items:flex-start;">
+          <span style="font-size:0.68rem; padding:2px 5px; background:rgba(155,142,203,0.15); border-radius:4px; white-space:nowrap; flex-shrink:0;">${tierLabels[String(h.tier)]||'💡'}</span>
+          <span style="flex:1; line-height:1.4;">${escapeHtml(h.text)}</span>
+          <span style="display:flex; gap:4px; align-items:center; flex-shrink:0; font-family:'Space Mono',monospace; font-size:0.7rem;">
+            <button onclick="votePeerHint('${h.id}','${qKey}','up')" style="background:none;border:none;cursor:pointer;color:${myVote==='up'?'#6fe4d6':'var(--parchment-dim)'}; font-size:0.85rem;" title="Helpful">👍</button>
+            <span>${net>0?'+':''}${net}</span>
+            <button onclick="votePeerHint('${h.id}','${qKey}','down')" style="background:none;border:none;cursor:pointer;color:${myVote==='down'?'var(--coral)':'var(--parchment-dim)'}; font-size:0.85rem;" title="Not helpful">👎</button>
+          </span>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    listEl.innerHTML = '<span style="color:var(--parchment-dim);">Could not load community hints.</span>';
+  }
+}
+
+async function votePeerHint(hintId, qKey, dir) {
+  if (!window.db || window.explorerBackendStatus !== 'live') return;
+  if (!state.peerHintVotes) state.peerHintVotes = {};
+  const prev = state.peerHintVotes[hintId];
+  if (prev === dir) return; // already voted this way
+
+  const ref = db.ref('peerHints/' + qKey + '/' + hintId);
+  const updates = {};
+  if (dir === 'up') {
+    updates.upvotes = firebase.database.ServerValue.increment(1);
+    if (prev === 'down') updates.downvotes = firebase.database.ServerValue.increment(-1);
+  } else {
+    updates.downvotes = firebase.database.ServerValue.increment(1);
+    if (prev === 'up') updates.upvotes = firebase.database.ServerValue.increment(-1);
+  }
+  try {
+    await ref.update(updates);
+    state.peerHintVotes[hintId] = dir;
+    doSave();
+    // Reload strip to reflect new votes
+    if (window._currentQKey) loadPeerHintsStrip(window._currentQKey);
+  } catch (_) {}
+}
+
+// Open contribute modal
+function openPeerHintContribute() {
+  if (!window._currentQKey) return;
+  if (state.xp < PEER_HINT_ELIGIBILITY_XP) {
+    showToast(`You need at least ${PEER_HINT_ELIGIBILITY_XP} XP to contribute community hints.`);
+    return;
+  }
+  const modal = document.getElementById('peerHintContributeModal');
+  if (modal) {
+    document.getElementById('peerHintContributeQKey').value = window._currentQKey;
+    document.getElementById('peerHintText').value = '';
+    document.getElementById('peerHintTier').value = '1';
+    modal.classList.add('show');
+  }
+}
+function closePeerHintContribute() {
+  const modal = document.getElementById('peerHintContributeModal');
+  if (modal) modal.classList.remove('show');
+}
+
+async function submitPeerHint() {
+  const text = (document.getElementById('peerHintText').value || '').trim();
+  const tier = parseInt(document.getElementById('peerHintTier').value) || 1;
+  const rawQKey = document.getElementById('peerHintContributeQKey').value;
+  if (!text || text.length < 10) { showToast('Write at least 10 characters for your hint.'); return; }
+  if (text.length > 200) { showToast('Keep hints under 200 characters.'); return; }
+  if (!window.db || window.explorerBackendStatus !== 'live') {
+    showToast('Need a live connection to submit hints.'); return;
+  }
+
+  const btn = document.getElementById('peerHintSubmitBtn');
+  if (btn) btn.disabled = true;
+
+  const qKey = _peerQKey(rawQKey);
+  const uid = window._battleMyUid || ('anon_' + Date.now());
+  // Auto-approve if user has high XP (>5000) — otherwise needs teacher review
+  const autoApprove = state.xp >= 5000;
+  try {
+    await db.ref('peerHints/' + qKey).push({
+      text, tier,
+      authorName: state.explorerName || 'Explorer',
+      authorUid: uid,
+      upvotes: 0, downvotes: 0,
+      isApproved: autoApprove,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    closePeerHintContribute();
+    showToast(autoApprove ? '✓ Hint published! +10 XP' : '✓ Hint submitted for review!');
+    if (autoApprove) {
+      state.xp += 10; addWeeklyXp(10);
+      if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+      updateStats(); doSave();
+    }
+    if (window._currentQKey) loadPeerHintsStrip(window._currentQKey);
+  } catch (e) {
+    showToast('Could not submit — try again.');
+  }
+  if (btn) btn.disabled = false;
+}
+
+/* ============================================================
+   PHASE 3 — STUDY SQUADS
+   Firebase path: squads/{squadId}
+   Squad object: { name, creatorUid, creatorName, members:{uid:{name,xp}},
+                   totalXp, createdAt, inviteCode }
+   ============================================================ */
+
+function openSquadsModal() {
+  const modal = document.getElementById('squadsModal');
+  if (!modal) return;
+  renderSquadsModalBody();
+  modal.classList.add('show');
+}
+function closeSquadsModal() {
+  const modal = document.getElementById('squadsModal');
+  if (modal) modal.classList.remove('show');
+}
+
+async function renderSquadsModalBody() {
+  const body = document.getElementById('squadsModalBody');
+  if (!body) return;
+  body.innerHTML = '<div style="text-align:center; padding:20px; color:var(--parchment-dim);">Loading…</div>';
+
+  if (!window.db || window.explorerBackendStatus !== 'live') {
+    body.innerHTML = '<div style="text-align:center; padding:20px; color:var(--parchment-dim);">⚠️ Squads need a live connection.</div>';
+    return;
+  }
+
+  // If in a squad, show it
+  if (state.squadId) {
+    try {
+      const snap = await db.ref('squads/' + state.squadId).once('value');
+      const squad = snap.val();
+      if (squad) { renderSquadHome(squad, state.squadId); return; }
+      else { state.squadId = null; state.squadName = null; doSave(); }
+    } catch (_) {}
+  }
+
+  // Not in a squad — show create/join
+  body.innerHTML = `
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-size:2.2rem; margin-bottom:8px;">🛡️</div>
+      <p style="color:var(--parchment-dim); font-size:0.88rem; margin:0;">Form a squad with friends, pool your XP, and compete on the squad leaderboard.</p>
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:0.78rem; color:var(--parchment-dim); display:block; margin-bottom:6px;">Create a new squad</label>
+      <div style="display:flex; gap:8px;">
+        <input id="newSquadNameInput" placeholder="Squad name…" maxlength="30" style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:inherit; font-family:'Space Mono',monospace; font-size:0.82rem;">
+        <button class="btn primary" onclick="createSquad()">Create</button>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--line); padding-top:16px;">
+      <label style="font-size:0.78rem; color:var(--parchment-dim); display:block; margin-bottom:6px;">Join with invite code</label>
+      <div style="display:flex; gap:8px;">
+        <input id="squadJoinCodeInput" placeholder="6-digit code…" maxlength="6" style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:inherit; font-family:'Space Mono',monospace; font-size:0.82rem; letter-spacing:3px; text-transform:uppercase; text-align:center;">
+        <button class="btn ghost" onclick="joinSquadByCode()">Join</button>
+      </div>
+      <div id="squadJoinError" style="color:var(--coral); font-size:0.78rem; margin-top:6px; display:none;"></div>
+    </div>
+    <div style="border-top:1px solid var(--line); padding-top:16px; margin-top:16px;">
+      <div style="font-size:0.78rem; color:var(--parchment-dim); margin-bottom:10px; font-family:'Space Mono',monospace; letter-spacing:1px; text-transform:uppercase;">Squad Leaderboard</div>
+      <div id="squadLeaderboardList" style="font-size:0.82rem;">Loading top squads…</div>
+    </div>`;
+  loadSquadLeaderboard();
+}
+
+async function createSquad() {
+  const nameInput = document.getElementById('newSquadNameInput');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) { showToast('Enter a squad name.'); return; }
+  const uid = window._battleMyUid || (await ensureAnonymousAuth()) || ('u_' + Date.now());
+  const code = generateSquadCode();
+  const squad = {
+    name,
+    creatorUid: uid,
+    creatorName: state.explorerName || 'Explorer',
+    inviteCode: code,
+    totalXp: state.xp || 0,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    members: { [uid]: { name: state.explorerName || 'Explorer', xp: state.xp || 0, joinedAt: firebase.database.ServerValue.TIMESTAMP } }
+  };
+  try {
+    const ref = await db.ref('squads').push(squad);
+    state.squadId = ref.key;
+    state.squadName = name;
+    doSave();
+    updateSquadPanelStatus();
+    renderSquadsModalBody();
+    showToast('✓ Squad "' + name + '" created!');
+  } catch (e) { showToast('Could not create squad — check your connection.'); }
+}
+
+function generateSquadCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+async function joinSquadByCode() {
+  const codeInput = document.getElementById('squadJoinCodeInput');
+  const errEl = document.getElementById('squadJoinError');
+  const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+  if (code.length !== 6) { if (errEl) { errEl.textContent = 'Enter the 6-character invite code.'; errEl.style.display = 'block'; } return; }
+  try {
+    const snap = await db.ref('squads').orderByChild('inviteCode').equalTo(code).once('value');
+    if (!snap.exists()) { if (errEl) { errEl.textContent = 'No squad found with that code.'; errEl.style.display = 'block'; } return; }
+    let squadId = null, squadData = null;
+    snap.forEach(child => { squadId = child.key; squadData = child.val(); });
+    const memberCount = squadData.members ? Object.keys(squadData.members).length : 0;
+    if (memberCount >= 10) { if (errEl) { errEl.textContent = 'That squad is full (max 10 members).'; errEl.style.display = 'block'; } return; }
+    const uid = window._battleMyUid || ('u_' + Date.now());
+    await db.ref('squads/' + squadId + '/members/' + uid).set({ name: state.explorerName || 'Explorer', xp: state.xp || 0, joinedAt: firebase.database.ServerValue.TIMESTAMP });
+    // Update squad totalXp
+    // Recalculate totalXp by reading current value + adding this member's XP
+    const txSnap = await db.ref('squads/' + squadId + '/totalXp').once('value');
+    const currentTotal = txSnap.val() || 0;
+    await db.ref('squads/' + squadId + '/totalXp').set(currentTotal + (state.xp || 0));
+    state.squadId = squadId;
+    state.squadName = squadData.name;
+    doSave();
+    updateSquadPanelStatus();
+    renderSquadsModalBody();
+    showToast('✓ Joined squad "' + squadData.name + '"!');
+  } catch (e) { if (errEl) { errEl.textContent = 'Could not join — check your connection.'; errEl.style.display = 'block'; } }
+}
+
+function renderSquadHome(squad, squadId) {
+  const body = document.getElementById('squadsModalBody');
+  if (!body) return;
+  const members = Object.entries(squad.members || {}).sort((a,b) => (b[1].xp||0)-(a[1].xp||0));
+  const memberRows = members.map(([uid, m], i) => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:0.85rem;">
+      <span>${['🥇','🥈','🥉'][i]||`#${i+1}`} ${escapeHtml(m.name||'?')}</span>
+      <span style="font-family:'Space Mono',monospace; color:var(--brass-light);">${(m.xp||0).toLocaleString()} XP</span>
+    </div>`).join('');
+  const code = squad.inviteCode || '------';
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+      <div>
+        <div style="font-family:'Fraunces',serif; font-size:1.3rem; font-weight:700;">🛡️ ${escapeHtml(squad.name)}</div>
+        <div style="font-size:0.78rem; color:var(--parchment-dim);">${members.length} member${members.length!==1?'s':''} · Total XP: ${(squad.totalXp||0).toLocaleString()}</div>
+      </div>
+      <button class="btn ghost" style="font-size:0.75rem;" onclick="leaveSquad('${squadId}')">Leave Squad</button>
+    </div>
+    <div style="background:rgba(201,154,75,0.08); border:1px solid rgba(201,154,75,0.25); border-radius:8px; padding:10px 14px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div>
+        <div style="font-size:0.68rem; color:var(--parchment-dim); margin-bottom:2px;">Invite Code</div>
+        <div style="font-family:'Space Mono',monospace; font-size:1.4rem; letter-spacing:5px; font-weight:700; color:var(--brass-light);">${code}</div>
+      </div>
+      <button class="btn ghost" style="font-size:0.75rem;" onclick="
+        if(navigator.clipboard) navigator.clipboard.writeText('${code}').then(()=>showToast('✓ Code copied!'));
+      ">📋 Copy</button>
+    </div>
+    <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:8px; font-family:'Space Mono',monospace; letter-spacing:1px; text-transform:uppercase;">Squad Rankings</div>
+    ${memberRows}`;
+}
+
+async function leaveSquad(squadId) {
+  if (!window.db) return;
+  const uid = window._battleMyUid || 'anon';
+  try {
+    await db.ref('squads/' + squadId + '/members/' + uid).remove();
+    state.squadId = null; state.squadName = null; doSave();
+    updateSquadPanelStatus();
+    renderSquadsModalBody();
+    showToast('You have left the squad.');
+  } catch (_) {}
+}
+
+async function loadSquadLeaderboard() {
+  const el = document.getElementById('squadLeaderboardList');
+  if (!el || !window.db) return;
+  try {
+    const snap = await db.ref('squads').orderByChild('totalXp').limitToLast(10).once('value');
+    const squads = [];
+    snap.forEach(child => squads.push({ id: child.key, ...child.val() }));
+    squads.sort((a,b) => (b.totalXp||0)-(a.totalXp||0));
+    if (!squads.length) { el.textContent = 'No squads yet — create the first one!'; return; }
+    el.innerHTML = squads.map((s, i) => `
+      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:0.82rem;">
+        <span>${['🥇','🥈','🥉'][i]||`#${i+1}`} ${escapeHtml(s.name)}</span>
+        <span style="font-family:'Space Mono',monospace; color:var(--brass-light);">${(s.totalXp||0).toLocaleString()}</span>
+      </div>`).join('');
+  } catch (_) { el.textContent = 'Could not load leaderboard.'; }
+}
+
+function updateSquadPanelStatus() {
+  const el = document.getElementById('squadPanelStatus');
+  if (!el) return;
+  if (state.squadName) {
+    el.innerHTML = `<span style="color:var(--brass-light); font-weight:600;">🛡️ ${escapeHtml(state.squadName)}</span> — tap to view squad`;
+  } else {
+    el.textContent = 'Form a squad, earn XP together & climb the squad leaderboard';
+  }
+}
+
+// Sync this user's XP to their squad after each answer
+async function syncXpToSquad() {
+  if (!state.squadId || !window.db || window.explorerBackendStatus !== 'live') return;
+  const uid = window._battleMyUid || 'anon';
+  try {
+    await db.ref('squads/' + state.squadId + '/members/' + uid + '/xp').set(state.xp || 0);
+    // Also update squad totalXp by summing members (simplified — just set member's contribution)
+    // We keep it eventually consistent; full sum recalculated on squad view open
+  } catch (_) {}
+}
+
+/* ============================================================
+   PHASE 3 — CONCEPT MINI-GAMES
+   Three canvas-based games teaching JEE concepts.
+   1. 🚀 Projectile Launcher — Kinematics (Physics)
+   2. ⚡ Circuit Builder — Resistance (Physics)
+   3. 🧪 Mole Mixer — Stoichiometry (Chemistry)
+   ============================================================ */
+
+function openMiniGamesModal() {
+  const modal = document.getElementById('miniGamesModal');
+  if (modal) { renderMiniGamesHome(); modal.classList.add('show'); }
+}
+function closeMiniGamesModal() {
+  const modal = document.getElementById('miniGamesModal');
+  if (modal) { modal.classList.remove('show'); stopCurrentMiniGame(); }
+}
+
+let _mgCurrentGame = null;
+function stopCurrentMiniGame() { _mgCurrentGame = null; }
+
+function renderMiniGamesHome() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const games = [
+    { id: 'projectile', icon: '🚀', name: 'Projectile Launcher', topic: 'Physics · Kinematics', desc: 'Adjust angle and velocity to hit the target. Master range & maximum height equations.', xp: 150 },
+    { id: 'circuit',    icon: '⚡', name: 'Circuit Solver',      topic: 'Physics · Circuits',  desc: 'Build series/parallel circuits to reach exact resistance. Apply R = V/I intuitively.', xp: 150 },
+    { id: 'mole',       icon: '🧪', name: 'Mole Mixer',          topic: 'Chemistry · Stoich.',  desc: 'Balance the reaction and calculate correct molar quantities before time runs out.', xp: 150 },
+  ];
+  body.innerHTML = `
+    <div style="display:grid; gap:14px;">
+      ${games.map(g => `
+        <div style="background:var(--glass); border:1px solid var(--line); border-radius:14px; padding:16px 18px; cursor:pointer; display:flex; gap:14px; align-items:center;" onclick="startMiniGame('${g.id}')">
+          <div style="font-size:2.2rem; flex-shrink:0;">${g.icon}</div>
+          <div style="flex:1;">
+            <div style="font-family:'Fraunces',serif; font-weight:700; font-size:1rem; margin-bottom:3px;">${g.name}</div>
+            <div style="font-size:0.72rem; color:var(--brass-light); margin-bottom:4px; font-family:'Space Mono',monospace;">${g.topic}</div>
+            <div style="font-size:0.8rem; color:var(--parchment-dim);">${g.desc}</div>
+          </div>
+          <div style="flex-shrink:0; text-align:center;">
+            <div style="font-family:'Space Mono',monospace; font-size:0.8rem; color:var(--brass-light); font-weight:700;">+${g.xp}</div>
+            <div style="font-size:0.65rem; color:var(--parchment-dim);">XP</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function startMiniGame(id) {
+  _mgCurrentGame = id;
+  if (id === 'projectile') startProjectileGame();
+  else if (id === 'circuit') startCircuitGame();
+  else if (id === 'mole') startMoleGame();
+}
+
+/* ── GAME 1: Projectile Launcher ─────────────────────────────── */
+function startProjectileGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  // Randomise target distance 40-80m at ground level
+  const target = 40 + Math.floor(Math.random() * 41); // metres
+  const g = 10; // m/s²
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🚀 Projectile Launcher</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Hit the target at <strong style="color:var(--brass-light);">${target} m</strong>. Formula: R = v²sin(2θ)/g</p>
+    <canvas id="projCanvas" width="520" height="200" style="width:100%; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin-bottom:14px;"></canvas>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+      <label style="font-size:0.78rem;">
+        <span style="color:var(--parchment-dim);">Launch Angle: </span><strong id="mgAngleVal">45°</strong>
+        <input type="range" min="10" max="80" value="45" id="mgAngle" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgAngleVal').textContent=this.value+'°'; drawProjectileCanvas(${target},${g})">
+      </label>
+      <label style="font-size:0.78rem;">
+        <span style="color:var(--parchment-dim);">Velocity: </span><strong id="mgVelVal">20 m/s</strong>
+        <input type="range" min="10" max="40" value="20" id="mgVel" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgVelVal').textContent=this.value+' m/s'; drawProjectileCanvas(${target},${g})">
+      </label>
+    </div>
+    <div id="mgProjFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="launchProjectile(${target},${g})">🚀 Launch!</button>`;
+  setTimeout(() => drawProjectileCanvas(target, g), 50);
+}
+
+function drawProjectileCanvas(target, g) {
+  const canvas = document.getElementById('projCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const angle = parseFloat(document.getElementById('mgAngle').value) * Math.PI / 180;
+  const v = parseFloat(document.getElementById('mgVel').value);
+  const range = (v*v*Math.sin(2*angle))/g;
+  const maxH  = (v*v*Math.sin(angle)*Math.sin(angle))/(2*g);
+  const scaleX = (W - 40) / Math.max(range, target + 10);
+  const scaleY = (H - 40) / Math.max(maxH, 1);
+
+  ctx.clearRect(0,0,W,H);
+  // Ground
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillRect(0, H-20, W, 20);
+  // Target flag
+  const tx = 20 + target * scaleX;
+  ctx.fillStyle = '#ff8fb0';
+  ctx.fillRect(tx-2, H-50, 4, 30);
+  ctx.fillStyle = '#ff5f8d';
+  ctx.beginPath(); ctx.moveTo(tx+2, H-50); ctx.lineTo(tx+18, H-42); ctx.lineTo(tx+2, H-34); ctx.fill();
+  ctx.fillStyle = 'rgba(255,95,141,0.15)';
+  ctx.fillRect(tx-8, H-20, 20, 20);
+
+  // Trajectory
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  const steps = 60;
+  for (let i = 0; i <= steps; i++) {
+    const t = (range / (v * Math.cos(angle))) * (i / steps);
+    const x = 20 + v * Math.cos(angle) * t * scaleX;
+    const y = H - 20 - (v * Math.sin(angle) * t - 0.5 * g * t * t) * scaleY;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#e8c382'; ctx.font = '11px Space Mono,monospace';
+  ctx.fillText(`Range: ${range.toFixed(1)}m`, 20, 18);
+  ctx.fillText(`Max H: ${maxH.toFixed(1)}m`, 150, 18);
+}
+
+function launchProjectile(target, g) {
+  const angle = parseFloat(document.getElementById('mgAngle').value) * Math.PI / 180;
+  const v = parseFloat(document.getElementById('mgVel').value);
+  const range = (v*v*Math.sin(2*angle))/g;
+  const diff = Math.abs(range - target);
+  const fb = document.getElementById('mgProjFeedback');
+  if (diff <= 2) {
+    if (fb) fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Bull's-eye! Range = ${range.toFixed(1)} m ≈ ${target} m. Perfect! +150 XP</span>`;
+    awardMiniGameXp(150, 'Projectile Master');
+  } else if (diff <= 6) {
+    if (fb) fb.innerHTML = `<span style="color:var(--brass-light);">Close! Range = ${range.toFixed(1)} m, target = ${target} m. Adjust angle slightly. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    if (fb) fb.innerHTML = `<span style="color:var(--coral);">Missed. Range = ${range.toFixed(1)} m, target = ${target} m. Try again!</span>`;
+  }
+  drawProjectileCanvas(target, g);
+}
+
+/* ── GAME 2: Circuit Solver ──────────────────────────────────── */
+function startCircuitGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const targets = [6, 8, 10, 12, 15, 18, 20];
+  const target = targets[Math.floor(Math.random() * targets.length)];
+  // Resistor values available
+  const options = [2, 3, 4, 5, 6, 8, 10];
+  const selected = [];
+
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">⚡ Circuit Solver</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Build a circuit that gives exactly <strong style="color:var(--brass-light);">${target} Ω</strong>.</p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+      ${options.map(r => `<button class="btn ghost" id="cktBtn_${r}" style="min-width:48px; font-family:'Space Mono',monospace; font-weight:700;" onclick="cktToggle(${r},${target})">${r}Ω</button>`).join('')}
+    </div>
+    <div style="margin-bottom:10px; font-size:0.8rem;">
+      <span style="color:var(--parchment-dim);">Mode: </span>
+      <button class="btn ghost" id="cktModeBtn" style="font-size:0.75rem; padding:4px 10px;" onclick="cktToggleMode(${target})">Series</button>
+    </div>
+    <canvas id="cktCanvas" width="520" height="90" style="width:100%; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin-bottom:10px;"></canvas>
+    <div id="cktFeedback" style="min-height:22px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkCircuit(${target})">⚡ Test Circuit</button>`;
+
+  window._cktSelected = [];
+  window._cktMode = 'series';
+  drawCircuitCanvas(target);
+}
+
+function cktToggle(r, target) {
+  if (!window._cktSelected) window._cktSelected = [];
+  const idx = window._cktSelected.indexOf(r);
+  if (idx >= 0) window._cktSelected.splice(idx, 1);
+  else if (window._cktSelected.length < 4) window._cktSelected.push(r);
+  const btn = document.getElementById('cktBtn_' + r);
+  if (btn) btn.style.borderColor = window._cktSelected.includes(r) ? 'var(--brass-light)' : '';
+  drawCircuitCanvas(target);
+}
+function cktToggleMode(target) {
+  window._cktMode = window._cktMode === 'series' ? 'parallel' : 'series';
+  const btn = document.getElementById('cktModeBtn');
+  if (btn) btn.textContent = window._cktMode === 'series' ? 'Series' : 'Parallel';
+  drawCircuitCanvas(target);
+}
+function calcCircuitR() {
+  const sel = window._cktSelected || [];
+  if (!sel.length) return 0;
+  if (window._cktMode === 'series') return sel.reduce((s,v)=>s+v, 0);
+  const inv = sel.reduce((s,v)=>s+1/v, 0);
+  return inv > 0 ? 1/inv : 0;
+}
+function drawCircuitCanvas(target) {
+  const canvas = document.getElementById('cktCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const sel = window._cktSelected || [];
+  if (!sel.length) {
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.font = '13px Space Mono,monospace';
+    ctx.textAlign = 'center'; ctx.fillText('Select resistors above to build your circuit', W/2, H/2);
+    ctx.textAlign = 'left'; return;
+  }
+  const totalR = calcCircuitR();
+  const n = sel.length;
+  const boxW = Math.min(80, (W-60)/n); const boxH = 34; const y = H/2 - boxH/2;
+  const totalW = n * boxW + (n-1)*10;
+  let startX = (W - totalW)/2;
+
+  // Wire left
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(startX, H/2); ctx.stroke();
+  // Wires and boxes
+  sel.forEach((r, i) => {
+    const x = startX + i*(boxW+10);
+    ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2;
+    if (i > 0) { ctx.beginPath(); ctx.moveTo(x-10, H/2); ctx.lineTo(x, H/2); ctx.stroke(); }
+    ctx.strokeRect(x, y, boxW, boxH);
+    ctx.fillStyle = '#e8c382'; ctx.font = '12px Space Mono,monospace'; ctx.textAlign='center';
+    ctx.fillText(r+'Ω', x+boxW/2, y+boxH/2+5);
+    ctx.textAlign='left';
+  });
+  // Wire right + battery symbol
+  const endX = startX + totalW;
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(endX, H/2); ctx.lineTo(W-30, H/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W-30, H/2-12); ctx.lineTo(W-30, H/2+12); ctx.stroke();
+  ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(W-24, H/2-8); ctx.lineTo(W-24, H/2+8); ctx.stroke();
+  ctx.lineWidth = 1;
+
+  // Label
+  ctx.fillStyle = totalR.toFixed(1) == target ? '#6fe4d6' : '#e8c382';
+  ctx.font = 'bold 13px Space Mono,monospace'; ctx.textAlign='center';
+  ctx.fillText(`Total: ${totalR.toFixed(2)} Ω  (target ${target} Ω)`, W/2, H-10);
+  ctx.textAlign='left';
+}
+function checkCircuit(target) {
+  const R = calcCircuitR();
+  const fb = document.getElementById('cktFeedback');
+  if (Math.abs(R - target) < 0.05) {
+    if (fb) fb.innerHTML = `<span style="color:#6fe4d6;">✓ Perfect! ${R.toFixed(2)} Ω = ${target} Ω. +150 XP</span>`;
+    awardMiniGameXp(150, 'Circuit Master');
+  } else if (Math.abs(R - target) <= 1) {
+    if (fb) fb.innerHTML = `<span style="color:var(--brass-light);">Almost! ${R.toFixed(2)} Ω ≠ ${target} Ω. Swap one resistor. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    if (fb) fb.innerHTML = `<span style="color:var(--coral);">Not quite. ${R.toFixed(2)} Ω ≠ ${target} Ω. Try a different combination.</span>`;
+  }
+}
+
+/* ── GAME 3: Mole Mixer ──────────────────────────────────────── */
+function startMoleGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const reactions = [
+    { eq: '2H₂ + O₂ → 2H₂O', reagents: ['H₂','O₂'], product:'H₂O', ratio:[2,1,2], given:{ id:0, moles:4 }, find: 2 },
+    { eq: 'N₂ + 3H₂ → 2NH₃', reagents: ['N₂','H₂'], product:'NH₃', ratio:[1,3,2], given:{ id:0, moles:2 }, find: 2 },
+    { eq: 'C + O₂ → CO₂',     reagents: ['C','O₂'],  product:'CO₂', ratio:[1,1,1], given:{ id:0, moles:3 }, find: 2 },
+    { eq: '2Mg + O₂ → 2MgO',  reagents: ['Mg','O₂'], product:'MgO', ratio:[2,1,2], given:{ id:0, moles:4 }, find: 1 },
+  ];
+  const rxn = reactions[Math.floor(Math.random()*reactions.length)];
+  const answer = (rxn.given.moles / rxn.ratio[rxn.given.id]) * rxn.ratio[rxn.find];
+  const targetLabel = rxn.find < rxn.ratio.length - 1 ? rxn.reagents[rxn.find] : rxn.product;
+
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🧪 Mole Mixer</h3>
+    <div style="background:rgba(127,160,111,0.1); border:1px solid rgba(127,160,111,0.3); border-radius:10px; padding:14px 16px; margin-bottom:16px;">
+      <div style="font-family:'Space Mono',monospace; font-size:1rem; color:#b5d6a7; margin-bottom:8px;">${rxn.eq}</div>
+      <div style="font-size:0.85rem; color:var(--parchment-dim);">
+        Given: <strong style="color:var(--brass-light);">${rxn.given.moles} mol</strong> of ${rxn.reagents[rxn.given.id]}<br>
+        Find: moles of <strong style="color:#9df1e6;">${targetLabel}</strong>
+      </div>
+    </div>
+    <div style="margin-bottom:14px; display:flex; gap:8px; align-items:center;">
+      <input type="number" id="moleAnswer" placeholder="Enter moles…" step="0.1" min="0" style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:inherit; font-family:'Space Mono',monospace; font-size:1rem;">
+      <span style="color:var(--parchment-dim); font-size:0.85rem;">mol ${targetLabel}</span>
+    </div>
+    <div id="moleFeedback" style="min-height:22px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:12px; line-height:1.6;">
+      💡 Hint: Use mole ratios.<br>
+      moles wanted = moles given × (ratio wanted / ratio given)
+    </div>
+    <button class="btn primary" style="width:100%;" onclick="checkMoleAnswer(${answer})">⚗️ Check Answer</button>`;
+}
+
+function checkMoleAnswer(answer) {
+  const val = parseFloat(document.getElementById('moleAnswer').value);
+  const fb = document.getElementById('moleFeedback');
+  if (isNaN(val)) { if (fb) fb.innerHTML = '<span style="color:var(--coral);">Enter a number.</span>'; return; }
+  if (Math.abs(val - answer) < 0.15) {
+    if (fb) fb.innerHTML = `<span style="color:#6fe4d6;">✓ Correct! ${val} mol is right. +150 XP</span>`;
+    awardMiniGameXp(150, 'Mole Master');
+  } else if (Math.abs(val - answer) <= 0.5) {
+    if (fb) fb.innerHTML = `<span style="color:var(--brass-light);">Close! Answer is ${answer.toFixed(1)} mol. Check your ratio. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    if (fb) fb.innerHTML = `<span style="color:var(--coral);">Incorrect. Answer is ${answer.toFixed(2)} mol. Review the mole ratio method.</span>`;
+  }
+}
+
+function awardMiniGameXp(xp, badgeLabel) {
+  if (!xp) return;
+  state.xp += xp; addWeeklyXp(xp);
+  floatXpGain(xp);
+  if (window.DB_Engine) window.DB_Engine.syncPlayerScore(state.explorerName, state.xp);
+  updateStats(); doSave();
+  if (badgeLabel) showToast(`🏅 ${badgeLabel} badge unlocked! +${xp} XP`);
+}
+
+/* ============================================================
    TEACHER / PARENT READ-ONLY DASHBOARD
    ============================================================ */
 function openParentDash() {
@@ -12296,11 +14127,12 @@ function renderParentDash() {
   const body = document.getElementById('parentDashBody');
   if (!body) return;
 
-  // Build a shareable URL with progress encoded as query params (read-only, no credentials)
   const subjColors = { math: '#c99c51', physics: '#9b8ecb', chemistry: '#7fa06f' };
+  const now = new Date();
 
   let subjRows = '';
   let totalCleared = 0, totalLevels = 0;
+  const subjBreakdown = [];
   getActiveData().forEach(sub => {
     if (sub.id === 'mixed') return;
     let cleared = 0;
@@ -12313,11 +14145,12 @@ function renderParentDash() {
     const chapTotal = sub.chapters.length * TOTAL_LEVELS;
     const pct = chapTotal ? Math.round((cleared / chapTotal) * 100) : 0;
     const color = subjColors[sub.id] || '#c99c51';
+    subjBreakdown.push({ name: sub.name, pct, cleared, chapTotal, color });
     subjRows += `
       <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--glass-border);">
         <div style="width:90px; font-size:0.88rem;">${sub.name}</div>
         <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:3px; height:8px; overflow:hidden;">
-          <div style="height:100%; width:${pct}%; background:${color};"></div>
+          <div style="height:100%; width:${pct}%; background:${color}; transition:width 0.4s;"></div>
         </div>
         <div style="font-family:'Space Mono',monospace; font-size:0.75rem; width:44px; text-align:right; color:${color};">${pct}%</div>
         <div style="font-size:0.72rem; color:var(--parchment-dim); width:70px; text-align:right;">${cleared}/${chapTotal} lvls</div>
@@ -12327,39 +14160,568 @@ function renderParentDash() {
   const overallPct = totalLevels ? Math.round((totalCleared / totalLevels) * 100) : 0;
   const streak = computeActivityStreak();
   const bank = getMistakeBank();
+  const weeklyXp = state.weeklyXp || 0;
 
-  // Build a compact shareable text summary
-  const summaryText = `📊 ${state.explorerName}'s Expedition 11 Progress\n` +
-    `Overall: ${overallPct}% (${totalCleared}/${totalLevels} levels)\n` +
-    `XP: ${state.xp} · Streak: ${streak} days · Mistake Bank: ${Object.keys(bank).length} items\n` +
-    `Generated: ${new Date().toLocaleDateString()}`;
+  // Hint analytics summary
+  let totalQ = 0, hintQ = 0;
+  const topicBreakdown = [];
+  Object.entries(state.hintAnalytics || {}).forEach(([tid, d]) => {
+    totalQ += d.total || 0;
+    hintQ += d.withHints || 0;
+    const rate = d.total ? Math.round((d.withHints / d.total) * 100) : 0;
+    topicBreakdown.push({ name: d.chapName || tid, rate, total: d.total });
+  });
+  const overallHintRate = totalQ ? Math.round((hintQ / totalQ) * 100) : 0;
+  topicBreakdown.sort((a,b) => b.rate - a.rate);
+  const hintTopRows = topicBreakdown.slice(0, 4).map(t => {
+    const col = t.rate > 50 ? 'var(--coral)' : t.rate > 30 ? 'var(--brass-light)' : '#6fe4d6';
+    const icon = t.rate > 50 ? '⚠️' : t.rate > 30 ? '📌' : '✓';
+    return `<div style="display:flex; justify-content:space-between; font-size:0.8rem; padding:5px 0; border-bottom:1px solid var(--line);">
+      <span>${icon} ${escapeHtml(t.name)}</span>
+      <span style="font-family:'Space Mono',monospace; color:${col};">${t.rate}%</span>
+    </div>`;
+  }).join('');
+
+  // Confidence matrix from reflection history
+  const refl = (state.reflectionHistory || []).slice(-50);
+  const confMatrix = { masterZone:0, overconf:0, hiddenStrength:0, growthArea:0 };
+  refl.forEach(r => {
+    const hi = r.confidence === 'high';
+    const lo = r.confidence === 'low';
+    if (hi && r.isCorrect) confMatrix.masterZone++;
+    else if (hi && !r.isCorrect) confMatrix.overconf++;
+    else if (lo && r.isCorrect) confMatrix.hiddenStrength++;
+    else if (lo && !r.isCorrect) confMatrix.growthArea++;
+  });
+
+  // Concern areas
+  const concernTopics = topicBreakdown.filter(t => t.rate > 50 && t.total >= 3).map(t => t.name);
+  const improveAreas = topicBreakdown.filter(t => t.rate < 20 && t.total >= 3).map(t => t.name);
+
+  // Weekly report text (copy-able for email to parent)
+  const weekRange = (() => {
+    const d = new Date(); d.setDate(d.getDate() - d.getDay());
+    const end = new Date(d); end.setDate(end.getDate() + 6);
+    return `${d.toLocaleDateString('en-IN',{month:'short',day:'numeric'})}–${end.toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'})}`;
+  })();
+
+  const reportText =
+`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 WEEKLY PROGRESS REPORT
+${state.explorerName} · ${weekRange}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 PROGRESS OVERVIEW
+Overall curriculum: ${overallPct}% (${totalCleared}/${totalLevels} levels)
+This week's XP: ${weeklyXp.toLocaleString()}
+Total XP: ${(state.xp||0).toLocaleString()}
+Study streak: ${streak} days
+Mistake bank: ${Object.keys(bank).length} items to review
+No-hint streak: ${state.noHintStreak||0} (best: ${state.bestNoHintStreak||0})
+
+📚 SUBJECT PROGRESS
+${subjBreakdown.map(s => `${s.name}: ${s.pct}% (${s.cleared}/${s.chapTotal} levels)`).join('\n')}
+
+💡 HINT USAGE (last ${totalQ} questions)
+Overall hint dependency: ${overallHintRate}%
+${topicBreakdown.slice(0,3).map(t => `${t.name}: ${t.rate}% hint usage`).join('\n')}
+${concernTopics.length ? `\n⚠️ AREAS NEEDING ATTENTION\n${concernTopics.slice(0,3).join(', ')}` : ''}
+${improveAreas.length ? `\n✅ STRONG AREAS\n${improveAreas.slice(0,3).join(', ')}` : ''}
+
+🧠 CONFIDENCE CALIBRATION (last ${refl.length} Qs)
+Mastery Zone (confident+correct): ${confMatrix.masterZone}
+Growth Area (not confident+incorrect): ${confMatrix.growthArea}
+Hidden Strength (not confident+correct): ${confMatrix.hiddenStrength}
+Overconfidence alerts (confident+incorrect): ${confMatrix.overconf}
+
+Generated: ${now.toLocaleString('en-IN')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   body.innerHTML = `
     <div style="margin-bottom:18px; padding:14px 16px; background:var(--glass); border:1px solid var(--line); border-radius:10px;">
       <div style="font-family:'Fraunces',serif; font-size:1.2rem; margin-bottom:4px;">👤 ${escapeHtml(state.explorerName)}</div>
-      <div style="font-size:0.82rem; color:var(--parchment-dim);">Overall progress: <b style="color:var(--brass-light);">${overallPct}%</b> · XP: <b>${state.xp}</b> · Streak: <b>${streak} days</b></div>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:8px;">
+        <div style="text-align:center;"><div style="font-family:'Space Mono',monospace; font-size:1.1rem; font-weight:700; color:var(--brass-light);">${overallPct}%</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Overall</div></div>
+        <div style="text-align:center;"><div style="font-family:'Space Mono',monospace; font-size:1.1rem; font-weight:700; color:#9b8ecb;">+${weeklyXp.toLocaleString()}</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Week XP</div></div>
+        <div style="text-align:center;"><div style="font-family:'Space Mono',monospace; font-size:1.1rem; font-weight:700; color:#6fe4d6;">${streak}d</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Streak</div></div>
+        <div style="text-align:center;"><div style="font-family:'Space Mono',monospace; font-size:1.1rem; font-weight:700; color:${overallHintRate>50?'var(--coral)':overallHintRate>30?'var(--brass-light)':'#6fe4d6'};">${overallHintRate}%</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Hint rate</div></div>
+        <div style="text-align:center;"><div style="font-family:'Space Mono',monospace; font-size:1.1rem; font-weight:700; color:#ff8fb0;">🔥${state.noHintStreak||0}</div><div style="font-size:0.68rem; color:var(--parchment-dim);">No-hint streak</div></div>
+      </div>
     </div>
-    <div style="margin-bottom:20px;">${subjRows}</div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:0.72rem; color:var(--parchment-dim); font-family:'Space Mono',monospace; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Subject Progress</div>
+      ${subjRows}
+    </div>
+
+    ${totalQ > 0 ? `
+    <div style="margin-bottom:16px; background:var(--glass); border:1px solid var(--line); border-radius:10px; padding:12px 14px;">
+      <div style="font-size:0.72rem; color:var(--parchment-dim); font-family:'Space Mono',monospace; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">💡 Hint Usage by Topic</div>
+      ${hintTopRows}
+    </div>` : ''}
+
+    ${refl.length > 0 ? `
+    <div style="margin-bottom:16px; background:var(--glass); border:1px solid var(--line); border-radius:10px; padding:12px 14px;">
+      <div style="font-size:0.72rem; color:var(--parchment-dim); font-family:'Space Mono',monospace; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">🧠 Confidence Calibration</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div style="padding:8px; background:rgba(111,228,214,0.1); border-radius:8px; text-align:center;"><div style="font-weight:700; color:#6fe4d6;">${confMatrix.masterZone}</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Mastery Zone ✓</div></div>
+        <div style="padding:8px; background:rgba(255,93,143,0.1); border-radius:8px; text-align:center;"><div style="font-weight:700; color:var(--coral);">${confMatrix.overconf}</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Overconfidence ⚠️</div></div>
+        <div style="padding:8px; background:rgba(155,142,203,0.1); border-radius:8px; text-align:center;"><div style="font-weight:700; color:#c3b9e8;">${confMatrix.hiddenStrength}</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Hidden Strength 💪</div></div>
+        <div style="padding:8px; background:rgba(201,154,75,0.1); border-radius:8px; text-align:center;"><div style="font-weight:700; color:var(--brass-light);">${confMatrix.growthArea}</div><div style="font-size:0.68rem; color:var(--parchment-dim);">Growth Area 📈</div></div>
+      </div>
+    </div>` : ''}
+
+    ${concernTopics.length ? `
+    <div style="margin-bottom:16px; padding:10px 14px; background:rgba(255,93,143,0.08); border:1px solid rgba(255,93,143,0.3); border-radius:10px;">
+      <div style="font-size:0.78rem; font-weight:700; color:var(--coral); margin-bottom:4px;">⚠️ Needs More Practice</div>
+      <div style="font-size:0.8rem; color:var(--parchment-dim);">${concernTopics.slice(0,3).join(' · ')} — hint usage >50%</div>
+    </div>` : ''}
+
     <div style="background:var(--glass); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:16px;">
-      <div style="font-family:'Space Mono',monospace; font-size:0.68rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:8px;">Shareable Summary</div>
-      <textarea readonly rows="5" onclick="this.select()" style="width:100%; resize:none; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:6px; padding:10px; color:var(--parchment); font-family:'Space Mono',monospace; font-size:0.78rem; outline:none;">${summaryText}</textarea>
-      <div style="display:flex; gap:8px; margin-top:10px;">
+      <div style="font-family:'Space Mono',monospace; font-size:0.68rem; letter-spacing:1px; text-transform:uppercase; color:var(--parchment-dim); margin-bottom:8px;">📧 Weekly Report for Parents/Teachers</div>
+      <textarea readonly rows="6" id="parentReportTA" onclick="this.select()" style="width:100%; resize:none; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:6px; padding:10px; color:var(--parchment); font-family:'Space Mono',monospace; font-size:0.72rem; outline:none; box-sizing:border-box;">${reportText}</textarea>
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
         <button class="btn ghost" style="font-size:0.8rem;" onclick="
-          const ta = this.closest('.modal-box').querySelector('textarea');
-          if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(()=>{this.textContent='✓ Copied'; setTimeout(()=>this.textContent='📋 Copy summary',1500)}).catch(()=>{});
-          else { ta.select(); document.execCommand('copy'); }
-        ">📋 Copy summary</button>
+          const ta = document.getElementById('parentReportTA');
+          if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(()=>{this.textContent='✓ Copied!'; setTimeout(()=>this.textContent='📋 Copy Report',1500)}).catch(()=>{ta.select(); document.execCommand('copy')});
+        ">📋 Copy Report</button>
         <button class="btn ghost" style="font-size:0.8rem;" onclick="
-          const ta = this.closest('.modal-box').querySelector('textarea');
-          const text = ta.value;
-          if (navigator.share) navigator.share({title:'Expedition 11 Progress', text}).catch(()=>{});
-          else openShareTextModal(text);
+          const text = document.getElementById('parentReportTA').value;
+          if (navigator.share) navigator.share({title:'${state.explorerName} Progress Report', text}).catch(()=>{});
+          else if (typeof openShareTextModal === 'function') openShareTextModal(text);
         ">📤 Share</button>
+        <button class="btn ghost" style="font-size:0.8rem;" onclick="
+          const text = document.getElementById('parentReportTA').value;
+          const subject = encodeURIComponent('Weekly Progress Report — ${escapeHtml(state.explorerName)}');
+          const body = encodeURIComponent(text);
+          window.open('mailto:?subject='+subject+'&body='+body);
+        ">📧 Email</button>
       </div>
     </div>
     <p style="font-size:0.75rem; color:var(--parchment-dim); line-height:1.5;">
-      This view shows the currently-loaded profile's progress. Progress is stored locally in this browser — share the text summary above with a teacher or parent.
+      Progress is stored locally in this browser. Copy or share the weekly report above with a parent or teacher — no personal data is transmitted automatically.
     </p>`;
+}
+
+/* ============================================================
+   PHASE 3 — 3D CONCEPT VISUALIZER (Feature 12)
+   Uses Three.js (loaded lazily on first open).
+   Supports 6 interactive 3D scenes covering key JEE concepts:
+   1. Projectile Motion     4. Electromagnetic Wave
+   2. Electric Field Lines  5. Molecular Orbital (H₂)
+   3. Wave Superposition    6. Circular Motion & Centripetal
+   ============================================================ */
+
+// Mapping: topic keywords → scene id for 3D visualizer
+const VIZ_TOPIC_MAP = [
+  { keywords: ['projectile','kinematics','motion','velocity','angle'], scene: 'projectile', label: 'Projectile Motion' },
+  { keywords: ['electric','field','charge','coulomb','gauss'], scene: 'electricfield', label: 'Electric Field Lines' },
+  { keywords: ['wave','superposition','interference','diffraction','em wave','electromagnetic'], scene: 'emwave', label: 'Electromagnetic Wave' },
+  { keywords: ['circular','centripetal','rotation','angular','torque'], scene: 'circular', label: 'Circular Motion' },
+  { keywords: ['molecular','orbital','bond','hybridization','carbon','benzene'], scene: 'molecular', label: 'Molecular Orbital' },
+  { keywords: ['standing wave','spring','oscillation','shm','simple harmonic'], scene: 'shm', label: 'Simple Harmonic Motion' },
+];
+
+let _threeJsLoaded = false;
+let _currentVizScene = null;
+let _vizAnimFrame = null;
+
+function update3DVizTrigger() {
+  const trigger = document.getElementById('viz3dTrigger');
+  if (!trigger) return;
+  const chapId = state.curChap && state.curChap.id || '';
+  const chapName = (state.curChap && state.curChap.name || '').toLowerCase();
+  const subjId = state.curSubj && state.curSubj.id || '';
+  // Only show for physics/chemistry
+  if (subjId !== 'physics' && subjId !== 'chemistry' && subjId !== 'mixed') {
+    trigger.style.display = 'none'; return;
+  }
+  const match = VIZ_TOPIC_MAP.find(m => m.keywords.some(k => chapName.includes(k) || chapId.includes(k)));
+  if (match) {
+    trigger.style.display = 'block';
+    trigger.dataset.scene = match.scene;
+    trigger.dataset.label = match.label;
+    trigger.querySelector('button').textContent = `🔭 Visualize: ${match.label}`;
+  } else {
+    trigger.style.display = 'none';
+  }
+}
+
+function open3DVisualizer() {
+  const trigger = document.getElementById('viz3dTrigger');
+  const scene = (trigger && trigger.dataset.scene) || 'projectile';
+  const label = (trigger && trigger.dataset.label) || '3D Visualization';
+  const modal = document.getElementById('viz3dModal');
+  if (!modal) return;
+  document.getElementById('viz3dTitle').textContent = '🔭 ' + label;
+  modal.classList.add('show');
+  _loadThreeAndStart(scene);
+}
+
+function close3DVisualizer() {
+  const modal = document.getElementById('viz3dModal');
+  if (modal) modal.classList.remove('show');
+  if (_vizAnimFrame) { cancelAnimationFrame(_vizAnimFrame); _vizAnimFrame = null; }
+  if (_currentVizScene) { _currentVizScene.dispose && _currentVizScene.dispose(); _currentVizScene = null; }
+  const container = document.getElementById('viz3dContainer');
+  if (container) container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--parchment-dim);font-size:0.9rem;">Loading Three.js…</div>';
+}
+
+async function _loadThreeAndStart(scene) {
+  const container = document.getElementById('viz3dContainer');
+  if (!container) return;
+  container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--parchment-dim);font-size:0.9rem;">Loading 3D engine…</div>';
+
+  if (!_threeJsLoaded) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+      script.onload = () => { _threeJsLoaded = true; resolve(); };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }).catch(() => {
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--coral);">⚠️ Could not load 3D engine — check your connection.</div>';
+      return;
+    });
+  }
+  if (!window.THREE) return;
+
+  container.innerHTML = '';
+  _startVizScene(scene, container);
+}
+
+function _startVizScene(scene, container) {
+  if (_vizAnimFrame) cancelAnimationFrame(_vizAnimFrame);
+  const W = container.clientWidth || 520;
+  const H = Math.min(container.clientHeight || 320, 320);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0b1320, 1);
+  container.appendChild(renderer.domElement);
+
+  const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
+  camera.position.set(0, 3, 8);
+  camera.lookAt(0, 0, 0);
+
+  const threeScene = new THREE.Scene();
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  threeScene.add(ambient);
+  const dirLight = new THREE.DirectionalLight(0xffd700, 0.8);
+  dirLight.position.set(5, 8, 5);
+  threeScene.add(dirLight);
+
+  // Add grid floor
+  const grid = new THREE.GridHelper(12, 12, 0x334455, 0x223344);
+  threeScene.add(grid);
+
+  let tick = 0;
+  const objects = [];
+
+  if (scene === 'projectile') {
+    _buildProjectileScene(threeScene, objects);
+    camera.position.set(0, 4, 12);
+  } else if (scene === 'electricfield') {
+    _buildElectricFieldScene(threeScene, objects);
+    camera.position.set(0, 6, 10);
+  } else if (scene === 'emwave') {
+    _buildEMWaveScene(threeScene, objects);
+    camera.position.set(0, 5, 12);
+  } else if (scene === 'circular') {
+    _buildCircularScene(threeScene, objects);
+    camera.position.set(0, 8, 8);
+  } else if (scene === 'molecular') {
+    _buildMolecularScene(threeScene, objects);
+    camera.position.set(0, 3, 8);
+  } else if (scene === 'shm') {
+    _buildSHMScene(threeScene, objects);
+    camera.position.set(0, 3, 10);
+  }
+
+  // Mouse drag to orbit
+  let isDragging = false, prevX = 0, prevY = 0, rotY = 0, rotX = 0;
+  renderer.domElement.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+  renderer.domElement.addEventListener('touchstart', e => { isDragging = true; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; }, { passive: true });
+  window.addEventListener('mouseup', () => isDragging = false);
+  window.addEventListener('touchend', () => isDragging = false);
+  renderer.domElement.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    rotY += (e.clientX - prevX) * 0.01; rotX += (e.clientY - prevY) * 0.005;
+    rotX = Math.max(-0.8, Math.min(0.8, rotX));
+    prevX = e.clientX; prevY = e.clientY;
+  });
+  renderer.domElement.addEventListener('touchmove', e => {
+    if (!isDragging || !e.touches[0]) return;
+    rotY += (e.touches[0].clientX - prevX) * 0.01;
+    prevX = e.touches[0].clientX;
+  }, { passive: true });
+
+  function animate() {
+    _vizAnimFrame = requestAnimationFrame(animate);
+    tick += 0.016;
+    // Auto-rotate camera around Y
+    const autoRot = rotY + tick * 0.3;
+    camera.position.x = Math.sin(autoRot) * 10;
+    camera.position.z = Math.cos(autoRot) * 10;
+    camera.position.y = 4 + rotX * 3;
+    camera.lookAt(0, 1, 0);
+    // Animate objects
+    objects.forEach(fn => fn(tick));
+    renderer.render(threeScene, camera);
+  }
+  animate();
+
+  _currentVizScene = { dispose: () => { renderer.dispose(); renderer.domElement.remove(); } };
+}
+
+function _buildProjectileScene(scene, objects) {
+  // Ground plane
+  const groundGeo = new THREE.PlaneGeometry(20, 20);
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a2a3a });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2; ground.position.y = 0;
+  scene.add(ground);
+
+  // Cannon
+  const barrelGeo = new THREE.CylinderGeometry(0.15, 0.15, 1.2, 8);
+  const metalMat = new THREE.MeshLambertMaterial({ color: 0x8a7a5a });
+  const barrel = new THREE.Mesh(barrelGeo, metalMat);
+  barrel.rotation.z = -Math.PI / 4; barrel.position.set(-5, 0.8, 0);
+  scene.add(barrel);
+
+  // Projectile ball
+  const ballGeo = new THREE.SphereGeometry(0.2, 16, 16);
+  const ballMat = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
+  const ball = new THREE.Mesh(ballGeo, ballMat);
+  scene.add(ball);
+
+  // Trajectory line
+  const tPoints = [];
+  const v0 = 8, angle = Math.PI / 4, g = 9.8, dt = 0.05;
+  for (let t = 0; t < 2.5; t += dt) {
+    tPoints.push(new THREE.Vector3(-5 + v0 * Math.cos(angle) * t, v0 * Math.sin(angle) * t - 0.5 * g * t * t + 1, 0));
+  }
+  const trajGeo = new THREE.BufferGeometry().setFromPoints(tPoints);
+  const trajLine = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ color: 0xffdd44, opacity: 0.6, transparent: true }));
+  scene.add(trajLine);
+
+  // Target
+  const targetGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 20);
+  const targetMat = new THREE.MeshLambertMaterial({ color: 0xff4466 });
+  const target = new THREE.Mesh(targetGeo, targetMat);
+  target.position.set(4.5, 0.05, 0);
+  scene.add(target);
+
+  // Labels (floating text via sprites are complex; use 3D axis arrows instead)
+  const axesHelper = new THREE.AxesHelper(3);
+  axesHelper.position.set(-5, 0, 0);
+  scene.add(axesHelper);
+
+  const totalT = 2 * v0 * Math.sin(angle) / g;
+  objects.push(t => {
+    const frac = (t % (totalT + 1)) / totalT;
+    if (frac < 1) {
+      const tt = frac * totalT;
+      ball.position.x = -5 + v0 * Math.cos(angle) * tt;
+      ball.position.y = Math.max(0.2, v0 * Math.sin(angle) * tt - 0.5 * g * tt * tt + 1);
+      ball.position.z = 0;
+    } else {
+      ball.position.set(-5, 1, 0);
+    }
+  });
+}
+
+function _buildElectricFieldScene(scene, objects) {
+  // Two charges: +red, -blue
+  const charges = [
+    { pos: new THREE.Vector3(-2, 1, 0), charge: 1, color: 0xff4455 },
+    { pos: new THREE.Vector3(2, 1, 0),  charge: -1, color: 0x4455ff },
+  ];
+  charges.forEach(c => {
+    const geo = new THREE.SphereGeometry(0.35, 16, 16);
+    const mat = new THREE.MeshLambertMaterial({ color: c.color });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(c.pos);
+    scene.add(mesh);
+  });
+
+  // Field line arrows (simplified as lines from + to -)
+  const lineMat = new THREE.LineBasicMaterial({ color: 0xffdd88, transparent: true, opacity: 0.7 });
+  for (let i = 0; i < 12; i++) {
+    const theta = (i / 12) * Math.PI * 2;
+    const r = 0.5;
+    const pts = [];
+    for (let s = 0; s <= 1; s += 0.05) {
+      const t = s;
+      const x = -2 + r * Math.cos(theta) + (4 + r * Math.cos(theta + Math.PI) - (-2 + r * Math.cos(theta))) * t;
+      const y = 1 + r * Math.sin(theta) * (1 - 2 * t * (1 - t));
+      pts.push(new THREE.Vector3(x, y, r * Math.sin(theta + Math.PI / 2) * 0.5 * Math.sin(Math.PI * t)));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    scene.add(new THREE.Line(geo, lineMat));
+  }
+
+  // Pulsing glow on charges
+  objects.push(t => {
+    charges.forEach((c, i) => {
+      // handled by ambient pulsing
+    });
+  });
+}
+
+function _buildEMWaveScene(scene, objects) {
+  const N = 80;
+  const ePoints = Array.from({ length: N }, (_, i) => new THREE.Vector3(i * 0.15 - 6, 0, 0));
+  const bPoints = Array.from({ length: N }, (_, i) => new THREE.Vector3(i * 0.15 - 6, 0, 0));
+
+  const eGeo = new THREE.BufferGeometry().setFromPoints(ePoints);
+  const bGeo = new THREE.BufferGeometry().setFromPoints(bPoints);
+  const eLine = new THREE.Line(eGeo, new THREE.LineBasicMaterial({ color: 0xff6644 }));
+  const bLine = new THREE.Line(bGeo, new THREE.LineBasicMaterial({ color: 0x4488ff }));
+  scene.add(eLine); scene.add(bLine);
+
+  // Propagation arrow
+  const arrowDir = new THREE.Vector3(1, 0, 0);
+  const arrowOrigin = new THREE.Vector3(-6, 0, 0);
+  const arrow = new THREE.ArrowHelper(arrowDir, arrowOrigin, 12, 0xffdd44, 0.5, 0.3);
+  scene.add(arrow);
+
+  objects.push(t => {
+    const ePos = eGeo.attributes.position;
+    const bPos = bGeo.attributes.position;
+    for (let i = 0; i < N; i++) {
+      const x = i * 0.15 - 6;
+      ePos.setXYZ(i, x, Math.sin(x + t * 3) * 1.5, 0);
+      bPos.setXYZ(i, x, 0, Math.sin(x + t * 3) * 1.5);
+    }
+    ePos.needsUpdate = true; bPos.needsUpdate = true;
+  });
+}
+
+function _buildCircularScene(scene, objects) {
+  // Track ring
+  const ringGeo = new THREE.TorusGeometry(3, 0.05, 8, 60);
+  const ringMat = new THREE.MeshLambertMaterial({ color: 0x4488aa });
+  scene.add(new THREE.Mesh(ringGeo, ringMat));
+
+  // Orbiting ball
+  const ballGeo = new THREE.SphereGeometry(0.25, 16, 16);
+  const ball = new THREE.Mesh(ballGeo, new THREE.MeshLambertMaterial({ color: 0xffaa33 }));
+  scene.add(ball);
+
+  // Centripetal force arrow (pointing to centre)
+  const arrowHelper = new THREE.ArrowHelper(
+    new THREE.Vector3(-1, 0, 0), new THREE.Vector3(3, 0, 0), 2.5, 0xff4444, 0.4, 0.25
+  );
+  scene.add(arrowHelper);
+
+  // Velocity arrow (tangent)
+  const velArrow = new THREE.ArrowHelper(
+    new THREE.Vector3(0, 0, 1), new THREE.Vector3(3, 0, 0), 1.5, 0x44ff88, 0.3, 0.2
+  );
+  scene.add(velArrow);
+
+  objects.push(t => {
+    const angle = t * 1.2;
+    const bx = Math.cos(angle) * 3, bz = Math.sin(angle) * 3;
+    ball.position.set(bx, 0, bz);
+    // Centripetal arrow points from ball toward centre
+    const toCenter = new THREE.Vector3(-bx, 0, -bz).normalize();
+    arrowHelper.position.copy(ball.position);
+    arrowHelper.setDirection(toCenter);
+    // Velocity arrow tangent
+    const velDir = new THREE.Vector3(-Math.sin(angle), 0, Math.cos(angle)).normalize();
+    velArrow.position.copy(ball.position);
+    velArrow.setDirection(velDir);
+  });
+}
+
+function _buildMolecularScene(scene, objects) {
+  // H2 molecule — two hydrogen atoms + bond
+  const atomMat1 = new THREE.MeshLambertMaterial({ color: 0xff6655 });
+  const atomMat2 = new THREE.MeshLambertMaterial({ color: 0x55aaff });
+  const atom1 = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), atomMat1);
+  const atom2 = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), atomMat2);
+  atom1.position.set(-1.2, 1, 0); atom2.position.set(1.2, 1, 0);
+  scene.add(atom1); scene.add(atom2);
+
+  // Bond cylinder
+  const bondGeo = new THREE.CylinderGeometry(0.12, 0.12, 2.4, 8);
+  const bondMat = new THREE.MeshLambertMaterial({ color: 0xddddcc, transparent: true, opacity: 0.7 });
+  const bond = new THREE.Mesh(bondGeo, bondMat);
+  bond.rotation.z = Math.PI / 2; bond.position.set(0, 1, 0);
+  scene.add(bond);
+
+  // Electron cloud (translucent sphere)
+  const cloudGeo = new THREE.SphereGeometry(1.8, 16, 16);
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0x8899ff, transparent: true, opacity: 0.08, side: THREE.DoubleSide });
+  const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+  cloud.position.set(0, 1, 0);
+  scene.add(cloud);
+
+  // Orbiting electrons
+  const eMat = new THREE.MeshLambertMaterial({ color: 0x88ddff });
+  const e1 = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), eMat);
+  const e2 = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), eMat);
+  scene.add(e1); scene.add(e2);
+
+  objects.push(t => {
+    // Gentle pulsing bond
+    bond.scale.x = 1 + 0.05 * Math.sin(t * 4);
+    // Orbiting electrons
+    e1.position.set(Math.cos(t * 2) * 1.5, 1 + Math.sin(t * 2) * 0.5, Math.sin(t * 2) * 1.0);
+    e2.position.set(-Math.cos(t * 2) * 1.5, 1 - Math.sin(t * 2) * 0.5, -Math.sin(t * 2) * 1.0);
+    cloud.material.opacity = 0.06 + 0.03 * Math.sin(t * 2);
+  });
+}
+
+function _buildSHMScene(scene, objects) {
+  // Spring coil (simplified as helix line)
+  const helixPoints = [];
+  for (let i = 0; i <= 80; i++) {
+    const t = i / 80;
+    helixPoints.push(new THREE.Vector3(-5 + t * 10, Math.sin(t * Math.PI * 8) * 0.3, Math.cos(t * Math.PI * 8) * 0.3));
+  }
+  const springGeo = new THREE.BufferGeometry().setFromPoints(helixPoints);
+  const springLine = new THREE.Line(springGeo, new THREE.LineBasicMaterial({ color: 0x88aacc }));
+  scene.add(springLine);
+
+  // Mass block
+  const massGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+  const massMat = new THREE.MeshLambertMaterial({ color: 0xffaa44 });
+  const mass = new THREE.Mesh(massGeo, massMat);
+  mass.position.set(5, 0.4, 0);
+  scene.add(mass);
+
+  // Wall
+  const wallGeo = new THREE.BoxGeometry(0.2, 2, 2);
+  const wallMat = new THREE.MeshLambertMaterial({ color: 0x556677 });
+  const wall = new THREE.Mesh(wallGeo, wallMat);
+  wall.position.set(-5, 0.5, 0);
+  scene.add(wall);
+
+  // Equilibrium line
+  const eqGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(5, -0.1, 0), new THREE.Vector3(5, 2, 0)]);
+  const eqLine = new THREE.Line(eqGeo, new THREE.LineBasicMaterial({ color: 0x44cc66, opacity: 0.5, transparent: true }));
+  scene.add(eqLine);
+
+  objects.push(t => {
+    const A = 2.5; // amplitude
+    const x = A * Math.cos(t * 2);
+    mass.position.x = 5 + x;
+    // Compress/stretch spring
+    const sPos = springGeo.attributes.position;
+    for (let i = 0; i <= 80; i++) {
+      const frac = i / 80;
+      const baseX = -5 + frac * (10 + x);
+      sPos.setXYZ(i, baseX, Math.sin(frac * Math.PI * 8) * 0.3 * (0.5 + 0.5 * frac), Math.cos(frac * Math.PI * 8) * 0.3);
+    }
+    sPos.needsUpdate = true;
+    // Velocity indicator (green = fast, orange = slow near extremes)
+    const speed = Math.abs(Math.sin(t * 2));
+    massMat.color.setHSL(0.1 + speed * 0.15, 1, 0.55);
+  });
 }
 
 /* ============================================================
@@ -12615,6 +14977,90 @@ document.addEventListener('DOMContentLoaded', function () {
   }, 1500);
 });
 </script>
+
+<!-- ===== 3D VISUALIZER MODAL ===== -->
+<div class="modal-backdrop" id="viz3dModal" onclick="if(event.target===this) close3DVisualizer()">
+  <div class="modal-box list-popup" style="max-width:600px; text-align:left; padding:0; overflow:hidden;">
+    <div class="widget-hdr" style="padding:14px 18px;">
+      <h3 id="viz3dTitle" style="margin:0;">🔭 3D Visualization</h3>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div style="font-size:0.7rem; color:var(--parchment-dim);">Drag to rotate · Auto-orbits</div>
+        <button class="popup-close" onclick="close3DVisualizer()">✕ Close</button>
+      </div>
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; padding:8px 16px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--line);">
+      <button class="btn ghost" style="font-size:0.7rem; padding:4px 8px;" onclick="_loadThreeAndStart('projectile'); document.getElementById('viz3dTitle').textContent='🔭 Projectile Motion'">🚀 Projectile</button>
+      <button class="btn ghost" style="font-size:0.7rem; padding:4px 8px;" onclick="_loadThreeAndStart('electricfield'); document.getElementById('viz3dTitle').textContent='🔭 Electric Field'">⚡ E-Field</button>
+      <button class="btn ghost" style="font-size:0.7rem; padding:4px 8px;" onclick="_loadThreeAndStart('emwave'); document.getElementById('viz3dTitle').textContent='🔭 EM Wave'">🌊 EM Wave</button>
+      <button class="btn ghost" style="font-size:0.7rem; padding:4px 8px;" onclick="_loadThreeAndStart('circular'); document.getElementById('viz3dTitle').textContent='🔭 Circular Motion'">⭕ Circular</button>
+      <button class="btn ghost" style="font-size:0.7rem; padding:4px 8px;" onclick="_loadThreeAndStart('molecular'); document.getElementById('viz3dTitle').textContent='🔭 Molecular Orbital'">🧪 Molecular</button>
+      <button class="btn ghost" style="font-size:0.7rem; padding:4px 8px;" onclick="_loadThreeAndStart('shm'); document.getElementById('viz3dTitle').textContent='🔭 Simple Harmonic Motion'">〰️ SHM</button>
+    </div>
+    <div id="viz3dContainer" style="width:100%; height:320px; background:#0b1320; position:relative;">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--parchment-dim);font-size:0.9rem;">Loading 3D engine…</div>
+    </div>
+    <div style="padding:10px 16px; font-size:0.72rem; color:var(--parchment-dim); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-top:1px solid var(--line);">
+      <span>🔴 Red = +charge/E &nbsp;|&nbsp; 🔵 Blue = -charge/B &nbsp;|&nbsp; 🟡 Gold = trajectory/velocity &nbsp;|&nbsp; 🟢 Green = force</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SQUADS MODAL ===== -->
+<div class="modal-backdrop" id="squadsModal" onclick="if(event.target===this) closeSquadsModal()">
+  <div class="modal-box list-popup" style="max-width:520px; text-align:left;">
+    <div class="widget-hdr">
+      <h3>🛡️ Study Squads</h3>
+      <button class="popup-close" onclick="closeSquadsModal()">✕ Close</button>
+    </div>
+    <div id="squadsModalBody" class="popup-list">
+      <div style="text-align:center; padding:20px; color:var(--parchment-dim);">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MINI-GAMES MODAL ===== -->
+<div class="modal-backdrop" id="miniGamesModal" onclick="if(event.target===this) closeMiniGamesModal()">
+  <div class="modal-box list-popup" style="max-width:580px; text-align:left;">
+    <div class="widget-hdr">
+      <h3>🎮 Concept Mini-Games</h3>
+      <button class="popup-close" onclick="closeMiniGamesModal()">✕ Close</button>
+    </div>
+    <div id="miniGamesBody" class="popup-list"></div>
+  </div>
+</div>
+
+<!-- ===== PEER HINT CONTRIBUTE MODAL ===== -->
+<div class="modal-backdrop" id="peerHintContributeModal" onclick="if(event.target===this) closePeerHintContribute()">
+  <div class="modal-box list-popup" style="max-width:480px; text-align:left;">
+    <div class="widget-hdr">
+      <h3>💬 Contribute a Community Hint</h3>
+      <button class="popup-close" onclick="closePeerHintContribute()">✕ Close</button>
+    </div>
+    <input type="hidden" id="peerHintContributeQKey">
+    <div style="margin-bottom:14px;">
+      <label style="font-size:0.78rem; color:var(--parchment-dim); display:block; margin-bottom:6px;">Hint type</label>
+      <select id="peerHintTier" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--glass); color:inherit; font-family:'Space Mono',monospace; font-size:0.82rem;">
+        <option value="1">💭 Conceptual nudge (1-2 sentences, no formulas)</option>
+        <option value="2">📐 Formula / method cue (mention relevant equation)</option>
+        <option value="3">🔢 Partial solution (first 2-3 steps)</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:0.78rem; color:var(--parchment-dim); display:block; margin-bottom:6px;">Your hint <span style="float:right;" id="peerHintCharCount">0/200</span></label>
+      <textarea id="peerHintText" rows="4" maxlength="200" placeholder="Write a helpful hint — NOT the full solution…"
+        oninput="document.getElementById('peerHintCharCount').textContent=this.value.length+'/200'"
+        style="width:100%; resize:vertical; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:inherit; font-family:'Public Sans',sans-serif; font-size:0.9rem; outline:none; box-sizing:border-box;"></textarea>
+    </div>
+    <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:14px; line-height:1.5;">
+      ✅ Approved hints earn you +10 XP · Hints with 20+ upvotes earn +50 XP<br>
+      ⚠️ Giving away the full answer will be rejected.
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn ghost" style="flex:1;" onclick="closePeerHintContribute()">Cancel</button>
+      <button class="btn primary" style="flex:1;" id="peerHintSubmitBtn" onclick="submitPeerHint()">Submit Hint</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

@@ -136,6 +136,7 @@ Messages
 <button class="tab-btn" id="tabPyq" onclick="switchTab('Pyq')">PYQ Bank</button>
 <button class="tab-btn" id="tabInsights" onclick="switchTab('Insights')">Weak Topics</button>
 <button class="tab-btn" id="tabAnalytics" onclick="switchTab('Analytics')">Analytics</button>
+<button class="tab-btn" id="tabHintInsights" onclick="switchTab('HintInsights')" style="background:rgba(201,156,81,0.08); border-color:rgba(201,156,81,0.3);">💡 Hint Insights</button>
 </div>
 <div id="reportsToolbar" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
 <input id="reportSearchInput" type="text" placeholder="Search by student, subject, or chapter..." class="reply-textarea" style="min-height:unset; flex:1 1 260px; padding:9px 12px; font-size:0.85rem;" oninput="renderReports()">
@@ -146,6 +147,7 @@ Messages
 <div class="report-list" id="reportCardsList"></div>
 <div class="report-list" id="insightsPanel" style="display:none; flex-direction:column;"></div>
 <div id="analyticsPanel" style="display:none; flex-direction:column; gap:20px;"></div>
+<div id="hintInsightsPanel" style="display:none; flex-direction:column; gap:20px;"></div>
 <div class="report-list" id="leaderboardList" style="display:none;"></div>
 <div class="report-list" id="removedList" style="display:none;"></div>
 <div class="report-list" id="inboxList" style="display:none;"></div>
@@ -844,8 +846,9 @@ window.sendInboxReply = sendInboxReply;
 
 function switchTab(tab) {
   activeTab = tab;
-  ['Pending','Resolved','Leaderboard','Removed','Messages','Pyq','Insights','Analytics'].forEach(t => {
-    document.getElementById('tab' + t).classList.toggle('active', tab === t);
+  ['Pending','Resolved','Leaderboard','Removed','Messages','Pyq','Insights','Analytics','HintInsights'].forEach(t => {
+    const el = document.getElementById('tab' + t);
+    if (el) el.classList.toggle('active', tab === t);
   });
   const reportsList = document.getElementById('reportCardsList');
   const lbList = document.getElementById('leaderboardList');
@@ -854,14 +857,16 @@ function switchTab(tab) {
   const pyqList = document.getElementById('pyqPanelWrap');
   const insightsPanel = document.getElementById('insightsPanel');
   const analyticsPanel = document.getElementById('analyticsPanel');
+  const hintInsightsPanel = document.getElementById('hintInsightsPanel');
   const toolbar = document.getElementById('reportsToolbar');
-  [reportsList, lbList, removedList, inboxList, pyqList, insightsPanel, analyticsPanel, toolbar].forEach(el => { if (el) el.style.display = 'none'; });
+  [reportsList, lbList, removedList, inboxList, pyqList, insightsPanel, analyticsPanel, hintInsightsPanel, toolbar].forEach(el => { if (el) el.style.display = 'none'; });
   if (tab === 'Leaderboard') { lbList.style.display = 'flex'; loadLeaderboard(); }
   else if (tab === 'Removed') { removedList.style.display = 'flex'; loadRemovedCandidates(); }
   else if (tab === 'Messages') { inboxList.style.display = 'flex'; renderInbox(); }
   else if (tab === 'Pyq') { pyqList.style.display = 'flex'; loadPyqAdmin(); }
   else if (tab === 'Insights') { insightsPanel.style.display = 'flex'; renderInsightsPanel(); }
   else if (tab === 'Analytics') { analyticsPanel.style.display = 'flex'; renderAnalyticsPanel(); }
+  else if (tab === 'HintInsights') { hintInsightsPanel.style.display = 'flex'; renderHintInsightsPanel(); }
   else { toolbar.style.display = 'flex'; reportsList.style.display = 'flex'; renderReports(); }
 }
 
@@ -1225,6 +1230,252 @@ function renderInsightsPanel() {
     <div style="display:flex; flex-direction:column; gap:6px;">
       ${studentRows.map(([name, count]) => `<div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:6px 0; border-bottom:1px solid var(--glass-border, rgba(255,255,255,0.08));"><span>${name}</span><span style="font-family:'JetBrains Mono',monospace;">${count}</span></div>`).join('')}
     </div>`;
+}
+
+// =====================================================================
+// PHASE 2D — TEACHER HINT INSIGHTS PANEL
+// Reads aggregated hint analytics from Firebase (written by student
+// clients into 'hintAnalytics/{uid}/{topicId}') and also surfaces
+// an intervention queue for students using all 3 hints + still wrong.
+// Falls back gracefully if no Firebase data is available yet.
+// =====================================================================
+async function renderHintInsightsPanel() {
+  const el = document.getElementById('hintInsightsPanel');
+  if (!el) return;
+
+  el.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">
+    <div style="font-size:1.5rem; margin-bottom:8px;">💡</div>
+    <p style="font-size:0.9rem;">Loading hint analytics from Firebase…</p>
+  </div>`;
+
+  // Read all hintAnalytics nodes from Firebase
+  let allStudentData = [];
+  try {
+    if (window.Admin_DB && window.Admin_DB.db) {
+      const snap = await window.Admin_DB.db.ref('hintAnalytics').once('value');
+      const raw = snap.val() || {};
+      // raw = { uid: { topicId: { total, withHints, chapName } } }
+      Object.entries(raw).forEach(([uid, topics]) => {
+        Object.entries(topics || {}).forEach(([topicId, data]) => {
+          allStudentData.push({ uid, topicId, ...data });
+        });
+      });
+    }
+  } catch(e) {
+    console.warn('[HintInsights] Firebase read failed:', e);
+  }
+
+  // Also aggregate from leaderboard/reports data as a fallback indicator
+  const lb = currentLeaderboard || [];
+  const reports = activeReports || [];
+
+  // Per-topic aggregation
+  const topicMap = {};
+  allStudentData.forEach(d => {
+    const key = d.chapName || d.topicId || 'Unknown';
+    if (!topicMap[key]) topicMap[key] = { total: 0, withHints: 0, topicId: d.topicId };
+    topicMap[key].total += d.total || 0;
+    topicMap[key].withHints += d.withHints || 0;
+  });
+  const topicRows = Object.entries(topicMap)
+    .map(([name, d]) => ({ name, ...d, pct: d.total ? Math.round((d.withHints / d.total) * 100) : 0 }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 12);
+
+  // Per-student aggregation (students with >60% hint dependency)
+  const studentMap = {};
+  allStudentData.forEach(d => {
+    if (!studentMap[d.uid]) studentMap[d.uid] = { total: 0, withHints: 0, uid: d.uid };
+    studentMap[d.uid].total += d.total || 0;
+    studentMap[d.uid].withHints += d.withHints || 0;
+  });
+  // Enrich with username from leaderboard
+  const uidToName = {};
+  lb.forEach(p => { if (p.uid) uidToName[p.uid] = p.username; });
+  const highDep = Object.values(studentMap)
+    .filter(s => s.total >= 5 && (s.withHints / s.total) > 0.6)
+    .map(s => ({ ...s, name: uidToName[s.uid] || s.uid.slice(0,8), pct: Math.round((s.withHints / s.total) * 100) }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 10);
+
+  // Intervention queue: reports where all 3 hints were used (inferred from
+  // reports that mention "used hints" in the comment or category)
+  const interventionNeeded = reports.filter(r =>
+    r.status === 'Pending' &&
+    ((r.comment || '').toLowerCase().includes('hint') || (r.category || '').toLowerCase().includes('hint'))
+  ).slice(0, 8);
+
+  if (allStudentData.length === 0 && interventionNeeded.length === 0) {
+    el.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
+      <div style="font-size:2rem; margin-bottom:12px;">💡</div>
+      <p style="font-size:1rem; margin-bottom:6px;">No hint data yet</p>
+      <p style="font-size:0.85rem; opacity:0.7;">Once students start using the 3-tier hint system, their analytics will aggregate here automatically.</p>
+    </div>`;
+    return;
+  }
+
+  const maxPct = topicRows.length ? topicRows[0].pct : 100;
+
+  el.innerHTML = `
+    <!-- Summary KPIs -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-bottom:20px;">
+      <div style="background:rgba(201,156,81,0.07); border:1px solid var(--line); border-radius:12px; padding:14px 16px;">
+        <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:4px;">Students tracked</div>
+        <div style="font-size:1.65rem; font-weight:700; color:var(--brass-light); font-family:'JetBrains Mono',monospace;">${Object.keys(studentMap).length}</div>
+      </div>
+      <div style="background:rgba(201,156,81,0.07); border:1px solid var(--line); border-radius:12px; padding:14px 16px;">
+        <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:4px;">Total questions</div>
+        <div style="font-size:1.65rem; font-weight:700; color:var(--brass-light); font-family:'JetBrains Mono',monospace;">${allStudentData.reduce((s, d) => s + (d.total || 0), 0)}</div>
+      </div>
+      <div style="background:rgba(196,87,63,0.07); border:1px solid rgba(196,87,63,0.25); border-radius:12px; padding:14px 16px;">
+        <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:4px;">High-dependency students (>60%)</div>
+        <div style="font-size:1.65rem; font-weight:700; color:var(--coral); font-family:'JetBrains Mono',monospace;">${highDep.length}</div>
+      </div>
+      <div style="background:rgba(231,111,81,0.07); border:1px solid rgba(231,111,81,0.25); border-radius:12px; padding:14px 16px;">
+        <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:4px;">Intervention queue</div>
+        <div style="font-size:1.65rem; font-weight:700; color:var(--coral); font-family:'JetBrains Mono',monospace;">${interventionNeeded.length}</div>
+      </div>
+    </div>
+
+    <!-- Top hint-heavy topics -->
+    ${topicRows.length ? `
+    <div style="background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:16px; padding:20px 22px; margin-bottom:20px;">
+      <div style="font-size:0.82rem; font-weight:700; color:var(--parchment-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;">Top Hint-Heavy Topics — Class Average</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${topicRows.map(t => {
+          const color = t.pct > 50 ? 'var(--coral)' : t.pct > 30 ? 'var(--brass-light)' : 'var(--sea)';
+          const flag = t.pct > 50 ? ' ⚠️' : '';
+          return `<div style="display:flex; align-items:center; gap:10px;">
+            <div style="flex:0 0 180px; font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.name}${flag}</div>
+            <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden; height:12px;">
+              <div style="width:${Math.max(2,(t.pct/Math.max(maxPct,1))*100)}%; height:100%; background:${color};"></div>
+            </div>
+            <div style="flex:0 0 50px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:${color};">${t.pct}%</div>
+            <div style="flex:0 0 60px; font-size:0.68rem; color:var(--parchment-dim);">${t.total} Qs</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Students needing help (>60% hint dependency) -->
+    ${highDep.length ? `
+    <div style="background:rgba(196,87,63,0.06); border:1px solid rgba(196,87,63,0.25); border-radius:16px; padding:20px 22px; margin-bottom:20px;">
+      <div style="font-size:0.82rem; font-weight:700; color:var(--coral); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px;">🚨 Students With &gt;60% Hint Dependency</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        ${highDep.map(s => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:0.85rem;">${s.name}</span>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:var(--coral);">${s.pct}% hint usage</span>
+              <span style="font-size:0.72rem; color:var(--parchment-dim);">${s.total} questions</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Intervention queue -->
+    ${interventionNeeded.length ? `
+    <div style="background:rgba(231,111,81,0.06); border:1px solid rgba(231,111,81,0.25); border-radius:16px; padding:20px 22px; margin-bottom:20px;">
+      <div style="font-size:0.82rem; font-weight:700; color:var(--coral); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px;">🔧 Intervention Queue — Students Who Got Stuck</div>
+      <p style="font-size:0.78rem; color:var(--parchment-dim); margin:0 0 12px;">These students filed reports mentioning hints — they likely used all 3 and still couldn't solve the question.</p>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${interventionNeeded.map(r => `
+          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(231,111,81,0.2); border-radius:10px; padding:12px 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+              <div>
+                <div style="font-size:0.78rem; font-weight:600;">${r.studentName || 'Student'}</div>
+                <div style="font-size:0.72rem; color:var(--parchment-dim);">${r.subject || ''} · ${r.chapter || ''}</div>
+              </div>
+              <button class="btn ghost" style="padding:5px 12px; font-size:0.72rem;" onclick="switchTab('Pending')">View Report →</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Peer Hints Moderation Queue -->
+    <div id="peerHintModerationSection" style="background:rgba(155,142,203,0.06); border:1px solid rgba(155,142,203,0.25); border-radius:16px; padding:20px 22px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="font-size:0.82rem; font-weight:700; color:#c3b9e8; text-transform:uppercase; letter-spacing:0.8px;">💬 Peer Hint Moderation Queue</div>
+        <button class="btn ghost" style="padding:5px 12px; font-size:0.72rem;" onclick="loadPeerHintModerationQueue()">↺ Refresh</button>
+      </div>
+      <div id="peerHintModerationBody" style="font-size:0.82rem; color:var(--parchment-dim);">Click refresh to load pending peer hints…</div>
+    </div>
+  `;
+
+  // Auto-load moderation queue
+  loadPeerHintModerationQueue();
+}
+
+async function loadPeerHintModerationQueue() {
+  const body = document.getElementById('peerHintModerationBody');
+  if (!body) return;
+  body.innerHTML = '<div style="color:var(--parchment-dim); font-size:0.8rem;">Loading…</div>';
+
+  if (!window.Admin_DB || !window.Admin_DB.db) {
+    body.innerHTML = '<div style="color:var(--parchment-dim);">Firebase not connected.</div>';
+    return;
+  }
+
+  try {
+    const snap = await window.Admin_DB.db.ref('peerHints').once('value');
+    const raw = snap.val() || {};
+    const pending = [];
+    Object.entries(raw).forEach(([qKey, hints]) => {
+      Object.entries(hints || {}).forEach(([hintId, h]) => {
+        if (!h.isApproved) {
+          pending.push({ qKey, hintId, ...h });
+        }
+      });
+    });
+    pending.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    if (!pending.length) {
+      body.innerHTML = '<div style="color:var(--parchment-dim); padding:10px 0;">No pending hints — queue is clear! ✓</div>';
+      return;
+    }
+
+    const tierLabels = { 1: '💭 Nudge', 2: '📐 Formula', 3: '🔢 Steps' };
+    body.innerHTML = `<div style="font-size:0.75rem; color:var(--parchment-dim); margin-bottom:10px;">${pending.length} hint${pending.length!==1?'s':''} awaiting review</div>` +
+      pending.map(h => `
+        <div id="phmCard_${h.hintId}" style="background:rgba(255,255,255,0.03); border:1px solid rgba(155,142,203,0.2); border-radius:10px; padding:12px 14px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+            <div style="flex:1;">
+              <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+                <span style="font-size:0.68rem; padding:2px 6px; background:rgba(155,142,203,0.15); border-radius:4px; color:#c3b9e8;">${tierLabels[h.tier]||'💡'}</span>
+                <span style="font-size:0.72rem; color:var(--parchment-dim);">by ${h.authorName||'Unknown'}</span>
+                <span style="font-size:0.68rem; color:var(--parchment-dim);">${h.createdAt ? new Date(h.createdAt).toLocaleDateString('en-IN') : ''}</span>
+              </div>
+              <div style="font-size:0.85rem; line-height:1.4; margin-bottom:4px;">"${h.text}"</div>
+              <div style="font-size:0.68rem; color:var(--parchment-dim); font-family:'JetBrains Mono',monospace; word-break:break-all;">Q: ${h.qKey}</div>
+            </div>
+            <div style="display:flex; gap:6px; flex-shrink:0;">
+              <button class="btn primary" style="padding:5px 12px; font-size:0.72rem;" onclick="approvePeerHint('${h.qKey}','${h.hintId}')">✓ Approve</button>
+              <button class="btn ghost" style="padding:5px 12px; font-size:0.72rem; border-color:var(--coral); color:var(--coral);" onclick="rejectPeerHint('${h.qKey}','${h.hintId}')">✗ Reject</button>
+            </div>
+          </div>
+        </div>`).join('');
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--coral);">Error loading peer hints: ' + e.message + '</div>';
+  }
+}
+
+async function approvePeerHint(qKey, hintId) {
+  if (!window.Admin_DB || !window.Admin_DB.db) return;
+  try {
+    await window.Admin_DB.db.ref('peerHints/' + qKey + '/' + hintId).update({ isApproved: true });
+    const card = document.getElementById('phmCard_' + hintId);
+    if (card) { card.style.opacity = '0.4'; card.innerHTML += '<div style="font-size:0.75rem; color:#6fe4d6; margin-top:6px;">✓ Approved</div>'; }
+  } catch (e) { alert('Error approving hint: ' + e.message); }
+}
+
+async function rejectPeerHint(qKey, hintId) {
+  if (!window.Admin_DB || !window.Admin_DB.db) return;
+  if (!confirm('Delete this peer hint permanently?')) return;
+  try {
+    await window.Admin_DB.db.ref('peerHints/' + qKey + '/' + hintId).remove();
+    const card = document.getElementById('phmCard_' + hintId);
+    if (card) card.remove();
+  } catch (e) { alert('Error rejecting hint: ' + e.message); }
 }
 
 async function openAnnouncementModal() {
@@ -1619,6 +1870,7 @@ window.submitReply = submitReply;
 window.verifyGatePasscode = verifyGatePasscode;
 window.switchTab = switchTab;
 window.renderAnalyticsPanel = renderAnalyticsPanel;
+window.renderHintInsightsPanel = renderHintInsightsPanel;
 window.previewPyqFromTextarea = previewPyqFromTextarea;
 window.confirmPyqImport = confirmPyqImport;
 window.closePyqPreviewModal = closePyqPreviewModal;
