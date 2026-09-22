@@ -1827,6 +1827,22 @@ body.theme-light .title-wrap h2 {
 .xp-breakdown-strip .xb-final{ color: var(--sea); font-weight: 700; font-size: 0.82rem; }
 .xp-breakdown-strip .xb-sep  { color: var(--parchment-dim); opacity: 0.5; }
 
+/* ===== TOAST NOTIFICATIONS ===== */
+#toastContainer {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+  z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+  align-items: center; pointer-events: none; width: 100%; padding: 0 16px;
+}
+.app-toast {
+  pointer-events: auto; background: var(--glass); border: 1px solid var(--glass-border);
+  color: var(--parchment); font-family: 'Space Mono', monospace; font-size: 0.82rem;
+  padding: 10px 18px; border-radius: 999px; box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+  backdrop-filter: blur(16px); max-width: 92vw; text-align: center;
+  opacity: 0; transform: translateY(12px); transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.app-toast.show { opacity: 1; transform: translateY(0); }
+.app-toast.hide { opacity: 0; transform: translateY(-8px); }
+
 /* ===== POST-QUESTION REFLECTION MODAL ===== */
 .reflection-modal-backdrop {
   position: fixed; inset: 0; background: rgba(5,9,20,0.75);
@@ -2047,6 +2063,9 @@ body.theme-light .title-wrap h2 {
 
 <!-- ===== HINT AVAILABLE TOAST ===== -->
 <div class="hint-available-toast" id="hintAvailableToast">💡 Hint available! Tap a hint button to reveal it.</div>
+
+<!-- ===== GENERIC APP TOAST NOTIFICATIONS ===== -->
+<div id="toastContainer" aria-live="polite"></div>
 
 <!-- ===== POST-QUESTION REFLECTION MODAL ===== -->
 <div class="reflection-modal-backdrop" id="reflectionModal">
@@ -3507,6 +3526,32 @@ let firestoreReady = false;
   }
 })();
 
+// =====================================================================
+// GENERIC TOAST NOTIFICATIONS
+// Lightweight, stacking, auto-dismissing toast used across squads, peer
+// hints, badge unlocks, etc. Previously called in ~15 places but never
+// defined, causing "showToast is not defined" ReferenceErrors.
+// =====================================================================
+let _toastSeq = 0;
+function showToast(message, durationMs = 3200) {
+  const container = document.getElementById('toastContainer');
+  if (!container || !message) return;
+  const id = 'toast_' + (++_toastSeq);
+  const el = document.createElement('div');
+  el.className = 'app-toast';
+  el.id = id;
+  el.textContent = message;
+  container.appendChild(el);
+  // Force reflow so the transition fires
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    el.classList.add('hide');
+    setTimeout(() => el.remove(), 260);
+  }, durationMs);
+}
+window.showToast = showToast;
+
 function getPlayerUid() {
   // Prefer the server-verified Firebase Auth uid once anonymous sign-in has
   // completed — this is what the security rules actually check against.
@@ -4274,6 +4319,7 @@ let state = {
   totalNoHintSolves: 0,    // lifetime count
   hintAnalytics: {},       // { [topicId]: { total, withHints } }
   reflectionHistory: [],   // [ { qKey, confidence, difficulty, correct, hintsUsed, ts } ]
+  qSinceReflection: 0,     // questions answered since the last reflection prompt (throttles the modal)
   // ── Phase 2B: Adaptive hint timing ──────────────────────────────────────
   adaptiveHintTimes: null, // [t1,t2,t3] overrides HINT_UNLOCK_TIMES when set
   // ── Phase 3: Squads & Peer Hints ─────────────────────────────────────────
@@ -10783,15 +10829,22 @@ function handleAnswer(selIdx, btnNode) {
   // Phase 2B: update adaptive hint times from this level's solve data
   updateAdaptiveHintTimes();
 
-  // Stash current question context for the reflection modal
-  window._pendingReflection = {
-    qKey: getCurrentQuestionKey(qData),
-    isCorrect,
-    hintsUsed: hintsUsedCount,
-    topicId
-  };
-  // Show reflection modal after a short delay (let feedback settle)
-  setTimeout(() => showReflectionModal(), 1800);
+  // Reflection modal: only prompt every Nth answered question (not every
+  // single one) so it stays a light, occasional check-in rather than a
+  // popup after every answer.
+  state.qSinceReflection = (state.qSinceReflection || 0) + 1;
+  if (state.qSinceReflection >= REFLECTION_PROMPT_INTERVAL) {
+    state.qSinceReflection = 0;
+    // Stash current question context for the reflection modal
+    window._pendingReflection = {
+      qKey: getCurrentQuestionKey(qData),
+      isCorrect,
+      hintsUsed: hintsUsedCount,
+      topicId
+    };
+    // Show reflection modal after a short delay (let feedback settle)
+    setTimeout(() => showReflectionModal(), 1800);
+  }
 
   // Phase 3: Show peer hints strip after answering
   const qKey = getCurrentQuestionKey(qData);
@@ -10850,6 +10903,9 @@ function renderNoHintStreakWidget() {
 // =====================================================================
 let _reflConfidence = null;
 let _reflDifficulty = null;
+// Prompt for reflection only once every N answered questions, not after
+// every single one.
+const REFLECTION_PROMPT_INTERVAL = 4;
 
 function showReflectionModal() {
   // Only show in practice mode, not JEE mock
