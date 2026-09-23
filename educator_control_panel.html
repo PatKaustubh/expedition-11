@@ -390,6 +390,7 @@ async function ensureAdminAuth() {
 }
 
 window.Admin_DB = {
+  db,
   async sendAnnouncement(message, audience, scheduledFor) {
     await ensureAdminAuth();
     if (!dbReady) return { ok: false, error: 'Not connected.' };
