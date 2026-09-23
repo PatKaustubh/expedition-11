@@ -3376,6 +3376,13 @@ let firestoreReady = false;
 
     db = firebase.database();
     dbReady = true;
+    // Also expose on window — several features (Squads, Hints, and any
+    // future code) check `window.db` / `window.dbReady` specifically,
+    // and a top-level `let` never auto-attaches to `window` the way a
+    // top-level `var` would. Without this, those checks silently see
+    // undefined forever even though the RTDB connection itself is fine.
+    window.db = db;
+    window.dbReady = dbReady;
     // Anonymous Auth: every write this app makes (leaderboard, reports,
     // removal-discussion replies) is gated in the security rules on
     // `auth != null` (and, for the leaderboard, `auth.uid === $uid`). This
@@ -13880,33 +13887,70 @@ function renderMiniGamesHome() {
   const body = document.getElementById('miniGamesBody');
   if (!body) return;
   const games = [
-    { id: 'projectile', icon: '🚀', name: 'Projectile Launcher', topic: 'Physics · Kinematics', desc: 'Adjust angle and velocity to hit the target. Master range & maximum height equations.', xp: 150 },
-    { id: 'circuit',    icon: '⚡', name: 'Circuit Solver',      topic: 'Physics · Circuits',  desc: 'Build series/parallel circuits to reach exact resistance. Apply R = V/I intuitively.', xp: 150 },
-    { id: 'mole',       icon: '🧪', name: 'Mole Mixer',          topic: 'Chemistry · Stoich.',  desc: 'Balance the reaction and calculate correct molar quantities before time runs out.', xp: 150 },
+    { id: 'projectile', icon: '🚀', name: 'Projectile Launcher', subject: 'Physics', topic: 'Kinematics', desc: 'Adjust angle and velocity to hit the target. Master range & maximum height equations.', xp: 150 },
+    { id: 'circuit',    icon: '⚡', name: 'Circuit Solver',      subject: 'Physics', topic: 'Circuits',  desc: 'Build series/parallel circuits to reach exact resistance. Apply R = V/I intuitively.', xp: 150 },
+    { id: 'wavelab',    icon: '🌊', name: 'Wave Interference Lab', subject: 'Physics', topic: 'Optics', desc: 'Tune slit separation and wavelength to hit a target fringe spacing.', xp: 150 },
+    { id: 'pendulum',   icon: '🕰️', name: 'Pendulum Lab',        subject: 'Physics', topic: 'Oscillations', desc: 'Set the pendulum length so its period matches the target time.', xp: 150 },
+    { id: 'mole',       icon: '🧪', name: 'Mole Mixer',          subject: 'Chemistry', topic: 'Stoichiometry',  desc: 'Balance the reaction and calculate correct molar quantities before time runs out.', xp: 150 },
+    { id: 'titration',  icon: '🧫', name: 'Titration Curve',     subject: 'Chemistry', topic: 'Acid-Base', desc: 'Add titrant and stop exactly at the equivalence point on the pH curve.', xp: 150 },
+    { id: 'halflife',   icon: '☢️', name: 'Half-Life Decay',     subject: 'Chemistry', topic: 'Kinetics', desc: 'Find the elapsed time that leaves the target percentage of sample remaining.', xp: 150 },
+    { id: 'electrochem',icon: '🔋', name: 'Cell Voltage Challenge', subject: 'Chemistry', topic: 'Electrochemistry', desc: 'Pick two half-cells that combine to the target standard cell potential.', xp: 150 },
+    { id: 'vector',     icon: '🧭', name: 'Vector Navigator',    subject: 'Mathematics', topic: 'Vectors', desc: 'Adjust a vector\'s magnitude and angle to hit the target resultant.', xp: 150 },
+    { id: 'probability',icon: '🎲', name: 'Probability Draw',    subject: 'Mathematics', topic: 'Probability', desc: 'Compute the probability of drawing a given outcome from a random urn.', xp: 150 },
+    { id: 'derivative', icon: '📈', name: 'Critical Point Hunter', subject: 'Mathematics', topic: 'Calculus', desc: 'Slide along a curve until the tangent flattens out at a critical point.', xp: 150 },
+    { id: 'matrix',     icon: '🔢', name: 'Matrix Determinant Duel', subject: 'Mathematics', topic: 'Matrices', desc: 'Compute the determinant of a 2×2 matrix before moving to the next one.', xp: 150 },
   ];
-  body.innerHTML = `
-    <div style="display:grid; gap:14px;">
-      ${games.map(g => `
-        <div style="background:var(--glass); border:1px solid var(--line); border-radius:14px; padding:16px 18px; cursor:pointer; display:flex; gap:14px; align-items:center;" onclick="startMiniGame('${g.id}')">
-          <div style="font-size:2.2rem; flex-shrink:0;">${g.icon}</div>
-          <div style="flex:1;">
-            <div style="font-family:'Fraunces',serif; font-weight:700; font-size:1rem; margin-bottom:3px;">${g.name}</div>
-            <div style="font-size:0.72rem; color:var(--brass-light); margin-bottom:4px; font-family:'Space Mono',monospace;">${g.topic}</div>
-            <div style="font-size:0.8rem; color:var(--parchment-dim);">${g.desc}</div>
-          </div>
-          <div style="flex-shrink:0; text-align:center;">
-            <div style="font-family:'Space Mono',monospace; font-size:0.8rem; color:var(--brass-light); font-weight:700;">+${g.xp}</div>
-            <div style="font-size:0.65rem; color:var(--parchment-dim);">XP</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
+  const SUBJECT_META = {
+    Physics:     { icon: '⚛️', color: '#8fb8e8' },
+    Chemistry:   { icon: '🧪', color: '#b5d6a7' },
+    Mathematics: { icon: '📐', color: '#e8c382' },
+  };
+  const subjectOrder = ['Physics', 'Chemistry', 'Mathematics'];
+  const bySubject = {};
+  games.forEach(g => { (bySubject[g.subject] = bySubject[g.subject] || []).push(g); });
+
+  body.innerHTML = subjectOrder.filter(s => bySubject[s]).map(subject => {
+    const meta = SUBJECT_META[subject] || { icon: '📚', color: 'var(--brass-light)' };
+    return `
+      <div style="margin-bottom:22px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <span style="font-size:1.2rem;">${meta.icon}</span>
+          <h4 style="margin:0; font-family:'Fraunces',serif; font-size:1.05rem; color:${meta.color};">${subject}</h4>
+          <span style="flex:1; height:1px; background:var(--line);"></span>
+        </div>
+        <div style="display:grid; gap:14px;">
+          ${bySubject[subject].map(g => `
+            <div style="background:var(--glass); border:1px solid var(--line); border-radius:14px; padding:16px 18px; cursor:pointer; display:flex; gap:14px; align-items:center;" onclick="startMiniGame('${g.id}')">
+              <div style="font-size:2.2rem; flex-shrink:0;">${g.icon}</div>
+              <div style="flex:1;">
+                <div style="font-family:'Fraunces',serif; font-weight:700; font-size:1rem; margin-bottom:3px;">${g.name}</div>
+                <div style="font-size:0.72rem; color:var(--brass-light); margin-bottom:4px; font-family:'Space Mono',monospace;">${g.subject} · ${g.topic}</div>
+                <div style="font-size:0.8rem; color:var(--parchment-dim);">${g.desc}</div>
+              </div>
+              <div style="flex-shrink:0; text-align:center;">
+                <div style="font-family:'Space Mono',monospace; font-size:0.8rem; color:var(--brass-light); font-weight:700;">+${g.xp}</div>
+                <div style="font-size:0.65rem; color:var(--parchment-dim);">XP</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function startMiniGame(id) {
   _mgCurrentGame = id;
   if (id === 'projectile') startProjectileGame();
   else if (id === 'circuit') startCircuitGame();
+  else if (id === 'wavelab') startWaveLabGame();
+  else if (id === 'pendulum') startPendulumGame();
   else if (id === 'mole') startMoleGame();
+  else if (id === 'titration') startTitrationGame();
+  else if (id === 'halflife') startHalfLifeGame();
+  else if (id === 'electrochem') startElectrochemGame();
+  else if (id === 'vector') startVectorGame();
+  else if (id === 'probability') startProbabilityGame();
+  else if (id === 'derivative') startDerivativeGame();
+  else if (id === 'matrix') startMatrixGame();
 }
 
 /* ── GAME 1: Projectile Launcher ─────────────────────────────── */
@@ -13920,7 +13964,7 @@ function startProjectileGame() {
     <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
     <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🚀 Projectile Launcher</h3>
     <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Hit the target at <strong style="color:var(--brass-light);">${target} m</strong>. Formula: R = v²sin(2θ)/g</p>
-    <canvas id="projCanvas" width="520" height="200" style="width:100%; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin-bottom:14px;"></canvas>
+    <canvas id="projCanvas" width="520" height="200" style="width:100%; max-width:520px; aspect-ratio:520/200; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 14px;"></canvas>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
       <label style="font-size:0.78rem;">
         <span style="color:var(--parchment-dim);">Launch Angle: </span><strong id="mgAngleVal">45°</strong>
@@ -14018,7 +14062,7 @@ function startCircuitGame() {
       <span style="color:var(--parchment-dim);">Mode: </span>
       <button class="btn ghost" id="cktModeBtn" style="font-size:0.75rem; padding:4px 10px;" onclick="cktToggleMode(${target})">Series</button>
     </div>
-    <canvas id="cktCanvas" width="520" height="90" style="width:100%; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin-bottom:10px;"></canvas>
+    <canvas id="cktCanvas" width="520" height="90" style="width:100%; max-width:520px; aspect-ratio:520/90; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 10px;"></canvas>
     <div id="cktFeedback" style="min-height:22px; font-size:0.85rem; margin-bottom:10px;"></div>
     <button class="btn primary" style="width:100%;" onclick="checkCircuit(${target})">⚡ Test Circuit</button>`;
 
@@ -14152,10 +14196,547 @@ function checkMoleAnswer(answer) {
     if (fb) fb.innerHTML = `<span style="color:#6fe4d6;">✓ Correct! ${val} mol is right. +150 XP</span>`;
     awardMiniGameXp(150, 'Mole Master');
   } else if (Math.abs(val - answer) <= 0.5) {
-    if (fb) fb.innerHTML = `<span style="color:var(--brass-light);">Close! Answer is ${answer.toFixed(1)} mol. Check your ratio. +50 XP</span>`;
+    if (fb) fb.innerHTML = `<span style="color:var(--brass-light);">Close, but not quite. Check your ratio and try again. +50 XP</span>`;
     awardMiniGameXp(50, null);
   } else {
-    if (fb) fb.innerHTML = `<span style="color:var(--coral);">Incorrect. Answer is ${answer.toFixed(2)} mol. Review the mole ratio method.</span>`;
+    if (fb) fb.innerHTML = `<span style="color:var(--coral);">Incorrect. Review the mole ratio method and try again.</span>`;
+  }
+}
+
+/* ── GAME 4: Wave Interference Lab ───────────────────────────── */
+function startWaveLabGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const target = +(1 + Math.random() * 5).toFixed(2); // mm
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🌊 Wave Interference Lab</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Match fringe spacing β = <strong style="color:var(--brass-light);">${target} mm</strong>. Formula: β = λD/d (D = 1.5 m)</p>
+    <canvas id="waveCanvas" width="520" height="140" style="width:100%; max-width:520px; aspect-ratio:520/140; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 14px;"></canvas>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+      <label style="font-size:0.78rem;">
+        <span style="color:var(--parchment-dim);">Slit Separation d: </span><strong id="mgDVal">1.0 mm</strong>
+        <input type="range" min="1" max="20" value="10" id="mgD" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgDVal').textContent=(this.value/10).toFixed(1)+' mm'; drawWaveCanvas(${target})">
+      </label>
+      <label style="font-size:0.78rem;">
+        <span style="color:var(--parchment-dim);">Wavelength λ: </span><strong id="mgLambdaVal">550 nm</strong>
+        <input type="range" min="400" max="700" step="10" value="550" id="mgLambda" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgLambdaVal').textContent=this.value+' nm'; drawWaveCanvas(${target})">
+      </label>
+    </div>
+    <div id="mgWaveFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkWaveLab(${target})">🌊 Check Pattern</button>`;
+  setTimeout(() => drawWaveCanvas(target), 50);
+}
+
+function calcFringeSpacing() {
+  const d = parseFloat(document.getElementById('mgD').value) / 10; // mm
+  const lambda = parseFloat(document.getElementById('mgLambda').value); // nm
+  const D = 1.5; // m
+  return (lambda * 1e-9 * D / (d * 1e-3)) * 1000; // mm
+}
+
+function drawWaveCanvas(target) {
+  const canvas = document.getElementById('waveCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const beta = calcFringeSpacing();
+  ctx.clearRect(0, 0, W, H);
+  const pxPerMm = 40;
+  const spacingPx = Math.max(4, Math.min(W, beta * pxPerMm));
+  for (let x = spacingPx / 2; x < W; x += spacingPx) {
+    ctx.fillStyle = 'rgba(233,196,130,0.5)';
+    ctx.fillRect(x - spacingPx * 0.18, 25, spacingPx * 0.36, H - 50);
+  }
+  ctx.fillStyle = '#e8c382'; ctx.font = '11px Space Mono,monospace';
+  ctx.fillText(`β = ${beta.toFixed(2)} mm  (target ${target} mm)`, 12, 16);
+}
+
+function checkWaveLab(target) {
+  const beta = calcFringeSpacing();
+  const diff = Math.abs(beta - target);
+  const fb = document.getElementById('mgWaveFeedback');
+  if (diff <= 0.15) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Matched! β = ${beta.toFixed(2)} mm. +150 XP</span>`;
+    awardMiniGameXp(150, 'Interference Ace');
+  } else if (diff <= 0.5) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close! β = ${beta.toFixed(2)} mm vs target ${target} mm. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Not yet. β = ${beta.toFixed(2)} mm vs target ${target} mm. Try again.</span>`;
+  }
+  drawWaveCanvas(target);
+}
+
+/* ── GAME 5: Pendulum Lab ────────────────────────────────────── */
+function startPendulumGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const target = +(0.7 + Math.random() * 2).toFixed(2); // seconds
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🕰️ Pendulum Lab</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Set the length so the period T = <strong style="color:var(--brass-light);">${target} s</strong>. Formula: T = 2π√(L/g)</p>
+    <canvas id="pendCanvas" width="520" height="220" style="width:100%; max-width:520px; aspect-ratio:520/220; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 14px;"></canvas>
+    <label style="font-size:0.78rem; display:block; margin-bottom:14px;">
+      <span style="color:var(--parchment-dim);">Length L: </span><strong id="mgLVal">100 cm</strong>
+      <input type="range" min="10" max="200" value="100" id="mgL" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgLVal').textContent=this.value+' cm'">
+    </label>
+    <div id="mgPendFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkPendulum(${target})">🕰️ Check Period</button>`;
+  window._pendPhase = 0;
+  animatePendulum();
+}
+
+function calcPendulumPeriod() {
+  const slider = document.getElementById('mgL');
+  const L = (slider ? parseFloat(slider.value) : 100) / 100; // m
+  return 2 * Math.PI * Math.sqrt(L / 9.8);
+}
+
+function animatePendulum() {
+  const canvas = document.getElementById('pendCanvas');
+  if (!canvas) return; // left the screen — stop the loop
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const Lslider = document.getElementById('mgL');
+  const L = Lslider ? parseFloat(Lslider.value) : 100;
+  const T = calcPendulumPeriod();
+  window._pendPhase = (window._pendPhase || 0) + (2 * Math.PI / 60) * (1 / Math.max(T, 0.3));
+  const angle = (Math.PI / 8) * Math.sin(window._pendPhase);
+  const pivotX = W / 2, pivotY = 20;
+  const rodLen = Math.min(H - 60, 30 + L * 0.9);
+  const bobX = pivotX + rodLen * Math.sin(angle);
+  const bobY = pivotY + rodLen * Math.cos(angle);
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.moveTo(pivotX - 30, pivotY); ctx.lineTo(pivotX + 30, pivotY); ctx.stroke();
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(bobX, bobY); ctx.stroke();
+  ctx.fillStyle = '#e8c382'; ctx.beginPath(); ctx.arc(bobX, bobY, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8c382'; ctx.font = '11px Space Mono,monospace';
+  ctx.fillText(`T = ${T.toFixed(2)} s`, 12, H - 10);
+  requestAnimationFrame(animatePendulum);
+}
+
+function checkPendulum(target) {
+  const T = calcPendulumPeriod();
+  const diff = Math.abs(T - target);
+  const fb = document.getElementById('mgPendFeedback');
+  if (diff <= 0.05) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Perfect! T = ${T.toFixed(2)} s. +150 XP</span>`;
+    awardMiniGameXp(150, 'Pendulum Pro');
+  } else if (diff <= 0.15) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close! T = ${T.toFixed(2)} s vs target ${target} s. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Not yet. T = ${T.toFixed(2)} s vs target ${target} s.</span>`;
+  }
+}
+
+/* ── GAME 6: Titration Curve ─────────────────────────────────── */
+function startTitrationGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const veq = Math.floor(15 + Math.random() * 21); // 15-35 mL
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🧫 Titration Curve</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Add NaOH drop by drop and stop exactly at the equivalence point (steepest pH jump).</p>
+    <canvas id="titrCanvas" width="520" height="200" style="width:100%; max-width:520px; aspect-ratio:520/200; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 14px;"></canvas>
+    <label style="font-size:0.78rem; display:block; margin-bottom:14px;">
+      <span style="color:var(--parchment-dim);">NaOH added: </span><strong id="mgVolVal">0 mL</strong>
+      <input type="range" min="0" max="50" step="0.5" value="0" id="mgVol" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgVolVal').textContent=this.value+' mL'; drawTitrationCanvas(${veq})">
+    </label>
+    <div id="mgTitrFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkTitration(${veq})">🧫 Stop & Check</button>`;
+  setTimeout(() => drawTitrationCanvas(veq), 50);
+}
+
+function calcPH(V, veq) {
+  return 7 + 6 * Math.tanh((V - veq) / 2.2);
+}
+
+function drawTitrationCanvas(veq) {
+  const canvas = document.getElementById('titrCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let px = 0; px <= W - 40; px++) {
+    const V = (px / (W - 40)) * 50;
+    const pH = calcPH(V, veq);
+    const y = H - 20 - (pH / 14) * (H - 40);
+    px === 0 ? ctx.moveTo(px + 20, y) : ctx.lineTo(px + 20, y);
+  }
+  ctx.stroke();
+  const currentVol = parseFloat(document.getElementById('mgVol')?.value || 0);
+  const curX = 20 + (currentVol / 50) * (W - 40);
+  const curY = H - 20 - (calcPH(currentVol, veq) / 14) * (H - 40);
+  ctx.fillStyle = '#ff8fb0'; ctx.beginPath(); ctx.arc(curX, curY, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8c382'; ctx.font = '11px Space Mono,monospace';
+  ctx.fillText(`pH = ${calcPH(currentVol, veq).toFixed(2)} at ${currentVol.toFixed(1)} mL`, 12, 16);
+}
+
+function checkTitration(veq) {
+  const V = parseFloat(document.getElementById('mgVol').value);
+  const diff = Math.abs(V - veq);
+  const fb = document.getElementById('mgTitrFeedback');
+  if (diff <= 1) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Equivalence point! ${V} mL ≈ ${veq} mL. +150 XP</span>`;
+    awardMiniGameXp(150, 'Titration Ace');
+  } else if (diff <= 3) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close! ${V} mL vs ${veq} mL. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Not yet. ${V} mL vs ${veq} mL. Watch for the steep pH jump.</span>`;
+  }
+  drawTitrationCanvas(veq);
+}
+
+/* ── GAME 7: Half-Life Decay ─────────────────────────────────── */
+function startHalfLifeGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const halfLife = +(2 + Math.random() * 8).toFixed(1); // hours
+  const targetPct = Math.floor(15 + Math.random() * 55); // 15-70%
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">☢️ Half-Life Decay</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Half-life = <strong style="color:var(--brass-light);">${halfLife} hr</strong>. Find the time when <strong style="color:var(--brass-light);">${targetPct}%</strong> remains. Formula: N = N₀(½)^(t/t½)</p>
+    <canvas id="decayCanvas" width="520" height="200" style="width:100%; max-width:520px; aspect-ratio:520/200; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 14px;"></canvas>
+    <label style="font-size:0.78rem; display:block; margin-bottom:14px;">
+      <span style="color:var(--parchment-dim);">Elapsed Time: </span><strong id="mgTVal">0.0 hr</strong>
+      <input type="range" min="0" max="${(halfLife * 5).toFixed(1)}" step="0.1" value="0" id="mgT" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgTVal').textContent=parseFloat(this.value).toFixed(1)+' hr'; drawDecayCanvas(${halfLife},${targetPct})">
+    </label>
+    <div id="mgDecayFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkHalfLife(${halfLife},${targetPct})">☢️ Check</button>`;
+  setTimeout(() => drawDecayCanvas(halfLife, targetPct), 50);
+}
+
+function drawDecayCanvas(halfLife, targetPct) {
+  const canvas = document.getElementById('decayCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const maxT = halfLife * 5;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let px = 0; px <= W - 40; px++) {
+    const t = (px / (W - 40)) * maxT;
+    const pct = 100 * Math.pow(0.5, t / halfLife);
+    const y = H - 20 - (pct / 100) * (H - 40);
+    px === 0 ? ctx.moveTo(px + 20, y) : ctx.lineTo(px + 20, y);
+  }
+  ctx.stroke();
+  const targetY = H - 20 - (targetPct / 100) * (H - 40);
+  ctx.strokeStyle = 'rgba(255,143,176,0.6)'; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(20, targetY); ctx.lineTo(W - 20, targetY); ctx.stroke(); ctx.setLineDash([]);
+  const t = parseFloat(document.getElementById('mgT')?.value || 0);
+  const pct = 100 * Math.pow(0.5, t / halfLife);
+  const curX = 20 + (t / maxT) * (W - 40), curY = H - 20 - (pct / 100) * (H - 40);
+  ctx.fillStyle = '#ff8fb0'; ctx.beginPath(); ctx.arc(curX, curY, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8c382'; ctx.font = '11px Space Mono,monospace';
+  ctx.fillText(`Remaining: ${pct.toFixed(1)}%`, 12, 16);
+}
+
+function checkHalfLife(halfLife, targetPct) {
+  const t = parseFloat(document.getElementById('mgT').value);
+  const pct = 100 * Math.pow(0.5, t / halfLife);
+  const diff = Math.abs(pct - targetPct);
+  const fb = document.getElementById('mgDecayFeedback');
+  if (diff <= 2) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Correct! ${pct.toFixed(1)}% remains. +150 XP</span>`;
+    awardMiniGameXp(150, 'Decay Detective');
+  } else if (diff <= 6) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close! ${pct.toFixed(1)}% vs target ${targetPct}%. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Not yet. ${pct.toFixed(1)}% vs target ${targetPct}%.</span>`;
+  }
+  drawDecayCanvas(halfLife, targetPct);
+}
+
+/* ── GAME 8: Cell Voltage Challenge ──────────────────────────── */
+function startElectrochemGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const electrodes = [
+    { name: 'Li⁺/Li', e: -3.04 }, { name: 'Mg²⁺/Mg', e: -2.37 }, { name: 'Zn²⁺/Zn', e: -0.76 },
+    { name: 'Fe²⁺/Fe', e: -0.44 }, { name: 'Pb²⁺/Pb', e: -0.13 }, { name: 'H⁺/H₂', e: 0.00 },
+    { name: 'Cu²⁺/Cu', e: 0.34 }, { name: 'Ag⁺/Ag', e: 0.80 }, { name: 'Au³⁺/Au', e: 1.50 }
+  ];
+  const i1 = Math.floor(Math.random() * electrodes.length);
+  let i2 = Math.floor(Math.random() * electrodes.length);
+  while (i2 === i1) i2 = Math.floor(Math.random() * electrodes.length);
+  const target = +Math.abs(electrodes[i1].e - electrodes[i2].e).toFixed(2);
+
+  window._ecSelected = [];
+  window._ecElectrodes = electrodes;
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🔋 Cell Voltage Challenge</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Pick two half-cells that give E°cell = <strong style="color:var(--brass-light);">${target} V</strong>. Formula: E°cell = E°cathode − E°anode</p>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+      ${electrodes.map((el, i) => `<button class="btn ghost" id="ecBtn_${i}" style="font-family:'Space Mono',monospace; font-size:0.75rem;" onclick="ecToggle(${i})">${el.name} (${el.e >= 0 ? '+' : ''}${el.e.toFixed(2)}V)</button>`).join('')}
+    </div>
+    <div id="mgEcFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkElectrochem(${target})">🔋 Check Cell</button>`;
+}
+
+function ecToggle(i) {
+  if (!window._ecSelected) window._ecSelected = [];
+  const idx = window._ecSelected.indexOf(i);
+  if (idx >= 0) window._ecSelected.splice(idx, 1);
+  else if (window._ecSelected.length < 2) window._ecSelected.push(i);
+  window._ecElectrodes.forEach((_, j) => {
+    const btn = document.getElementById('ecBtn_' + j);
+    if (btn) btn.style.borderColor = window._ecSelected.includes(j) ? 'var(--brass-light)' : '';
+  });
+}
+
+function checkElectrochem(target) {
+  const sel = window._ecSelected || [];
+  const fb = document.getElementById('mgEcFeedback');
+  if (sel.length < 2) { fb.innerHTML = '<span style="color:var(--coral);">Select exactly two half-cells.</span>'; return; }
+  const e1 = window._ecElectrodes[sel[0]].e, e2 = window._ecElectrodes[sel[1]].e;
+  const emf = Math.abs(e1 - e2);
+  const diff = Math.abs(emf - target);
+  if (diff <= 0.05) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Correct! E°cell = ${emf.toFixed(2)} V. +150 XP</span>`;
+    awardMiniGameXp(150, 'Voltaic Virtuoso');
+  } else if (diff <= 0.3) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close! ${emf.toFixed(2)} V vs target ${target} V. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Not quite. ${emf.toFixed(2)} V vs target ${target} V.</span>`;
+  }
+}
+
+/* ── GAME 9: Vector Navigator ────────────────────────────────── */
+function startVectorGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const v2 = +(3 + Math.random() * 5).toFixed(1);
+  const a2 = Math.floor(Math.random() * 360);
+  const sampleV1 = +(2 + Math.random() * 8).toFixed(1);
+  const sampleA1 = Math.floor(Math.random() * 360);
+  const rad = Math.PI / 180;
+  const target = +Math.sqrt(sampleV1 * sampleV1 + v2 * v2 + 2 * sampleV1 * v2 * Math.cos((sampleA1 - a2) * rad)).toFixed(1);
+
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🧭 Vector Navigator</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">Fixed vector B = ${v2} units at ${a2}°. Adjust vector A to make |A + B| = <strong style="color:var(--brass-light);">${target}</strong> units.</p>
+    <canvas id="vecCanvas" width="520" height="260" style="width:100%; max-width:520px; aspect-ratio:520/260; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 14px;"></canvas>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+      <label style="font-size:0.78rem;">
+        <span style="color:var(--parchment-dim);">|A|: </span><strong id="mgV1Val">5.0</strong>
+        <input type="range" min="0" max="10" step="0.1" value="5" id="mgV1" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgV1Val').textContent=parseFloat(this.value).toFixed(1); drawVectorCanvas(${v2},${a2},${target})">
+      </label>
+      <label style="font-size:0.78rem;">
+        <span style="color:var(--parchment-dim);">∠A: </span><strong id="mgA1Val">0°</strong>
+        <input type="range" min="0" max="359" value="0" id="mgA1" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgA1Val').textContent=this.value+'°'; drawVectorCanvas(${v2},${a2},${target})">
+      </label>
+    </div>
+    <div id="mgVecFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkVector(${v2},${a2},${target})">🧭 Check Resultant</button>`;
+  setTimeout(() => drawVectorCanvas(v2, a2, target), 50);
+}
+
+function calcResultant(v2, a2) {
+  const v1 = parseFloat(document.getElementById('mgV1').value);
+  const a1 = parseFloat(document.getElementById('mgA1').value);
+  const rad = Math.PI / 180;
+  const ax = v1 * Math.cos(a1 * rad) + v2 * Math.cos(a2 * rad);
+  const ay = v1 * Math.sin(a1 * rad) + v2 * Math.sin(a2 * rad);
+  return { mag: Math.sqrt(ax * ax + ay * ay), ax, ay, v1, a1 };
+}
+
+function drawVectorCanvas(v2, a2, target) {
+  const canvas = document.getElementById('vecCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2, scale = 18;
+  const rad = Math.PI / 180;
+  const r = calcResultant(v2, a2);
+  ctx.clearRect(0, 0, W, H);
+  function arrow(x1, y1, x2, y2, color) {
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 10 * Math.cos(ang - 0.4), y2 - 10 * Math.sin(ang - 0.4));
+    ctx.lineTo(x2 - 10 * Math.cos(ang + 0.4), y2 - 10 * Math.sin(ang + 0.4));
+    ctx.closePath(); ctx.fill();
+  }
+  arrow(cx, cy, cx + v2 * scale * Math.cos(a2 * rad), cy - v2 * scale * Math.sin(a2 * rad), '#7fa06f');
+  arrow(cx, cy, cx + r.v1 * scale * Math.cos(r.a1 * rad), cy - r.v1 * scale * Math.sin(r.a1 * rad), '#c99c51');
+  arrow(cx, cy, cx + r.ax * scale, cy - r.ay * scale, '#ff8fb0');
+  ctx.fillStyle = '#e8c382'; ctx.font = '11px Space Mono,monospace';
+  ctx.fillText(`|A+B| = ${r.mag.toFixed(2)}  (target ${target})`, 12, 16);
+}
+
+function checkVector(v2, a2, target) {
+  const r = calcResultant(v2, a2);
+  const diff = Math.abs(r.mag - target);
+  const fb = document.getElementById('mgVecFeedback');
+  if (diff <= 0.15) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Perfect! |A+B| = ${r.mag.toFixed(2)}. +150 XP</span>`;
+    awardMiniGameXp(150, 'Vector Voyager');
+  } else if (diff <= 0.6) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close! ${r.mag.toFixed(2)} vs target ${target}. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Not yet. ${r.mag.toFixed(2)} vs target ${target}.</span>`;
+  }
+  drawVectorCanvas(v2, a2, target);
+}
+
+/* ── GAME 10: Probability Draw ───────────────────────────────── */
+function startProbabilityGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const red = 2 + Math.floor(Math.random() * 6);
+  const blue = 2 + Math.floor(Math.random() * 6);
+  const green = 1 + Math.floor(Math.random() * 5);
+  const total = red + blue + green;
+  const colors = [['red', red], ['blue', blue], ['green', green]];
+  const pick = colors[Math.floor(Math.random() * colors.length)];
+  const answer = pick[1] / total;
+
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🎲 Probability Draw</h3>
+    <div style="background:rgba(127,160,111,0.1); border:1px solid rgba(127,160,111,0.3); border-radius:10px; padding:14px 16px; margin-bottom:16px;">
+      <div style="font-size:0.85rem; color:var(--parchment-dim);">
+        An urn has <strong style="color:var(--brass-light);">${red} red</strong>, <strong style="color:var(--brass-light);">${blue} blue</strong>, and <strong style="color:var(--brass-light);">${green} green</strong> balls.<br>
+        One ball is drawn at random. Find P(${pick[0]}).
+      </div>
+    </div>
+    <div style="margin-bottom:14px; display:flex; gap:8px; align-items:center;">
+      <input type="number" id="probAnswer" placeholder="e.g. 0.25" step="0.01" min="0" max="1" style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:inherit; font-family:'Space Mono',monospace; font-size:1rem;">
+    </div>
+    <div id="probFeedback" style="min-height:22px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:12px;">💡 Hint: P(event) = favorable outcomes / total outcomes</div>
+    <button class="btn primary" style="width:100%;" onclick="checkProbability(${answer})">🎲 Check Answer</button>`;
+}
+
+function checkProbability(answer) {
+  const val = parseFloat(document.getElementById('probAnswer').value);
+  const fb = document.getElementById('probFeedback');
+  if (isNaN(val)) { fb.innerHTML = '<span style="color:var(--coral);">Enter a number.</span>'; return; }
+  const diff = Math.abs(val - answer);
+  if (diff <= 0.02) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">✓ Correct! P = ${answer.toFixed(2)}. +150 XP</span>`;
+    awardMiniGameXp(150, 'Probability Pro');
+  } else if (diff <= 0.1) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close, but not quite. Double-check your fraction. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Incorrect. Recheck favorable vs. total outcomes and try again.</span>`;
+  }
+}
+
+/* ── GAME 11: Critical Point Hunter ──────────────────────────── */
+function startDerivativeGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const k = +(1 + Math.random() * 3).toFixed(1);
+  window._dgK = k;
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">📈 Critical Point Hunter</h3>
+    <p style="font-size:0.8rem; color:var(--parchment-dim); margin:0 0 14px;">f(x) = ⅓x³ − ${(k * k).toFixed(1)}x. Slide x until the tangent line is flat (f′(x) = 0) at the positive critical point.</p>
+    <canvas id="derivCanvas" width="520" height="240" style="width:100%; max-width:520px; aspect-ratio:520/240; border-radius:8px; background:rgba(0,0,0,0.3); display:block; margin:0 auto 14px;"></canvas>
+    <label style="font-size:0.78rem; display:block; margin-bottom:14px;">
+      <span style="color:var(--parchment-dim);">x: </span><strong id="mgXVal">0.0</strong>
+      <input type="range" min="-50" max="500" step="1" value="0" id="mgX" style="width:100%; margin-top:4px;" oninput="document.getElementById('mgXVal').textContent=(this.value/100).toFixed(2); drawDerivCanvas()">
+    </label>
+    <div id="mgDerivFeedback" style="min-height:24px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <button class="btn primary" style="width:100%;" onclick="checkDerivative()">📈 Check Slope</button>`;
+  setTimeout(drawDerivCanvas, 50);
+}
+
+function fCubic(x, k) { return x * x * x / 3 - k * k * x; }
+function fPrimeCubic(x, k) { return x * x - k * k; }
+
+function drawDerivCanvas() {
+  const canvas = document.getElementById('derivCanvas');
+  if (!canvas) return;
+  const k = window._dgK;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2, scale = 30;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+  ctx.strokeStyle = '#c99c51'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let px = 0; px <= W; px++) {
+    const x = (px - cx) / scale;
+    const y = cy - fCubic(x, k) * 8;
+    px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+  }
+  ctx.stroke();
+  const xVal = parseFloat(document.getElementById('mgX').value) / 100;
+  const slope = fPrimeCubic(xVal, k);
+  const y0 = fCubic(xVal, k);
+  const px0 = cx + xVal * scale, py0 = cy - y0 * 8;
+  const dx = 60;
+  ctx.strokeStyle = '#ff8fb0'; ctx.lineWidth = 2; ctx.beginPath();
+  ctx.moveTo(px0 - dx, py0 + slope * dx * 8 / scale); ctx.lineTo(px0 + dx, py0 - slope * dx * 8 / scale); ctx.stroke();
+  ctx.fillStyle = '#ff8fb0'; ctx.beginPath(); ctx.arc(px0, py0, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8c382'; ctx.font = '11px Space Mono,monospace';
+  ctx.fillText(`f′(${xVal.toFixed(2)}) = ${slope.toFixed(2)}`, 12, 16);
+}
+
+function checkDerivative() {
+  const k = window._dgK;
+  const xVal = parseFloat(document.getElementById('mgX').value) / 100;
+  const slope = fPrimeCubic(xVal, k);
+  const fb = document.getElementById('mgDerivFeedback');
+  if (Math.abs(slope) <= 0.1 && xVal > 0) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">🎯 Found it! x ≈ ${xVal.toFixed(2)}, f′(x) ≈ 0. +150 XP</span>`;
+    awardMiniGameXp(150, 'Derivative Detective');
+  } else if (Math.abs(slope) <= 0.6 && xVal > 0) {
+    fb.innerHTML = `<span style="color:var(--brass-light);">Close! f′(x) = ${slope.toFixed(2)}. Nudge closer to flat. +50 XP</span>`;
+    awardMiniGameXp(50, null);
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Not flat yet. f′(x) = ${slope.toFixed(2)}. Try a different x.</span>`;
+  }
+}
+
+/* ── GAME 12: Matrix Determinant Duel ────────────────────────── */
+function rndInt(lo, hi) { return lo + Math.floor(Math.random() * (hi - lo + 1)); }
+
+function startMatrixGame() {
+  const body = document.getElementById('miniGamesBody');
+  if (!body) return;
+  const a = rndInt(-6, 6), b = rndInt(-6, 6), c = rndInt(-6, 6), d = rndInt(-6, 6);
+  window._mtxDet = a * d - b * c;
+  body.innerHTML = `
+    <button class="btn ghost" style="margin-bottom:12px;" onclick="renderMiniGamesHome()">← Back</button>
+    <h3 style="margin:0 0 4px; font-family:'Fraunces',serif;">🔢 Matrix Determinant Duel</h3>
+    <div style="background:rgba(127,160,111,0.1); border:1px solid rgba(127,160,111,0.3); border-radius:10px; padding:18px; margin-bottom:16px; text-align:center;">
+      <div style="display:inline-grid; grid-template-columns:repeat(2,44px); gap:8px; font-family:'Space Mono',monospace; font-size:1.1rem; border-left:2px solid #b5d6a7; border-right:2px solid #b5d6a7; padding:6px 14px;">
+        <div>${a}</div><div>${b}</div><div>${c}</div><div>${d}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px; display:flex; gap:8px; align-items:center;">
+      <input type="number" id="mtxAnswer" placeholder="det = ?" step="1" style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.04); color:inherit; font-family:'Space Mono',monospace; font-size:1rem;">
+    </div>
+    <div id="mtxFeedback" style="min-height:22px; font-size:0.85rem; margin-bottom:10px;"></div>
+    <div style="font-size:0.72rem; color:var(--parchment-dim); margin-bottom:12px;">💡 det = ad − bc</div>
+    <button class="btn primary" style="width:100%;" onclick="checkMatrix()">🔢 Check Determinant</button>`;
+}
+
+function checkMatrix() {
+  const val = parseFloat(document.getElementById('mtxAnswer').value);
+  const fb = document.getElementById('mtxFeedback');
+  if (isNaN(val)) { fb.innerHTML = '<span style="color:var(--coral);">Enter a number.</span>'; return; }
+  if (val === window._mtxDet) {
+    fb.innerHTML = `<span style="color:#6fe4d6;">✓ Correct! det = ${window._mtxDet}. +150 XP</span>`;
+    awardMiniGameXp(150, 'Matrix Master');
+  } else {
+    fb.innerHTML = `<span style="color:var(--coral);">Incorrect. Recompute ad − bc and try again.</span>`;
   }
 }
 
