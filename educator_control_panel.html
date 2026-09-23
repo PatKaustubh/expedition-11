@@ -1306,11 +1306,20 @@ async function renderHintInsightsPanel() {
   ).slice(0, 8);
 
   if (allStudentData.length === 0 && interventionNeeded.length === 0) {
-    el.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--parchment-dim);">
+    el.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--parchment-dim);">
       <div style="font-size:2rem; margin-bottom:12px;">💡</div>
-      <p style="font-size:1rem; margin-bottom:6px;">No hint data yet</p>
+      <p style="font-size:1rem; margin-bottom:6px;">No hint analytics data yet</p>
       <p style="font-size:0.85rem; opacity:0.7;">Once students start using the 3-tier hint system, their analytics will aggregate here automatically.</p>
+    </div>
+    <!-- Peer Hints Moderation Queue -->
+    <div id="peerHintModerationSection" style="background:rgba(155,142,203,0.06); border:1px solid rgba(155,142,203,0.25); border-radius:16px; padding:20px 22px; margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="font-size:0.82rem; font-weight:700; color:#c3b9e8; text-transform:uppercase; letter-spacing:0.8px;">💬 Peer Hint Moderation Queue</div>
+        <button class="btn ghost" style="padding:5px 12px; font-size:0.72rem;" onclick="loadPeerHintModerationQueue()">↺ Refresh</button>
+      </div>
+      <div id="peerHintModerationBody" style="font-size:0.82rem; color:var(--parchment-dim);">Click refresh to load pending peer hints…</div>
     </div>`;
+    loadPeerHintModerationQueue();
     return;
   }
 
